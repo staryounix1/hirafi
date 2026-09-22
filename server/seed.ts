@@ -50,6 +50,28 @@ const CATEGORIES = [
   { slug: "handyman", nameAr: "خدمات عامة", icon: "Settings" },
 ];
 
+// ── صور واقعية مطابقة لكل فئة ────────────────────────────────────────────────
+// قبلها كانت صور picsum عشوائية، فيظهر «تسريب في المطبخ» صورة رصيف خشبي — تناقض يضرب
+// مصداقية العرض كله. هذه صور وُلّدت خصيصاً لكل مهنة.
+const CDN_IMG = "https://static.teamily.ai/sites/54acf1a4-fb8b-4ade-befc-2c880513d6e8/images";
+const CATEGORY_IMAGES: Record<string, string> = {
+  plumbing: `${CDN_IMG}/hirfi_category_photos_v4/hirfi_category_photos.png`,
+  electrical: `${CDN_IMG}/hirfi_category_photos_v2/hirfi_category_photos.png`,
+  carpentry: `${CDN_IMG}/hirfi_category_photos_v12/hirfi_category_photos.png`,
+  painting: `${CDN_IMG}/hirfi_category_photos/hirfi_category_photos.png`,
+  hvac: `${CDN_IMG}/hirfi_category_photos_v11/hirfi_category_photos.png`,
+  cleaning: `${CDN_IMG}/hirfi_category_photos_v5/hirfi_category_photos.png`,
+  moving: `${CDN_IMG}/hirfi_category_photos_v8/hirfi_category_photos.png`,
+  electronics: `${CDN_IMG}/hirfi_category_photos_v7/hirfi_category_photos.png`,
+  tailoring: `${CDN_IMG}/hirfi_category_photos_v9/hirfi_category_photos.png`,
+  photography: `${CDN_IMG}/hirfi_category_photos_v10/hirfi_category_photos.png`,
+  tutoring: `${CDN_IMG}/hirfi_category_photos_v6/hirfi_category_photos.png`,
+  handyman: `${CDN_IMG}/hirfi_category_photos_v3/hirfi_category_photos.png`,
+};
+/** صورة الفئة المناسبة — مع بديل ثابت إن جاءت فئة غير معروفة. */
+const categoryImage = (slug: string | undefined) =>
+  CATEGORY_IMAGES[slug ?? ""] ?? CATEGORY_IMAGES.handyman;
+
 // ── المستخدمون ────────────────────────────────────────────────────────────────
 type UserSpec = {
   email: string;
@@ -731,7 +753,7 @@ async function main() {
     for (const [i, w] of (u.works ?? []).entries()) {
       await db.insert(providerWorks).values({
         providerUserId: uid,
-        imageUrl: `https://picsum.photos/seed/hirfi-work-${u.email.split("@")[0]}-${i}/900/650`,
+        imageUrl: categoryImage(u.skills?.[i % Math.max(1, u.skills.length)]),
         caption: w.caption,
         createdAt: daysAgo(30 - i * 5),
       });
@@ -770,10 +792,11 @@ async function main() {
       .returning();
     reqCount++;
 
-    for (let i = 0; i < (r.images ?? 0); i++) {
+    // صورة واحدة معبّرة عن الفئة لكل طلب — تكرار الصورة نفسها مرّتين في معرض واحد يبدو خطأً.
+    if ((r.images ?? 0) > 0) {
       await db.insert(requestImages).values({
         requestId: reqRow.id,
-        imageUrl: `https://picsum.photos/seed/hirfi-req-${reqRow.id.slice(0, 8)}-${i}/900/650`,
+        imageUrl: categoryImage(r.category),
         createdAt,
       });
     }
