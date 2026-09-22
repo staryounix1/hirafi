@@ -1,23 +1,25 @@
-// Vercel serverless entrypoint.
+// Vercel Node (serverless) entrypoint.
 //
-// The app's real server (server/_core/index.ts) calls `serve({...})` to bind a
-// port, which is wrong for a serverless function: Vercel hands us a Node
-// (req, res) pair instead. So this file re-exports the SAME Hono app without
-// listening. Keep every route/middleware in sync with server/_core/index.ts —
-// this is only the transport adapter, never a second source of truth.
+// The app's real server (server/_core/index.ts) calls `serve({...})`, binding a
+// port — wrong for a serverless function, where Vercel hands us a Node
+// IncomingMessage/ServerResponse pair instead. This file mounts the SAME Hono
+// app (same routers, same middleware) and bridges Node <-> Fetch here, so the
+// business code stays the single source of truth.
+//
+// NOTE: `hono/vercel`'s handle() expects a Web `Request`, which is what Vercel
+// passes only to *Edge* functions. A Node runtime function gets (req, res), so
+// that adapter silently produces a non-function handler and the invocation
+// fails. Hence the explicit bridge below.
 import { Hono } from "hono";
 import { trpcServer } from "@hono/trpc-server";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 import { serveAppStorage } from "../server/_core/storage";
 import { getJob } from "../server/_core/jobs";
 import { mountClient } from "../server/_core/serve";
-import { handle } from "hono/vercel";
 
-const app = new Hono().basePath("/").onError((err, c) => {
-  console.error("[server] unhandled", err);
-  return c.json({ error: "internal error" }, 500);
-});
+const app = new Hono();
 
 app.get("/api/health", (c) => c.json({ ok: true }));
 
@@ -50,4 +52,48 @@ app.post("/api/_jobs/:name", async (c) => {
 // Serve the built SPA + index.html fallback from dist/public.
 mountClient(app);
 
-export default handle(app);
+/** Build a Web Request from Vercel's Node request. */
+async function toWebRequest(req: IncomingMessage): Promise<Request> {
+  const host = (req.headers["x-forwarded-host"] as string) ?? req.headers.host ?? "localhost";
+  const proto = (req.headers["x-forwarded-proto"] as string) ?? "https";
+  const url = new URL(req.url ?? "/", `${proto}://${host}`);
+
+  const method = req.method ?? "GET";
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(req.headers)) {
+    if (v === undefined) continue;
+    if (Array.isArray(v)) for (const item of v) headers.append(k, item);
+    else headers.set(k, v);
+  }
+
+  let body: Buffer | undefined;
+  if (method !== "GET" && method !== "HEAD") {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(Buffer.from(chunk));
+    body = Buffer.concat(chunks);
+  }
+
+  return new Request(url, { method, headers, body: body?.length ? body : undefined });
+}
+
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  try {
+    const response = await app.fetch(await toWebRequest(req));
+    res.statusCode = response.status;
+    response.headers.forEach((value, key) => {
+      // set-cookie can repeat; append the rest.
+      if (key.toLowerCase() === "set-cookie") res.appendHeader(key, value);
+      else res.setHeader(key, value);
+    });
+    const buf = Buffer.from(await response.arrayBuffer());
+    res.setHeader("content-length", String(buf.byteLength));
+    res.end(buf);
+  } catch (err) {
+    console.error("[vercel] invocation failed", err);
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.setHeader("content-type", "text/plain; charset=utf-8");
+    }
+    res.end("internal error");
+  }
+}
