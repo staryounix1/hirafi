@@ -79,7 +79,24 @@ async function toWebRequest(req: IncomingMessage): Promise<Request> {
   return new Request(url, { method, headers, body });
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+/**
+ * Vercel-facing entry. Wraps the real bridge so a boot/invocation failure surfaces
+ * as readable text instead of a bare FUNCTION_INVOCATION_FAILED (the platform
+ * gives no runtime logs on this plan).
+ */
+export default async function __entry(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  try {
+    await handler(req, res);
+  } catch (err) {
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.setHeader("content-type", "text/plain; charset=utf-8");
+    }
+    res.end("INVOKE ERROR:\n" + (err instanceof Error ? err.stack : String(err)));
+  }
+}
+
+async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     const response = await app.fetch(await toWebRequest(req));
     res.statusCode = response.status;
