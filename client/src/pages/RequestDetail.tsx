@@ -1,4 +1,4 @@
-// ── الشاشة الموحّدة للطلب ─────────────────────────────────────────────────────
+// ── الشاشة الموحّدة للطلب ────────────────────────────────────────────────────────
 // شريط الحياة + تفاصيل الطلب + العروض + التفاوض + المحادثة + التقييم + المحفظة،
 // كلها في مكان واحد. الأزرار المعروضة تتغيّر بحسب الدور والحالة، فلا يرى أي طرف
 // إجراءً لا يملكه الخادم أصلاً (نفس شروط canWrite/isOwner في db.ts).
@@ -23,6 +23,8 @@ import {
   Calendar,
   Eye,
   AlertCircle,
+  Users,
+  ScrollText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,11 +47,13 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   categoryIcon,
+  countAr,
   errorMessage,
   formatDateAr,
   formatDateTimeAr,
   formatDuration,
   formatMAD,
+  madNumber,
   requestStatusMeta,
   timeAgoAr,
   urgencyMeta,
@@ -62,22 +66,28 @@ export default function RequestDetail() {
 
   if (!id) {
     return (
-      <ErrorState message="رابط الطلب غير صالح — لا يحمل رقماً تعريفياً." />
+      <div className="p-4">
+        <ErrorState message="رابط الطلب غير صالح — لا يحمل رقماً تعريفياً." />
+      </div>
     );
   }
 
   if (q.isLoading) {
     return (
-      <div className="grid gap-5">
-        <div className="hirfi-skeleton h-16 rounded-xl" />
-        <div className="hirfi-skeleton h-14 rounded-xl" />
+      <div className="grid gap-3 px-4 pt-5">
+        <div className="hirfi-skeleton h-24 rounded-3xl" />
+        <div className="hirfi-skeleton h-14 rounded-3xl" />
         <ListSkeleton count={2} />
       </div>
     );
   }
 
   if (q.isError) {
-    return <ErrorState message={errorMessage(q.error)} onRetry={() => void q.refetch()} />;
+    return (
+      <div className="p-4">
+        <ErrorState message={errorMessage(q.error)} onRetry={() => void q.refetch()} />
+      </div>
+    );
   }
   if (!q.data) return null;
 
@@ -96,14 +106,17 @@ export default function RequestDetail() {
   const myCounters = d.offers.filter((o) => o.providerUserId === r.customerId);
 
   return (
-    <div className="grid gap-5">
-      <Link
-        href={d.isOwner ? "/requests" : "/browse"}
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowRight className="size-4" />
-        {d.isOwner ? "عودة إلى طلباتي" : "عودة إلى التصفّح"}
-      </Link>
+    <div className="grid pb-6">
+      {/* رجوع */}
+      <div className="px-4 pt-4">
+        <Link
+          href={d.isOwner ? "/requests" : "/browse"}
+          className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-muted-foreground"
+        >
+          <ArrowRight className="size-3.5" />
+          {d.isOwner ? "عودة إلى طلباتي" : "عودة إلى التصفّح"}
+        </Link>
+      </div>
 
       <PageHeader
         icon={catIcon}
@@ -115,253 +128,289 @@ export default function RequestDetail() {
               {sm.label}
             </Badge>
             <Badge tone={urg.tone}>{urg.label}</Badge>
-            <RefCode id={r.id} />
           </div>
         }
       />
 
-      <LifecycleBar
-        status={r.status}
-        hasOffers={incomingOffers.length > 0}
-        offersCount={incomingOffers.length}
-      />
+      <div className="px-4 pt-4">
+        <LifecycleBar
+          status={r.status}
+          hasOffers={incomingOffers.length > 0}
+          offersCount={incomingOffers.length}
+        />
+      </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="grid min-w-0 gap-5">
-          {/* تفاصيل الطلب */}
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-base font-bold">تفاصيل الطلب</h2>
-            <p className="mt-3 text-sm leading-relaxed whitespace-pre-line">{r.description}</p>
+      {/* المال أولاً — الرقم الأبرز */}
+      <section className="px-4 pt-3">
+        <div className="card-flat p-4">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+                <CircleDollarSign className="size-3.5" />
+                {r.agreedAmount ? "السعر المتفق عليه" : "الميزانية المقترحة للزبون"}
+              </div>
+              <div className="text-price mt-1 flex items-baseline gap-1.5 text-[30px] leading-none">
+                {madNumber(r.agreedAmount ?? r.budgetAmount)}
+                <span className="text-[12px] font-bold text-muted-foreground">درهم</span>
+              </div>
+            </div>
+            <RefCode id={r.id} />
+          </div>
 
-            {d.images.length > 0 ? (
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {d.images.map((img) => (
-                  <a
-                    key={img.id}
-                    href={img.imageUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group relative aspect-square overflow-hidden rounded-lg border border-border"
+          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3">
+            <div>
+              <dt className="flex items-center gap-1 text-[10.5px] font-bold text-muted-foreground">
+                <MapPin className="size-3" />
+                الموقع
+              </dt>
+              <dd className="mt-0.5 truncate text-[12.5px] font-bold">
+                {r.city} — {r.district}
+              </dd>
+            </div>
+            <div>
+              <dt className="flex items-center gap-1 text-[10.5px] font-bold text-muted-foreground">
+                <Clock className="size-3" />
+                نُشر
+              </dt>
+              <dd className="mt-0.5 text-[12.5px] font-bold">{timeAgoAr(r.createdAt)}</dd>
+            </div>
+            <div className="col-span-2">
+              <dt className="flex items-center gap-1 text-[10.5px] font-bold text-muted-foreground">
+                <Calendar className="size-3" />
+                الوقت المقترح للتنفيذ
+              </dt>
+              <dd className="mt-0.5 text-[12.5px] font-bold">
+                {r.scheduledFor ? formatDateTimeAr(r.scheduledFor) : "مرن — لم يُحدَّد"}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      {/* تفاصيل الطلب */}
+      <section className="px-4 pt-3">
+        <div className="card-flat p-4">
+          <h2 className="flex items-center gap-1.5 text-[15px] font-black">
+            <ScrollText className="size-4.5 text-brand-dark" />
+            تفاصيل الطلب
+          </h2>
+          <p className="mt-2.5 text-[13px] leading-relaxed whitespace-pre-line">
+            {r.description}
+          </p>
+          <p className="mt-2 text-[10.5px] text-muted-foreground">
+            نُشر في {formatDateAr(r.createdAt)}
+          </p>
+
+          {d.images.length > 0 ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {d.images.map((img) => (
+                <a
+                  key={img.id}
+                  href={img.imageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group relative aspect-square overflow-hidden rounded-2xl"
+                >
+                  <img
+                    src={img.imageUrl}
+                    alt="صورة توضيحية للطلب"
+                    className="size-full object-cover transition-transform group-active:scale-105"
+                  />
+                  <span className="absolute inset-0 grid place-items-center bg-foreground/0 text-background opacity-0 transition-opacity group-hover:bg-foreground/35 group-hover:opacity-100">
+                    <Eye className="size-5" />
+                  </span>
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      {/* العروض المقدَّمة */}
+      <section className="grid gap-3 px-4 pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-[17px] font-black">
+            <MessageSquare className="size-4.5 text-brand-dark" />
+            العروض المقدَّمة
+          </h2>
+          <Badge tone={incomingOffers.length > 0 ? "teal" : "muted"}>
+            {countAr(incomingOffers.length, ["عرض", "عرضان", "عروض"], "عرضاً")}
+          </Badge>
+        </div>
+
+        {incomingOffers.length === 0 ? (
+          <EmptyState
+            icon={Hourglass}
+            title="لا عروض بعد"
+            description={
+              d.isOwner
+                ? "طلبك منشور ويظهر الآن للحرّافين في منطقتك. أول ما يقدّم أحدهم عرضاً سيصلك إشعار هنا، وستقدر أن تقارن السعر والمدة والرسالة قبل أن تقرّر."
+                : "كن أول من يقترح سعراً على هذا الطلب — وكلما كانت رسالتك واضحة عمّا يشمله السعر، ارتفعت فرصك في القبول."
+            }
+          />
+        ) : (
+          <div className="grid gap-3">
+            {incomingOffers.map((o) => (
+              <OfferCardRow
+                key={o.id}
+                offer={o}
+                isOwner={d.isOwner}
+                requestOpen={r.status === "open"}
+                budget={r.budgetAmount}
+                onDone={() => void q.refetch()}
+              />
+            ))}
+          </div>
+        )}
+
+        {myCounters.length > 0 ? (
+          <div className="grid gap-3 pt-1">
+            <h3 className="text-[13px] font-black text-muted-foreground">
+              {d.isOwner ? "عروضي المضادة" : "عروض مضادة وُجّهت إليّ"}
+            </h3>
+            {myCounters.map((o) => (
+              <OfferCardRow
+                key={o.id}
+                offer={o}
+                isOwner={d.isOwner}
+                requestOpen={r.status === "open"}
+                budget={r.budgetAmount}
+                isCounter
+                onDone={() => void q.refetch()}
+              />
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      {/* نموذج تقديم عرض — للحرّاف على طلب مفتوح لم يعرض عليه بعد */}
+      {!d.isOwner && r.status === "open" && !d.hasOffered ? (
+        <div className="px-4 pt-3">
+          <OfferForm requestId={r.id} budget={r.budgetAmount} onDone={() => void q.refetch()} />
+        </div>
+      ) : null}
+
+      {/* أطراف الطلب */}
+      <section className="px-4 pt-3">
+        <div className="card-flat p-4">
+          <h2 className="flex items-center gap-1.5 text-[15px] font-black">
+            <Users className="size-4.5 text-brand-dark" />
+            أطراف الطلب
+          </h2>
+          <div className="mt-3 grid gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand font-display text-[15px] font-black text-brand-ink">
+                {(r.customerName ?? "?").trim().charAt(0)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <b className="truncate text-[13.5px]">{r.customerName}</b>
+                  <Badge tone="brand">زبون</Badge>
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="size-3" />
+                    {r.customerCity}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Star className="size-3" />
+                    {customerAvg !== null ? `${customerAvg} من 5` : "بلا تقييم"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {d.acceptedOffer ? (
+              <div className="flex items-center gap-3 border-t border-border pt-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-teal-soft font-display text-[15px] font-black text-teal">
+                  {d.acceptedOffer.providerName.trim().charAt(0)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/providers/${d.acceptedOffer.providerUserId}`}
+                    className="block truncate text-[13.5px] font-black underline-offset-2 hover:underline"
                   >
-                    <img
-                      src={img.imageUrl}
-                      alt="صورة توضيحية للطلب"
-                      className="size-full object-cover transition-transform group-hover:scale-105"
-                    />
-                    <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity group-hover:bg-black/35 group-hover:opacity-100">
-                      <Eye className="size-5" />
-                    </span>
-                  </a>
-                ))}
+                    {d.acceptedOffer.providerName}
+                  </Link>
+                  <div className="text-[11px] text-muted-foreground">
+                    {formatMAD(d.acceptedOffer.price)} — {formatDuration(d.acceptedOffer.durationMinutes)}
+                  </div>
+                </div>
+                <Badge tone="success">الحرّاف المختار</Badge>
               </div>
             ) : null}
+          </div>
+        </div>
+      </section>
 
-            <dl className="mt-4 grid gap-x-4 gap-y-3 border-t border-border pt-4 sm:grid-cols-2">
-              <div>
-                <dt className="text-xs text-muted-foreground">الميزانية المقترحة</dt>
-                <dd className="mt-0.5 flex items-center gap-1.5 font-display text-lg font-extrabold text-brand-dark">
-                  <CircleDollarSign className="size-4" />
-                  {formatMAD(r.agreedAmount ?? r.budgetAmount)}
-                  <span className="text-[11px] font-normal text-muted-foreground">
-                    {r.agreedAmount ? "(السعر المتفق عليه)" : "(اقتراح الزبون)"}
-                  </span>
-                </dd>
+      {/* الإجراءات بحسب الحالة والدور */}
+      <div className="px-4 pt-3">
+        <OwnerActions
+          requestId={r.id}
+          status={r.status}
+          isOwner={d.isOwner}
+          acceptedProviderId={d.acceptedOffer?.providerUserId ?? null}
+          viewerId={d.isOwner ? null : d.counterpartId}
+          onDone={() => void q.refetch()}
+        />
+      </div>
+
+      {/* الاتفاق المالي */}
+      {r.agreedAmount ? (
+        <section className="px-4 pt-3">
+          <div className="rounded-3xl bg-teal-soft p-4">
+            <h2 className="flex items-center gap-1.5 text-[15px] font-black text-teal">
+              <Wallet className="size-4.5" />
+              الاتفاق المالي
+            </h2>
+            <dl className="mt-3 grid gap-2 text-[12.5px]">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">السعر المتفق عليه</dt>
+                <dd className="font-black">{formatMAD(r.agreedAmount)}</dd>
               </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">الموقع</dt>
-                <dd className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold">
-                  <MapPin className="size-4 text-brand" />
-                  {r.city} — {r.district}
-                </dd>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">عمولة المنصّة (10%)</dt>
+                <dd className="font-black">{formatMAD(Math.round(r.agreedAmount * 0.1))}</dd>
               </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">نُشر</dt>
-                <dd className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold">
-                  <Clock className="size-4 text-brand" />
-                  {timeAgoAr(r.createdAt)} · {formatDateAr(r.createdAt)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">الوقت المقترح للتنفيذ</dt>
-                <dd className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold">
-                  <Calendar className="size-4 text-brand" />
-                  {r.scheduledFor ? formatDateTimeAr(r.scheduledFor) : "مرن — لم يُحدَّد"}
+              <div className="mt-1 flex items-center justify-between gap-3 border-t border-teal/20 pt-2">
+                <dt className="font-black">صافي استحقاق الحرّاف</dt>
+                <dd className="text-price text-[17px] leading-none text-teal">
+                  {madNumber(r.agreedAmount - Math.round(r.agreedAmount * 0.1))}
                 </dd>
               </div>
             </dl>
-          </section>
-
-          {/* العروض */}
-          <section className="grid gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="flex items-center gap-2 text-base font-bold">
-                <MessageSquare className="size-4.5 text-brand" />
-                العروض المقدَّمة
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
-                  {incomingOffers.length}
-                </span>
-              </h2>
-            </div>
-
-            {incomingOffers.length === 0 ? (
-              <EmptyState
-                icon={Hourglass}
-                title="لا عروض بعد"
-                description={
-                  d.isOwner
-                    ? "طلبك منشور ويظهر الآن للحرّافين في منطقتك. أول ما يقدّم أحدهم عرضاً سيصلك إشعار هنا."
-                    : "كن أول من يقترح سعراً على هذا الطلب."
-                }
-              />
-            ) : (
-              <div className="grid gap-3">
-                {incomingOffers.map((o) => (
-                  <OfferCardRow
-                    key={o.id}
-                    offer={o}
-                    isOwner={d.isOwner}
-                    requestOpen={r.status === "open"}
-                    budget={r.budgetAmount}
-                    onDone={() => void q.refetch()}
-                  />
-                ))}
-              </div>
-            )}
-
-            {myCounters.length > 0 ? (
-              <div className="grid gap-3">
-                <h3 className="text-sm font-bold text-muted-foreground">
-                  {d.isOwner ? "عروضي المضادة" : "عروض مضادة وُجّهت إليّ"}
-                </h3>
-                {myCounters.map((o) => (
-                  <OfferCardRow
-                    key={o.id}
-                    offer={o}
-                    isOwner={d.isOwner}
-                    requestOpen={r.status === "open"}
-                    budget={r.budgetAmount}
-                    isCounter
-                    onDone={() => void q.refetch()}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </section>
-
-          {/* نموذج تقديم عرض — للحرّاف على طلب مفتوح لم يعرض عليه بعد */}
-          {!d.isOwner && r.status === "open" && !d.hasOffered ? (
-            <OfferForm requestId={r.id} budget={r.budgetAmount} onDone={() => void q.refetch()} />
-          ) : null}
-        </div>
-
-        {/* العمود الجانبي */}
-        <aside className="grid min-w-0 gap-4 lg:sticky lg:top-20 lg:self-start">
-          <section className="rounded-xl border border-border bg-card p-4">
-            <h2 className="text-sm font-bold">أطراف الطلب</h2>
-            <div className="mt-3 grid gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand/12 font-display text-sm font-bold text-brand-dark">
-                  {(r.customerName ?? "?").trim().charAt(0)}
-                </span>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">{r.customerName}</div>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="size-3" />
-                      {r.customerCity}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Star className="size-3" />
-                      {customerAvg !== null ? `${customerAvg} من 5` : "بلا تقييم"}
-                    </span>
-                  </div>
-                </div>
-                <span className="ms-auto text-[11px] text-muted-foreground">الزبون</span>
-              </div>
-
-              {d.acceptedOffer ? (
-                <div className="flex items-center gap-2.5 border-t border-border pt-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-soft font-display text-sm font-bold text-teal">
-                    {d.acceptedOffer.providerName.trim().charAt(0)}
-                  </span>
-                  <div className="min-w-0">
-                    <Link
-                      href={`/providers/${d.acceptedOffer.providerUserId}`}
-                      className="truncate text-sm font-semibold hover:text-brand-dark"
-                    >
-                      {d.acceptedOffer.providerName}
-                    </Link>
-                    <div className="text-xs text-muted-foreground">
-                      {formatMAD(d.acceptedOffer.price)} — {formatDuration(d.acceptedOffer.durationMinutes)}
-                    </div>
-                  </div>
-                  <span className="ms-auto text-[11px] font-semibold text-success">الحرّاف المختار</span>
-                </div>
-              ) : null}
-            </div>
-          </section>
-
-          {/* الإجراءات بحسب الحالة والدور */}
-          <OwnerActions
-            requestId={r.id}
-            status={r.status}
-            isOwner={d.isOwner}
-            acceptedProviderId={d.acceptedOffer?.providerUserId ?? null}
-            viewerId={d.isOwner ? null : d.counterpartId}
-            onDone={() => void q.refetch()}
-          />
-
-          {r.agreedAmount ? (
-            <section className="rounded-xl border border-teal/25 bg-teal-soft/50 p-4">
-              <h2 className="flex items-center gap-1.5 text-sm font-bold text-teal">
-                <Wallet className="size-4" />
-                الاتفاق المالي
-              </h2>
-              <dl className="mt-3 grid gap-1.5 text-sm">
-                <div className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">السعر المتفق عليه</dt>
-                  <dd className="font-semibold">{formatMAD(r.agreedAmount)}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">عمولة المنصّة (10%)</dt>
-                  <dd className="font-semibold">{formatMAD(Math.round(r.agreedAmount * 0.1))}</dd>
-                </div>
-                <div className="mt-1 flex items-center justify-between border-t border-teal/20 pt-2">
-                  <dt className="font-semibold">صافي استحقاق الحرّاف</dt>
-                  <dd className="font-display font-extrabold text-teal">
-                    {formatMAD(r.agreedAmount - Math.round(r.agreedAmount * 0.1))}
-                  </dd>
-                </div>
-              </dl>
-              <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                تُقيَّد العمليّات في المحفظة الداخلية عند إتمام الطلب — لا بوابة دفع حقيقية في هذا النطاق.
-              </p>
-            </section>
-          ) : null}
-
-          <ChatPanel requestId={r.id} enabled={d.canWriteMessages} />
-
-          {r.status === "completed" && !d.iReviewed ? (
-            <ReviewPanel
-              requestId={r.id}
-              counterpartId={d.counterpartId}
-              onDone={() => void q.refetch()}
-            />
-          ) : null}
-
-          {r.status === "completed" && d.iReviewed ? (
-            <p className="flex items-center gap-2 rounded-xl border border-success/25 bg-success-soft/50 px-3.5 py-3 text-sm font-medium text-success">
-              <CheckCircle2 className="size-4 shrink-0" />
-              قيّمت هذا الطلب — شكراً لك.
+            <p className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">
+              تُقيَّد العمليّات في المحفظة الداخلية عند إتمام الطلب — لا بوابة دفع حقيقية في هذا النطاق.
             </p>
-          ) : null}
-        </aside>
+          </div>
+        </section>
+      ) : null}
+
+      {/* المحادثة */}
+      <div className="px-4 pt-3">
+        <ChatPanel requestId={r.id} enabled={d.canWriteMessages} />
       </div>
+
+      {/* التقييم */}
+      {r.status === "completed" && !d.iReviewed ? (
+        <div className="px-4 pt-3">
+          <ReviewPanel requestId={r.id} onDone={() => void q.refetch()} />
+        </div>
+      ) : null}
+
+      {r.status === "completed" && d.iReviewed ? (
+        <div className="px-4 pt-3">
+          <p className="flex items-center gap-2 rounded-3xl bg-success/12 px-4 py-3.5 text-[13px] font-bold text-success">
+            <CheckCircle2 className="size-4.5 shrink-0" />
+            قيّمت هذا الطلب — شكراً لك، تقييمك يظهر في الملف العام.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-// ── بطاقة عرض + أزرار القرار بحسب الدور ──────────────────────────────────────
+// ── بطاقة عرض + أزرار القرار بحسب الدور ───────────────────────────────────────
 function OfferCardRow({
   offer,
   isOwner,
@@ -387,8 +436,7 @@ function OfferCardRow({
   const [dur, setDur] = useState(String(offer.durationMinutes));
   const [msg, setMsg] = useState("");
 
-  const busy =
-    accept.isPending || reject.isPending || withdraw.isPending || respond.isPending;
+  const busy = accept.isPending || reject.isPending || withdraw.isPending || respond.isPending;
 
   async function run(fn: () => Promise<unknown>, ok: string) {
     try {
@@ -408,7 +456,12 @@ function OfferCardRow({
     if (!d || d < 15) return toast.error("أدخل مدة صحيحة (15 دقيقة على الأقل)");
     if (msg.trim().length < 5) return toast.error("اكتب رسالة قصيرة توضّح عرضك المضاد");
     try {
-      await counter.mutateAsync({ id: offer.id, price: Math.round(p), durationMinutes: Math.round(d), message: msg.trim() });
+      await counter.mutateAsync({
+        id: offer.id,
+        price: Math.round(p),
+        durationMinutes: Math.round(d),
+        message: msg.trim(),
+      });
       await utils.invalidate();
       toast.success("أُرسل عرضك المضاد — القرار النهائي يبقى لك");
       setCountering(false);
@@ -426,7 +479,7 @@ function OfferCardRow({
       <>
         <Button
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 rounded-full"
           disabled={busy}
           onClick={() =>
             run(
@@ -441,7 +494,7 @@ function OfferCardRow({
         <Button
           size="sm"
           variant="outline"
-          className="gap-1.5"
+          className="gap-1.5 rounded-full"
           disabled={busy}
           onClick={() => setCountering((v) => !v)}
         >
@@ -451,7 +504,7 @@ function OfferCardRow({
         <Button
           size="sm"
           variant="ghost"
-          className="gap-1.5 text-muted-foreground"
+          className="gap-1.5 rounded-full text-muted-foreground"
           disabled={busy}
           onClick={() => run(() => reject.mutateAsync({ id: offer.id }), "رُفض العرض")}
         >
@@ -467,7 +520,7 @@ function OfferCardRow({
       <Button
         size="sm"
         variant="outline"
-        className="gap-1.5 text-muted-foreground"
+        className="gap-1.5 rounded-full text-muted-foreground"
         disabled={busy}
         onClick={() => run(() => withdraw.mutateAsync({ id: offer.id }), "سُحب عرضك")}
       >
@@ -484,7 +537,7 @@ function OfferCardRow({
       <>
         <Button
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 rounded-full"
           disabled={busy}
           onClick={() =>
             run(
@@ -499,7 +552,7 @@ function OfferCardRow({
         <Button
           size="sm"
           variant="ghost"
-          className="gap-1.5 text-muted-foreground"
+          className="gap-1.5 rounded-full text-muted-foreground"
           disabled={busy}
           onClick={() => run(() => respond.mutateAsync({ id: offer.id, accept: false }), "رفضت العرض المضاد")}
         >
@@ -509,25 +562,68 @@ function OfferCardRow({
       </>
     ) : null;
 
+  // خيارات سعرية سريعة للعرض المضاد: منتصف الطريق، ثم خصم 10% و20% عن عرضه.
+  const quick = [
+    { label: "منتصف الطريق", value: Math.round((budget + offer.price) / 2) },
+    { label: "خصم 10% عن عرضه", value: Math.round(offer.price * 0.9) },
+    { label: "خصم 20% عن عرضه", value: Math.round(offer.price * 0.8) },
+  ].filter((v) => v.value >= 20);
+
   return (
     <div className="grid gap-2">
       <OfferCard offer={offer} actions={counterActions ?? ownerActions ?? providerActions} />
 
       {countering && !isCounter ? (
-        <div className="grid gap-3 rounded-xl border border-warn/30 bg-warn-soft/40 p-4">
-          <h4 className="flex items-center gap-1.5 text-sm font-bold text-warn">
+        <div className="grid gap-3 rounded-3xl bg-warn-soft p-4">
+          <h4 className="flex items-center gap-1.5 text-[14px] font-black text-warn">
             <Pencil className="size-4" />
             عرض مضاد إلى {offer.providerName}
           </h4>
-          <div className="grid gap-3 sm:grid-cols-2">
+
+          <div className="flex flex-wrap gap-2">
+            {quick.map((v) => (
+              <button
+                key={v.label}
+                type="button"
+                onClick={() => setPrice(String(v.value))}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-[11.5px] font-bold transition-colors",
+                  Number(price) === v.value
+                    ? "bg-warn text-white"
+                    : "bg-background text-foreground active:bg-muted",
+                )}
+              >
+                {v.label} · {formatMAD(v.value)}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <Field label="سعرك المقترح (درهم)" required>
-              <Input type="number" min={20} step={10} value={price} onChange={(e) => setPrice(e.target.value)} />
+              <Input
+                type="number"
+                min={20}
+                step={10}
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
             </Field>
             <Field label="المدة (دقيقة)" required>
-              <Input type="number" min={15} step={15} value={dur} onChange={(e) => setDur(e.target.value)} />
+              <Input
+                type="number"
+                min={15}
+                step={15}
+                value={dur}
+                onChange={(e) => setDur(e.target.value)}
+              />
             </Field>
           </div>
-          <Field label="رسالة" hint="اشرح لماذا هذا السعر مناسب — أو ما الذي يمكن تنفيذه به" required>
+
+          <Field
+            label="رسالة"
+            hint="اشرح لماذا هذا السعر مناسب — أو ما الذي يمكن تنفيذه به"
+            required
+          >
             <Textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
@@ -536,16 +632,18 @@ function OfferCardRow({
               placeholder="مثال: السعر أعلى قليلاً من ميزانيتي، لكن يمكنني قبوله إذا شملت القطع."
             />
           </Field>
+
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" className="gap-1.5" onClick={sendCounter} disabled={counter.isPending}>
+            <Button size="sm" className="gap-1.5 rounded-full" onClick={() => void sendCounter()} disabled={counter.isPending}>
               {counter.isPending ? <Spinner /> : <Send className="size-3.5" />}
               أرسل العرض المضاد
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setCountering(false)}>
+            <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setCountering(false)}>
               إلغاء
             </Button>
           </div>
-          <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+
+          <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
             <Info className="mt-0.5 size-3.5 shrink-0" />
             العرض المضاد لا يُلزمك: الاتفاق لا يتم إلا إذا وافق الحرّاف، ويبقى بإمكانك قبول عرضه الأصلي.
           </p>
@@ -553,14 +651,14 @@ function OfferCardRow({
       ) : null}
 
       {!isOwner && !isCounter && offer.status === "countered" && offer.parentOfferId ? (
-        <p className="flex items-start gap-1.5 rounded-lg bg-warn-soft/60 px-3 py-2 text-xs text-warn">
+        <p className="flex items-start gap-1.5 rounded-2xl bg-warn-soft px-3.5 py-2.5 text-[11.5px] leading-relaxed text-warn">
           <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
           عرضك الأصلي قيد التفاوض — راجع العرض المضاد في الأسفل.
         </p>
       ) : null}
 
       {isOwner && isCounter && offer.status === "countered" ? (
-        <p className="flex items-start gap-1.5 rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+        <p className="flex items-start gap-1.5 rounded-2xl bg-muted/70 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-muted-foreground">
           <Hourglass className="mt-0.5 size-3.5 shrink-0" />
           بانتظار ردّ الحرّاف على عرضك المضاد — ويبقى الاتفاق غير مبرم حتى يوافق.
         </p>
@@ -616,17 +714,41 @@ function OfferForm({
     }
   }
 
+  // خيارات سريعة بالنسبة إلى ميزانية الزبون.
+  const quick = [
+    { label: "بميزانيته", value: budget },
+    { label: "أقل 10%", value: Math.round(budget * 0.9) },
+    { label: "أعلى 10%", value: Math.round(budget * 1.1) },
+  ].filter((v) => v.value >= 20);
+
   return (
-    <section className="card-warm rounded-xl border border-brand/30 bg-card p-5">
-      <h2 className="flex items-center gap-1.5 text-base font-bold">
-        <Send className="size-4.5 text-brand" />
+    <section className="rounded-3xl bg-brand p-4 text-brand-ink">
+      <h2 className="flex items-center gap-1.5 text-[16px] font-black">
+        <Send className="size-4.5" />
         قدّم عرضك على هذا الطلب
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-1.5 text-[12.5px] leading-relaxed opacity-80">
         الزبون اقترح {formatMAD(budget)} — أنت من يقترح السعر النهائي والمدة وطريقة التنفيذ.
       </p>
-      <form onSubmit={submit} className="mt-4 grid gap-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+
+      <form onSubmit={submit} className="mt-3 grid gap-3 rounded-2xl bg-background p-3.5">
+        <div className="flex flex-wrap gap-2">
+          {quick.map((v) => (
+            <button
+              key={v.label}
+              type="button"
+              onClick={() => setPrice(String(v.value))}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-[11.5px] font-bold transition-colors",
+                Number(price) === v.value ? "bg-brand text-brand-ink" : "bg-muted active:bg-muted/70",
+              )}
+            >
+              {v.label} · {formatMAD(v.value)}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <Field label="سعرك (درهم)" required error={errors.price}>
             <Input type="number" min={20} step={10} value={price} onChange={(e) => setPrice(e.target.value)} />
           </Field>
@@ -634,6 +756,7 @@ function OfferForm({
             <Input type="number" min={15} step={15} value={dur} onChange={(e) => setDur(e.target.value)} />
           </Field>
         </div>
+
         <Field
           label="رسالتك إلى الزبون"
           hint="ما الذي يشمله السعر؟ متى تستطيع البدء؟ هل القطع داخلة؟"
@@ -648,7 +771,8 @@ function OfferForm({
             placeholder="مثال: أتشخّص مجاناً، وأتوقع تغيير الوصلة والسيفون. السعر يشمل القطع وضمان 3 أشهر."
           />
         </Field>
-        <Button type="submit" className="w-fit gap-2" disabled={create.isPending}>
+
+        <Button type="submit" className="w-fit gap-2 rounded-full" disabled={create.isPending}>
           {create.isPending ? <Spinner /> : <Send className="size-4" />}
           أرسل العرض
         </Button>
@@ -657,7 +781,7 @@ function OfferForm({
   );
 }
 
-// ── إجراءات صاحب الطلب والحرّاف المختار على حالة الطلب ──────────────────────
+// ── إجراءات صاحب الطلب والحرّاف المختار على حالة الطلب ──────────────────────────
 function OwnerActions({
   requestId,
   status,
@@ -722,9 +846,9 @@ function OwnerActions({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
-      <h2 className="text-sm font-bold">إجراء الحالة</h2>
-      <div className="mt-3 grid gap-2.5">
+    <section className="card-flat p-4">
+      <h2 className="text-[15px] font-black">إجراء الحالة</h2>
+      <div className="mt-3 grid gap-3">
         {options.map((o) => {
           const open = confirming === o.next;
           return (
@@ -732,7 +856,7 @@ function OwnerActions({
               <Button
                 variant={o.next === "cancelled" ? "outline" : "default"}
                 className={cn(
-                  "w-full gap-2",
+                  "w-full gap-2 rounded-full",
                   o.next === "cancelled" && "border-destructive/30 text-destructive hover:bg-destructive/5",
                 )}
                 disabled={setStatus.isPending}
@@ -752,21 +876,22 @@ function OwnerActions({
                 )}
                 {o.label}
               </Button>
+
               {open ? (
-                <div className="rounded-lg border border-border bg-muted/50 p-3">
-                  <p className="text-xs leading-relaxed text-muted-foreground">{o.hint}</p>
+                <div className="rounded-2xl bg-muted/70 p-3.5">
+                  <p className="text-[11.5px] leading-relaxed text-muted-foreground">{o.hint}</p>
                   <div className="mt-2.5 flex gap-2">
-                    <Button size="sm" className="gap-1.5" disabled={setStatus.isPending} onClick={() => void run(o.next)}>
+                    <Button size="sm" className="gap-1.5 rounded-full" disabled={setStatus.isPending} onClick={() => void run(o.next)}>
                       {setStatus.isPending ? <Spinner /> : <Check className="size-3.5" />}
                       نعم، متأكّد
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setConfirming(null)}>
+                    <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setConfirming(null)}>
                       تراجع
                     </Button>
                   </div>
                 </div>
               ) : (
-                <p className="text-[11px] leading-relaxed text-muted-foreground">{o.hint}</p>
+                <p className="px-1 text-[11px] leading-relaxed text-muted-foreground">{o.hint}</p>
               )}
             </div>
           );
@@ -808,12 +933,12 @@ function ChatPanel({ requestId, enabled }: { requestId: string; enabled: boolean
 
   if (!enabled) {
     return (
-      <section className="rounded-xl border border-dashed border-border bg-card/60 p-4">
-        <h2 className="flex items-center gap-1.5 text-sm font-bold">
-          <MessageSquare className="size-4 text-brand" />
+      <section className="card-flat border-dashed p-4">
+        <h2 className="flex items-center gap-1.5 text-[15px] font-black">
+          <MessageSquare className="size-4.5 text-brand-dark" />
           المحادثة
         </h2>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
           تُفتح المحادثة بين الزبون والحرّاف بمجرد تقديم عرض على الطلب، وتُقصر بعد الاتفاق على الطرفين
           المتعاقدين — فلا يرى حرّافٌ محادثة منافسه.
         </p>
@@ -822,9 +947,9 @@ function ChatPanel({ requestId, enabled }: { requestId: string; enabled: boolean
   }
 
   return (
-    <section className="flex flex-col rounded-xl border border-border bg-card">
-      <h2 className="flex items-center gap-1.5 border-b border-border px-4 py-3 text-sm font-bold">
-        <MessageSquare className="size-4 text-brand" />
+    <section className="card-flat flex flex-col overflow-hidden">
+      <h2 className="flex items-center gap-1.5 border-b border-border px-4 py-3 text-[15px] font-black">
+        <MessageSquare className="size-4.5 text-brand-dark" />
         المحادثة
         <span className="ms-auto text-[10px] font-normal text-muted-foreground">تحديث تلقائي كل 5 ثوانٍ</span>
       </h2>
@@ -833,13 +958,13 @@ function ChatPanel({ requestId, enabled }: { requestId: string; enabled: boolean
         {q.isLoading ? (
           <div className="grid gap-2">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="hirfi-skeleton h-12 rounded-lg" />
+              <div key={i} className="hirfi-skeleton h-12 rounded-2xl" />
             ))}
           </div>
         ) : q.isError ? (
-          <p className="text-xs text-destructive">{errorMessage(q.error)}</p>
+          <p className="text-[12px] text-destructive">{errorMessage(q.error)}</p>
         ) : rows.length === 0 ? (
-          <p className="py-2 text-center text-xs text-muted-foreground">
+          <p className="py-2 text-center text-[12px] text-muted-foreground">
             لا رسائل بعد — ابدأ بتحديد موعد التنفيذ أو تأكيد التفاصيل.
           </p>
         ) : (
@@ -850,17 +975,19 @@ function ChatPanel({ requestId, enabled }: { requestId: string; enabled: boolean
                 <div key={m.id} className={cn("flex", mine ? "justify-start" : "justify-end")}>
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-xl border px-3 py-2",
-                      mine ? "border-brand/25 bg-brand/10" : "border-border bg-muted/60",
+                      "max-w-[85%] rounded-2xl px-3.5 py-2.5",
+                      mine ? "bg-brand text-brand-ink" : "bg-muted",
                     )}
                   >
-                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <b className={cn("font-semibold", mine ? "text-brand-dark" : "text-foreground")}>
+                    <div className="flex items-center gap-2 text-[10.5px]">
+                      <b className={cn("font-black", mine ? "text-brand-ink" : "text-foreground")}>
                         {mine ? "أنا" : m.senderName}
                       </b>
-                      <span>{timeAgoAr(m.createdAt)}</span>
+                      <span className={cn(mine ? "text-brand-ink/70" : "text-muted-foreground")}>
+                        {timeAgoAr(m.createdAt)}
+                      </span>
                     </div>
-                    <p className="mt-1 text-sm leading-relaxed whitespace-pre-line">{m.body}</p>
+                    <p className="mt-1 text-[13px] leading-relaxed whitespace-pre-line">{m.body}</p>
                   </div>
                 </div>
               );
@@ -876,9 +1003,9 @@ function ChatPanel({ requestId, enabled }: { requestId: string; enabled: boolean
           onChange={(e) => setBody(e.target.value)}
           maxLength={1000}
           className="min-h-16"
-          placeholder="اكتب رسالة… (Enter للإرسال من الزر)"
+          placeholder="اكتب رسالة…"
         />
-        <Button type="submit" size="sm" className="w-fit gap-1.5" disabled={send.isPending || !body.trim()}>
+        <Button type="submit" size="sm" className="w-fit gap-1.5 rounded-full" disabled={send.isPending || !body.trim()}>
           {send.isPending ? <Spinner /> : <Send className="size-3.5" />}
           إرسال
         </Button>
@@ -887,16 +1014,8 @@ function ChatPanel({ requestId, enabled }: { requestId: string; enabled: boolean
   );
 }
 
-// ── التقييم المتبادل بعد الإتمام ────────────────────────────────────────────
-function ReviewPanel({
-  requestId,
-  counterpartId,
-  onDone,
-}: {
-  requestId: string;
-  counterpartId: string | null;
-  onDone: () => void;
-}) {
+// ── التقييم المتبادل بعد الإتمام ─────────────────────────────────────────────
+function ReviewPanel({ requestId, onDone }: { requestId: string; onDone: () => void }) {
   const create = trpc.reviews.create.useMutation();
   const utils = trpc.useUtils();
   const [rating, setRating] = useState(0);
@@ -916,16 +1035,17 @@ function ReviewPanel({
   }
 
   return (
-    <section className="rounded-xl border border-warn/25 bg-warn-soft/40 p-4">
-      <h2 className="flex items-center gap-1.5 text-sm font-bold text-warn">
-        <Star className="size-4" />
+    <section className="rounded-3xl bg-warn-soft p-4">
+      <h2 className="flex items-center gap-1.5 text-[15px] font-black text-warn">
+        <Star className="size-4.5" />
         قيّم الطرف الآخر
       </h2>
-      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
         التقييم لا يظهر إلا بعد الإتمام، ويُحتسب في متوسّط تقييم الملف العام.
       </p>
+
       <form onSubmit={submit} className="mt-3 grid gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1" dir="ltr">
             {[1, 2, 3, 4, 5].map((i) => (
               <button
@@ -933,12 +1053,12 @@ function ReviewPanel({
                 type="button"
                 onClick={() => setRating(i)}
                 aria-label={`${i} من 5`}
-                className="transition-transform hover:scale-110"
+                className="transition-transform active:scale-110"
               >
                 <svg
                   viewBox="0 0 24 24"
                   className={cn(
-                    "size-7",
+                    "size-8",
                     i <= rating ? "fill-warn text-warn" : "fill-transparent text-border",
                   )}
                   strokeWidth={1.6}
@@ -951,6 +1071,7 @@ function ReviewPanel({
           </div>
           {rating > 0 ? <Stars value={rating} /> : null}
         </div>
+
         <Textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
@@ -958,12 +1079,12 @@ function ReviewPanel({
           className="min-h-20"
           placeholder="كيف كانت التجربة؟ الالتزام بالموعد، جودة العمل، السعر…"
         />
-        <Button type="submit" size="sm" className="w-fit gap-1.5" disabled={create.isPending}>
+
+        <Button type="submit" size="sm" className="w-fit gap-1.5 rounded-full" disabled={create.isPending}>
           {create.isPending ? <Spinner /> : <Star className="size-3.5" />}
           أرسل التقييم
         </Button>
       </form>
-      {counterpartId ? null : null}
     </section>
   );
 }

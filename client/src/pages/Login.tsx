@@ -1,4 +1,4 @@
-// ── دخول: بريد + كلمة مرور، مع أزرار الحسابين التجريبيين ─────────────────
+// ── دخول: بريد + كلمة مرور، مع أزرار الحسابين التجريبيين ──────────────────────
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { LogOut, UserCircle, Briefcase, ArrowLeft } from "lucide-react";
@@ -59,7 +59,7 @@ export default function Login() {
       footer={
         <>
           ليس لديك حساب؟{" "}
-          <Link href="/register" className="font-semibold text-brand-dark hover:underline">
+          <Link href="/register" className="font-bold text-brand-dark underline">
             أنشئ حساباً جديداً
           </Link>
         </>
@@ -88,46 +88,57 @@ export default function Login() {
         </Field>
 
         {error ? (
-          <p className="rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive">
+          <p className="rounded-2xl bg-destructive/10 px-3.5 py-3 text-[12.5px] font-bold text-destructive">
             {error}
           </p>
         ) : null}
 
-        <Button type="submit" size="lg" className="gap-2" disabled={busy}>
+        <Button type="submit" size="lg" className="w-full gap-2 rounded-full" disabled={busy}>
           {busy ? <Spinner /> : <LogOut className="size-4" />}
           دخول
         </Button>
       </form>
 
-      <div className="mt-6 grid gap-2.5 border-t border-border pt-5">
-        <p className="text-center text-xs font-semibold text-muted-foreground">
-          أو استعمل حساباً تجريبياً (كلمة المرور: <span className="font-mono">demo1234</span>)
+      <div className="mt-5 grid gap-2.5 border-t border-border pt-5">
+        <p className="text-center text-[11.5px] font-bold text-muted-foreground">
+          أو استعمل حساباً تجريبياً (كلمة المرور:{" "}
+          <span className="font-mono">demo1234</span>)
         </p>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2">
           <Button
             type="button"
             variant="outline"
-            className="gap-2"
+            className="justify-start gap-2.5 rounded-2xl py-5"
             onClick={() => demo("sara@hirfi.ma", "زبون")}
             disabled={demoBusy !== null}
           >
-            {demoBusy === "sara@hirfi.ma" ? <Spinner /> : <UserCircle className="size-4" />}
-            سارة — زبون
+            {demoBusy === "sara@hirfi.ma" ? <Spinner /> : <UserCircle className="size-4.5 text-brand-dark" />}
+            <span className="flex flex-col items-start leading-tight">
+              <b className="text-[13px]">سارة — زبون</b>
+              <span className="text-[10.5px] font-normal text-muted-foreground">
+                تنشر طلبات وتقارن العروض
+              </span>
+            </span>
           </Button>
           <Button
             type="button"
             variant="outline"
-            className="gap-2"
+            className="justify-start gap-2.5 rounded-2xl py-5"
             onClick={() => demo("karim@hirfi.ma", "حرّاف")}
             disabled={demoBusy !== null}
           >
-            {demoBusy === "karim@hirfi.ma" ? <Spinner /> : <Briefcase className="size-4" />}
-            كريم — حرّاف
+            {demoBusy === "karim@hirfi.ma" ? <Spinner /> : <Briefcase className="size-4.5 text-teal" />}
+            <span className="flex flex-col items-start leading-tight">
+              <b className="text-[13px]">كريم — حرّاف</b>
+              <span className="text-[10.5px] font-normal text-muted-foreground">
+                يقدّم عروضاً وينفّذ الأعمال
+              </span>
+            </span>
           </Button>
         </div>
         <Link
           href="/"
-          className="mt-1 inline-flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          className="mt-1 inline-flex items-center justify-center gap-1 text-[12px] font-bold text-muted-foreground"
         >
           <ArrowLeft className="size-3.5" />
           العودة إلى الصفحة الرئيسية

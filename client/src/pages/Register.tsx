@@ -1,4 +1,4 @@
-// ── تسجيل حساب جديد + الحاوية البصرية المشتركة لصفحات الدخول ───────────────
+// ── تسجيل حساب جديد + الحاوية البصرية المشتركة لصفحتي الدخول والتسجيل ──────────
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { UserPlus, ArrowLeft } from "lucide-react";
@@ -9,7 +9,7 @@ import { useAuth } from "@/_core/useAuth";
 import { toast } from "@/lib/toast";
 import { errorMessage } from "@/lib/format";
 
-/** إطار موحّد لصفحتي الدخول والتسجيل: بطاقة مركّزة على خلفية كريمية. */
+/** إطار موحّد لصفحتي الدخول والتسجيل: بطاقة مركّزة بعرض الجوال على خلفية كريمية. */
 export function AuthShell({
   title,
   subtitle,
@@ -23,25 +23,25 @@ export function AuthShell({
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10">
-      <Link href="/" className="mb-6 flex items-center gap-2.5">
-        <span className="grid size-11 place-items-center rounded-2xl bg-brand-gradient font-display text-xl leading-none font-extrabold text-white shadow-sm">
+      <Link href="/" className="mb-6 flex items-center gap-3">
+        <span className="grid size-12 place-items-center rounded-3xl bg-brand font-display text-2xl leading-none font-black text-brand-ink">
           ح
         </span>
         <span className="flex flex-col leading-none">
-          <b className="font-display text-xl font-extrabold tracking-tight">حِرْفي</b>
-          <span className="mt-1 text-[11px] text-muted-foreground">
+          <b className="font-display text-[22px] font-black tracking-tight">حِرفي</b>
+          <span className="mt-1 text-[11.5px] text-muted-foreground">
             حرفيّون وخدمات قريبة منك
           </span>
         </span>
       </Link>
 
-      <div className="card-warm w-full max-w-md rounded-2xl border border-border bg-card p-6 sm:p-7">
-        <h1 className="font-display text-2xl font-extrabold">{title}</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>
-        <div className="mt-6">{children}</div>
+      <div className="card-flat w-full max-w-md p-5 sm:p-6">
+        <h1 className="font-display text-[24px] leading-tight font-black">{title}</h1>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{subtitle}</p>
+        <div className="mt-5">{children}</div>
       </div>
 
-      <div className="mt-5 max-w-md text-center text-sm text-muted-foreground">{footer}</div>
+      <div className="mt-5 max-w-md text-center text-[13px] text-muted-foreground">{footer}</div>
     </div>
   );
 }
@@ -81,7 +81,7 @@ export default function Register() {
       footer={
         <>
           لديك حساب بالفعل؟{" "}
-          <Link href="/login" className="font-semibold text-brand-dark hover:underline">
+          <Link href="/login" className="font-bold text-brand-dark underline">
             سجّل الدخول
           </Link>
         </>
@@ -118,19 +118,19 @@ export default function Register() {
         </Field>
 
         {error ? (
-          <p className="rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive">
+          <p className="rounded-2xl bg-destructive/10 px-3.5 py-3 text-[12.5px] font-bold text-destructive">
             {error}
           </p>
         ) : null}
 
-        <Button type="submit" size="lg" className="gap-2" disabled={busy}>
+        <Button type="submit" size="lg" className="w-full gap-2 rounded-full" disabled={busy}>
           {busy ? <Spinner /> : <UserPlus className="size-4" />}
           أنشئ الحساب
         </Button>
 
         <Link
           href="/"
-          className="inline-flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center justify-center gap-1 text-[12px] font-bold text-muted-foreground"
         >
           <ArrowLeft className="size-3.5" />
           العودة إلى الصفحة الرئيسية
