@@ -8,7 +8,7 @@
 import * as esbuild from "esbuild";
 
 await esbuild.build({
-  entryPoints: ["api/index.ts"],
+  entryPoints: ["server/vercel/entry.ts"],
   bundle: true,
   platform: "node",
   packages: "external",
