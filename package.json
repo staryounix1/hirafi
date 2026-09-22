@@ -7,7 +7,7 @@
     "dev": "concurrently -k -n api,web -c blue,green \"pnpm dev:api\" \"pnpm dev:web\"",
     "dev:api": "tsx watch server/_core/index.ts",
     "dev:web": "vite",
-    "build": "echo \"=== HIRFI BUILD MARKER v2 ===\" && pnpm build:web && pnpm build:api && node scripts/build-vercel-output.mjs",
+    "build": "pnpm build:web && pnpm build:api",
     "build:web": "vite build",
     "build:api": "node scripts/build-server.mjs",
     "start": "node dist/index.js",

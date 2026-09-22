@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
-  "buildCommand": "echo HIRFI_BUILD_COMMAND_EXECUTED && exit 1",
-  "installCommand": "pnpm install --frozen-lockfile"
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build:vercel"
 }
