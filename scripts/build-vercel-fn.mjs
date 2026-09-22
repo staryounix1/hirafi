@@ -1,15 +1,10 @@
-// Pre-bundle the Vercel serverless entry to plain JavaScript.
+// Bundle the Vercel serverless handler to plain ESM JavaScript.
 //
-// Two constraints shape this:
-//  1. api/index.ts left to @vercel/node resolved the app's extensionless TS
-//     imports inconsistently, so the deployed export was not the handler.
-//  2. package.json has "type":"module", so ANY .js file in this project is
-//     loaded as ESM. esbuild's `format:"cjs"` output starts with
-//     `module.exports = ...`, which throws `module is not defined in ES module
-//     scope` at import time — the real cause of FUNCTION_INVOCATION_FAILED.
-//
-// So emit real ESM and give it a default export. Vercel's Node runtime accepts
-// an ESM default-exported handler.
+// Why bundle at all: @vercel/node's own transpile of the TypeScript entry resolves
+// this app's extensionless TS imports ("../routers") inconsistently, so the deployed
+// export was never the handler.
+// Why ESM: package.json is "type":"module", so a CJS bundle (`module.exports`)
+// throws "module is not defined in ES module scope" the moment Vercel imports it.
 import * as esbuild from "esbuild";
 
 await esbuild.build({
@@ -18,6 +13,6 @@ await esbuild.build({
   platform: "node",
   packages: "external",
   format: "esm",
-  outfile: "api/index.js",
+  outfile: "api/handler.js",
   logLevel: "info",
 });
