@@ -1,20 +1,22 @@
-// ── بطاقات الطلب والعرض وشريط الحياة ───────────────────────────────────────────
+// ── بطاقات الطلب والعرض وشريط الحالة — بأسلوب inDrive ──────────────────────
+// بطاقة العرض هنا «بطاقة صائق» من inDrive بنفس ترتيبها: السعر الضخم أوّلاً، ثم
+// المسافة/التقييم/المسافة، ثم زرّان واضحان (اقبل / فاوض).
 import { Link } from "wouter";
 import {
   MapPin,
   Clock,
-  CircleDollarSign,
-  MessageSquare,
   Star,
+  MessageSquare,
   Send,
   Check,
-  Hourglass,
   Copy,
+  CircleDollarSign,
+  Hourglass,
 } from "lucide-react";
 import { Badge, VerifiedBadge } from "@/components/hirfi/primitives";
 import {
   categoryIcon,
-  formatMAD,
+  madNumber,
   formatDuration,
   timeAgoAr,
   requestStatusMeta,
@@ -40,12 +42,14 @@ export interface RequestCardData {
   urgency: string;
   status: string;
   createdAt: Date | string;
-  /** غير موجود في مسارات لا تحسبه (مثل الطلبات المقبولة عند الحرّاف). */
   offerCount?: number;
   agreedAmount?: number | null;
 }
 
-/** بطاقة طلب — قوائم الزبون، تصفّح الحرّاف، ولوحات التحكم. */
+/**
+ * بطاقة طلب — قوائم الزبون، تصفّح الحرّاف، ولوحات التحكّم.
+ * ترتيب inDrive: السعر الضخم في الصدر، ثم العنوان، ثم معلومات ثانوية صغيرة.
+ */
 export function RequestCard({
   request,
   href,
@@ -65,6 +69,7 @@ export function RequestCard({
   const meta = requestStatusMeta(request.status);
   const urg = urgencyMeta(request.urgency);
   const offers = request.offerCount ?? 0;
+  const amount = request.agreedAmount ?? request.budgetAmount;
   const band =
     showDistance && viewerCity
       ? distanceBand(
@@ -74,73 +79,64 @@ export function RequestCard({
       : null;
 
   return (
-    <article className="card-warm group rounded-xl border border-border bg-card p-4 transition-colors hover:border-brand/40 sm:p-5">
-      <div className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand/10 text-brand-dark">
-          <Icon className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <Link href={href} className="min-w-0">
-              <h3 className="text-base leading-snug font-bold group-hover:text-brand-dark">
-                {request.title}
-              </h3>
-            </Link>
-            <Badge tone={meta.tone} icon={meta.icon}>
-              {meta.label}
-            </Badge>
-          </div>
-
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            {truncate(request.description, 130)}
-          </p>
-
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <Icon className="size-3.5" />
-              {request.categoryName}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <MapPin className="size-3.5" />
-              {request.city} — {request.district}
-            </span>
-            <span className="inline-flex items-center gap-1 font-semibold text-foreground">
-              <CircleDollarSign className="size-3.5 text-brand" />
-              {formatMAD(request.agreedAmount ?? request.budgetAmount)}
-              <span className="text-[10px] font-normal text-muted-foreground">
-                {request.agreedAmount ? "(متفق عليه)" : "(مقترح)"}
+    <article
+      className="rounded-3xl bg-card p-4"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      <Link href={href} className="block active:opacity-95">
+        {/* السعر أولاً — كما في كل بطاقة inDrive */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate text-[16px] leading-snug font-black">{request.title}</h3>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1 font-bold">
+                <Icon className="size-3.5" />
+                {request.categoryName}
               </span>
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Clock className="size-3.5" />
-              {timeAgoAr(request.createdAt)}
-            </span>
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="size-3.5" />
+                {request.city}
+                {request.district ? ` — ${request.district}` : ""}
+              </span>
+            </div>
           </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {offers > 0 ? (
-              <Badge tone="brand" icon={MessageSquare}>
-                {offers} عرض
-              </Badge>
-            ) : (
-              <Badge tone="muted" icon={Hourglass}>
-                لا عروض بعد
-              </Badge>
-            )}
-            {/* شارة الاستعجال تفقد معناها بعد الإتمام أو الإلغاء — فلا تُعرض على طلب منتهٍ. */}
-            {request.status === "completed" || request.status === "cancelled" ? null : (
-              <Badge tone={urg.tone}>{urg.label}</Badge>
-            )}
-            {band ? (
-              <Badge tone={DISTANCE_LABELS[band].tone} icon={MapPin}>
-                {DISTANCE_LABELS[band].label}
-              </Badge>
-            ) : null}
+          <div className="shrink-0 text-end">
+            <div className="text-price text-[26px] leading-none text-foreground">
+              {madNumber(amount)}
+            </div>
+            <div className="mt-1 text-[10.5px] font-bold text-muted-foreground">
+              {request.agreedAmount ? "السعر المتفق عليه" : "درهم — السعر المقترح"}
+            </div>
           </div>
-
-          {children ? <div className="mt-3.5">{children}</div> : null}
         </div>
-      </div>
+
+        <p className="mt-2.5 text-[13px] leading-relaxed text-muted-foreground">
+          {truncate(request.description, 120)}
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <Badge tone={meta.tone}>{meta.label}</Badge>
+          {offers > 0 ? (
+            <Badge tone="teal" icon={MessageSquare}>
+              {offers} عرض
+            </Badge>
+          ) : (
+            <Badge tone="muted" icon={Hourglass}>
+              لا عروض بعد
+            </Badge>
+          )}
+          {request.status === "completed" || request.status === "cancelled" ? null : (
+            <Badge tone={urg.tone}>{urg.label}</Badge>
+          )}
+          {band ? <Badge tone={DISTANCE_LABELS[band].tone}>{DISTANCE_LABELS[band].label}</Badge> : null}
+          <span className="ms-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Clock className="size-3" />
+            {timeAgoAr(request.createdAt)}
+          </span>
+        </div>
+      </Link>
+
+      {children ? <div className="mt-3.5">{children}</div> : null}
     </article>
   );
 }
@@ -165,79 +161,148 @@ export interface OfferRow {
   providerAvatarUrl: string | null;
 }
 
-/** بطاقة عرض — أزرار القرار تُمرَّر من الشاشة الأب حسب الدور والحالة. */
-export function OfferCard({ offer, actions }: { offer: OfferRow; actions?: React.ReactNode }) {
+/**
+ * بطاقة عرض بنمط «بطاقة السائق» في inDrive: اسم + تقييم + مسافة في سطر،
+ * السعر والمسافة على اليمين، وشرح العرض، ثم أزرار القرار.
+ */
+export function OfferCard({
+  offer,
+  viewerCity,
+  viewerDistrict,
+  agreed,
+  actions,
+  isCounter,
+  counterOf,
+}: {
+  offer: OfferRow;
+  viewerCity?: string | null;
+  viewerDistrict?: string | null;
+  /** السعر المتفق عليه نهائياً — يُبرز على البطاقة المقبولة. */
+  agreed?: number | null;
+  actions?: React.ReactNode;
+  /** هذا عرض مضاد (ردّ الزبون على عرض الحرّاف). */
+  isCounter?: boolean;
+  /** السعر الأصلي الذي يردّ عليه العرض المضاد. */
+  counterOf?: number | null;
+}) {
   const meta = offerStatusMeta(offer.status);
   const avg = offer.providerRatingCount
     ? Math.round((offer.providerRatingSum / offer.providerRatingCount) * 10) / 10
     : null;
+  const band =
+    viewerCity && offer.providerCity
+      ? distanceBand(
+          { city: viewerCity, district: viewerDistrict },
+          { city: offer.providerCity, district: offer.providerDistrict },
+        )
+      : null;
 
   return (
     <article
       className={cn(
-        "rounded-xl border bg-card p-4",
-        offer.status === "accepted" ? "border-success/40 bg-success-soft/40" : "border-border",
+        "rounded-3xl bg-card p-4",
+        offer.status === "accepted" && "ring-2 ring-brand",
       )}
+      style={{ boxShadow: "var(--shadow-card)" }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-2.5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-soft font-display text-sm font-bold text-teal">
-            {offer.providerName.trim().charAt(0)}
-          </span>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Link
-                href={`/providers/${offer.providerUserId}`}
-                className="text-sm font-bold hover:text-brand-dark"
-              >
-                {offer.providerName}
-              </Link>
-              {offer.providerIsVerified ? <VerifiedBadge /> : null}
+      <div className="flex items-start gap-3">
+        {/* صورة دائرية كبيرة — نمط بطاقات inDrive */}
+        <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary font-display text-[17px] font-black text-foreground">
+          {offer.providerAvatarUrl ? (
+            // eslint-disable-next-line jsx-a11y/img-redundant-alt
+            <img src={offer.providerAvatarUrl} alt="" className="size-full object-cover" />
+          ) : (
+            offer.providerName.trim().charAt(0)
+          )}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Link
+                  href={`/providers/${offer.providerUserId}`}
+                  className="truncate text-[15px] font-black hover:underline"
+                >
+                  {offer.providerName}
+                </Link>
+                {offer.providerIsVerified ? <VerifiedBadge /> : null}
+              </div>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11.5px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1 font-bold text-foreground">
+                  <Star className="size-3 fill-warn text-warn" />
+                  {avg !== null ? avg : "جديد"}
+                  {offer.providerRatingCount ? (
+                    <span className="font-normal text-muted-foreground">
+                      ({offer.providerRatingCount})
+                    </span>
+                  ) : null}
+                </span>
+                {band ? <span className="font-bold">{DISTANCE_LABELS[band].label}</span> : null}
+                <span>{offer.providerCompletedJobs} عمل</span>
+              </div>
             </div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="size-3" />
-                {offer.providerCity}
-                {offer.providerDistrict ? ` — ${offer.providerDistrict}` : ""}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Star className="size-3" />
-                {avg !== null ? `${avg} (${offer.providerRatingCount})` : "بلا تقييم"}
-              </span>
-              <span>{offer.providerCompletedJobs} عمل منجز</span>
+
+            <div className="shrink-0 text-end">
+              <div className="text-price text-[26px] leading-none">
+                {madNumber(offer.price)}
+              </div>
+              <div className="mt-1 text-[10.5px] font-bold whitespace-nowrap text-muted-foreground">
+                {formatDuration(offer.durationMinutes)}
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="shrink-0 text-end">
-          <div className="font-display text-lg leading-none font-extrabold text-brand-dark">
-            {formatMAD(offer.price)}
-          </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            {formatDuration(offer.durationMinutes)}
           </div>
         </div>
       </div>
 
-      <p className="mt-3 rounded-lg bg-muted/60 px-3 py-2 text-sm leading-relaxed">
-        {offer.message}
-      </p>
+      {/* مقارنة السعر في التفاوض — الفرق ظاهر كما في شاشة العرض المضاد عند inDrive */}
+      {isCounter && counterOf != null ? (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-muted px-3 py-2">
+          <span className="text-[11.5px] font-bold text-muted-foreground">
+            عرض الحرّاف: {madNumber(counterOf)} درهم
+          </span>
+          <span
+            className={cn(
+              "text-[12px] font-black",
+              offer.price > counterOf ? "text-destructive" : "text-success",
+            )}
+          >
+            {offer.price > counterOf ? "+" : "−"}
+            {madNumber(Math.abs(offer.price - counterOf))} درهم
+          </span>
+        </div>
+      ) : null}
+
+      {offer.message ? (
+        <p className="mt-3 rounded-2xl bg-muted/70 px-3 py-2.5 text-[13px] leading-relaxed">
+          {offer.message}
+        </p>
+      ) : null}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={meta.tone} icon={meta.icon}>
-            {meta.label}
-          </Badge>
-          <span className="text-xs text-muted-foreground">{timeAgoAr(offer.createdAt)}</span>
+          <Badge tone={meta.tone}>{meta.label}</Badge>
+          <span className="text-[11px] text-muted-foreground">{timeAgoAr(offer.createdAt)}</span>
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? <div className="flex w-full flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
+
+      {offer.status === "accepted" && agreed != null ? (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-brand px-3 py-2.5">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-black text-brand-ink">
+            <Check className="size-4" />
+            السعر النهائي المتفق عليه
+          </span>
+          <span className="text-price text-[19px] text-brand-ink">{madNumber(agreed)} درهم</span>
+        </div>
+      ) : null}
     </article>
   );
 }
 
 /**
- * شريط الحياة: منشور → عروض → مقبول → قيد التنفيذ → منتهي.
- * الخطوة الحاضرة بلون العلامة والمنجزة عليها علامة صح. الإيقاع من اليمين لليسار.
+ * شريط الحالة: منشور → عروض → مقبول → قيد التنفيذ → منتهي.
+ * يُرسم كشريط أفقي بسيط بخطّ ملوّن (أخضر ليموني للمنجز) مثل تتبّع inDrive.
  */
 export function LifecycleBar({
   status,
@@ -271,52 +336,52 @@ export function LifecycleBar({
   ];
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card px-3 py-3.5">
-      <ol className="flex min-w-max items-center gap-1">
+    <div className="rounded-3xl bg-card px-4 py-4" style={{ boxShadow: "var(--shadow-card)" }}>
+      <ol className="flex items-start justify-between gap-1">
         {steps.map((s, i) => {
           const done = i < current && !cancelled;
           const active = i === current && !cancelled;
           return (
-            <li key={s.label} className="flex items-center gap-1">
-              <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "grid size-7 shrink-0 place-items-center rounded-full border transition-colors",
-                    done && "border-success/40 bg-success text-white",
-                    active && "border-brand bg-brand text-white",
-                    !done && !active && "border-border bg-muted text-muted-foreground",
-                  )}
-                >
-                  {done ? <Check className="size-3.5" /> : <s.icon className="size-3.5" />}
-                </span>
-                <span
-                  className={cn(
-                    "text-xs font-semibold whitespace-nowrap",
-                    active && "text-brand-dark",
-                    done && "text-success",
-                    !done && !active && "text-muted-foreground",
-                  )}
-                >
-                  {s.label}
-                  {i === 1 && offersCount > 0 ? (
-                    <span className="ms-1 text-[10px] font-normal">({offersCount})</span>
-                  ) : null}
-                </span>
-              </div>
+            <li key={s.label} className="relative flex min-w-0 flex-1 flex-col items-center gap-1.5">
+              {/* خط الربط بين الحلقتين */}
               {i < steps.length - 1 ? (
                 <span
                   className={cn(
-                    "mx-0.5 h-0.5 w-5 rounded-full sm:w-8",
-                    i < current && !cancelled ? "bg-success/50" : "bg-border",
+                    "absolute top-[13px] h-1 w-full rounded-full",
+                    i < current && !cancelled ? "bg-brand" : "bg-border",
                   )}
+                  style={{ insetInlineStart: "50%", zIndex: 0 }}
                 />
               ) : null}
+              <span
+                className={cn(
+                  "relative z-10 grid size-7 shrink-0 place-items-center rounded-full border-2 transition-colors",
+                  done && "border-brand bg-brand text-brand-ink",
+                  active && "border-foreground bg-foreground text-background",
+                  !done && !active && "border-border bg-card text-muted-foreground",
+                )}
+              >
+                {done ? <Check className="size-3.5" strokeWidth={3} /> : <s.icon className="size-3.5" />}
+              </span>
+              <span
+                className={cn(
+                  "text-center text-[10.5px] leading-tight",
+                  active && "font-black text-foreground",
+                  done && "font-bold text-foreground",
+                  !done && !active && "font-medium text-muted-foreground",
+                )}
+              >
+                {s.label}
+                {i === 1 && offersCount > 0 ? (
+                  <span className="ms-0.5 font-black">({offersCount})</span>
+                ) : null}
+              </span>
             </li>
           );
         })}
       </ol>
       {cancelled ? (
-        <p className="mt-2.5 text-xs font-medium text-muted-foreground">
+        <p className="mt-3 text-center text-[12px] font-bold text-muted-foreground">
           أُلغي هذا الطلب قبل الاتفاق — يمكنك نشر طلب جديد في أي وقت.
         </p>
       ) : null}
@@ -324,7 +389,7 @@ export function LifecycleBar({
   );
 }
 
-/** رقم مرجعي مختصر يُنسَخ بضغطة — بدل UUID كامل في الواجهة. */
+/** رقم مرجعي مختصر يُنسخ بضغطة — بدل UUID كامل في الواجهة. */
 export function RefCode({ id }: { id: string }) {
   const short = `#${id.slice(0, 6).toUpperCase()}`;
   return (
@@ -338,7 +403,7 @@ export function RefCode({ id }: { id: string }) {
           toast.error("تعذّر النسخ — انسخه يدوياً");
         }
       }}
-      className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+      className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-mono text-[10.5px] font-bold text-muted-foreground transition-colors hover:text-foreground"
       title="انسخ الرقم المرجعي"
     >
       {short}

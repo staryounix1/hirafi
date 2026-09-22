@@ -112,15 +112,29 @@ export function ratingAvg(sum: number, count: number): number | null {
 
 export type Tone = "brand" | "teal" | "success" | "warn" | "danger" | "muted" | "info";
 
+/** شرائح inDrive مسطّحة بلا حدود مرئية: خلفية فاتحة + نصّ داكن فقط. */
 export const TONE_CLASS: Record<Tone, string> = {
-  brand: "bg-brand/12 text-brand-dark border-brand/25",
-  teal: "bg-teal-soft text-teal border-teal/20",
-  success: "bg-success-soft text-success border-success/20",
-  warn: "bg-warn-soft text-warn border-warn/25",
-  danger: "bg-destructive/10 text-destructive border-destructive/20",
-  muted: "bg-muted text-muted-foreground border-border",
-  info: "bg-info-soft text-info border-info/20",
+  brand: "bg-brand text-brand-ink border-transparent",
+  teal: "bg-teal-soft text-teal border-transparent",
+  success: "bg-success-soft text-success border-transparent",
+  warn: "bg-warn-soft text-warn border-transparent",
+  danger: "bg-destructive/12 text-destructive border-transparent",
+  muted: "bg-muted text-muted-foreground border-transparent",
+  info: "bg-info-soft text-info border-transparent",
 };
+
+/** الرقم وحده بلا كلمة العملة — للأسعار الضخمة في بطاقات العروض والطلبات. */
+export function madNumber(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return "—";
+  return new Intl.NumberFormat("fr-MA", { maximumFractionDigits: 0 }).format(amount);
+}
+
+/** فرق السعر بين العرض والسعر المضاد — يُعرض في شاشة التفاوض. */
+export function priceDelta(from: number, to: number): { abs: number; pct: number; up: boolean } {
+  const abs = Math.round(Math.abs(to - from));
+  const pct = from ? Math.round((abs / from) * 100) : 0;
+  return { abs, pct, up: to > from };
+}
 
 /** حالة الطلب ← تسمية ورمز ولون وشريح أيقونة. */
 export interface StatusMeta {
@@ -228,4 +242,16 @@ export function errorMessage(e: unknown): string {
     if (m && !m.includes("TRPCClientError") && m.length < 240) return m;
   }
   return "حدث خطأ غير متوقّع. حاول مرة أخرى.";
+}
+
+/**
+ * عدّ اسم بالعربية الصحيحة: 0 → «لا مفرد»، 1 → مفرد، 2 → مثنّى، 3–10 → جمع، 11+ → تمييز مفرد.
+ * مثال: countAr(9, ["حركة", "حركتان", "حركات"], "حركة") → «9 حركات»
+ */
+export function countAr(n: number, forms: [string, string, string], many: string): string {
+  if (n === 0) return `لا ${forms[0]}`;
+  if (n === 1) return `${forms[0]} واحدة`;
+  if (n === 2) return forms[1];
+  if (n <= 10) return `${n} ${forms[2]}`;
+  return `${n} ${many}`;
 }

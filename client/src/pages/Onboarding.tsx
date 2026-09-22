@@ -1,20 +1,13 @@
-// ── اختيار الدور (زبون / حرّاف) + مهارات الحرّاف وموقعه ───────────────────
+// ── اختيار الدور (زبون / حرف) + مهارات الحرف وموقعه ──────────────────────────
 // خطوة واحدة بعد التسجيل — قابلة للتغيير لاحقاً من الملف الشخصي.
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import {
-  UserCircle,
-  Briefcase,
-  Check,
-  MapPin,
-  Sparkles,
-  ArrowLeft,
-} from "lucide-react";
+import { UserCircle, Briefcase, Check, Sparkles, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Field, PageHeader, Spinner, EmptyState } from "@/components/hirfi/primitives";
+import { EmptyState, Field, PageHeader, Spinner } from "@/components/hirfi/primitives";
 import { trpc } from "@/_core/trpc";
 import { useCategories, useMyProfile } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
@@ -80,7 +73,7 @@ export default function Onboarding() {
       await setRole.mutateAsync({ role });
       if (role === "provider") await setSkills.mutateAsync({ categoryIds: selected });
       await utils.invalidate();
-      toast.success("حُفظ ملفك — أهلاً بك في حِرْفي");
+      toast.success("حُفظ ملفك — أهلاً بك في حِرفي");
       navigate("/dashboard");
     } catch (e) {
       toast.error(errorMessage(e));
@@ -98,15 +91,11 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="grid gap-6">
-      <PageHeader
-        icon={Sparkles}
-        title="كيف ستستعمل حِرْفي؟"
-        description="اختر دورك — يمكنك تغييره لاحقاً من الملف الشخصي في أي وقت."
-      />
+    <div className="grid">
+      <PageHeader icon={Sparkles} title="كيف ستستعمل حِرفي؟" description="اختر دورك — يمكنك تغييره لاحقاً من الملف الشخصي في أي وقت." />
 
       {/* اختيار الدور */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2.5 px-4 pt-4">
         {(
           [
             {
@@ -118,7 +107,7 @@ export default function Onboarding() {
             {
               key: "provider" as AppRole,
               icon: Briefcase,
-              title: "حرّاف / مقدّم خدمة",
+              title: "حرف / مقدّم خدمة",
               body: "عندي حرفة أو خدمة أقدّمها: أتصفّح الطلبات القريبة، أقدّم عروضاً، أنفّذ، وأبني سمعتي بالتقييمات.",
             },
           ] as const
@@ -130,35 +119,35 @@ export default function Onboarding() {
               type="button"
               onClick={() => setRoleLocal(r.key)}
               className={cn(
-                "card-warm rounded-xl border p-5 text-start transition-colors",
-                active ? "border-brand bg-brand/6 ring-2 ring-brand/25" : "border-border bg-card hover:border-brand/40",
+                "card-flat p-4 text-start transition-colors",
+                active && "ring-2 ring-brand",
               )}
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3">
                 <span
                   className={cn(
-                    "grid size-11 place-items-center rounded-xl",
-                    active ? "bg-brand text-white" : "bg-brand/10 text-brand-dark",
+                    "grid size-11 shrink-0 place-items-center rounded-2xl",
+                    active ? "bg-brand text-brand-ink" : "bg-muted text-foreground",
                   )}
                 >
                   <r.icon className="size-5.5" />
                 </span>
+                <b className="text-[15px] font-black">{r.title}</b>
                 {active ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-brand/12 px-2 py-0.5 text-xs font-semibold text-brand-dark">
-                    <Check className="size-3" />
+                  <span className="ms-auto inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-1 text-[11px] font-black text-brand-ink">
+                    <Check className="size-3" strokeWidth={3} />
                     مختار
                   </span>
                 ) : null}
               </div>
-              <h3 className="mt-3 text-base font-bold">{r.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{r.body}</p>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">{r.body}</p>
             </button>
           );
         })}
       </div>
 
       {/* بيانات أساسية */}
-      <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2">
+      <div className="card-flat mt-3 grid gap-4 p-4 sm:grid-cols-2">
         <Field label="الاسم الذي سيظهر للآخرين" required className="sm:col-span-2">
           <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="مثال: كريم بناني" />
         </Field>
@@ -213,25 +202,18 @@ export default function Onboarding() {
         ) : null}
       </div>
 
-      {/* المهارات — للحرّاف فقط */}
+      {/* المهارات — للحرف فقط */}
       {role === "provider" ? (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-start gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-teal-soft text-teal">
-              <MapPin className="size-4" />
-            </span>
-            <div>
-              <h2 className="text-base font-bold">مهاراتك وفئات خدمتك</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                اختر الفئات التي تعمل فيها ({selected.length} مختارة) — تُستعمل لترجيح الطلبات المناسبة لك.
-              </p>
-            </div>
-          </div>
+        <div className="card-flat mt-3 p-4">
+          <h2 className="text-[15px] font-black">مهاراتك وفئات خدمتك</h2>
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+            اختر الفئات التي تعمل فيها ({selected.length} مختارة) — تُستعمل لترجيح الطلبات المناسبة لك.
+          </p>
 
           {cats.isLoading ? (
-            <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="hirfi-skeleton h-11 rounded-lg" />
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div key={i} className="hirfi-skeleton h-11 rounded-2xl" />
               ))}
             </div>
           ) : cats.isError ? (
@@ -245,7 +227,7 @@ export default function Onboarding() {
               />
             </div>
           ) : (
-            <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="mt-4 grid grid-cols-3 gap-2">
               {(cats.data ?? []).map((c) => {
                 const Icon = categoryIcon(c.icon);
                 const on = selected.includes(c.id);
@@ -255,15 +237,12 @@ export default function Onboarding() {
                     type="button"
                     onClick={() => toggleSkill(c.id)}
                     className={cn(
-                      "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
-                      on
-                        ? "border-teal bg-teal-soft text-teal"
-                        : "border-border bg-background text-muted-foreground hover:border-brand/40 hover:text-foreground",
+                      "flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 transition-colors",
+                      on ? "bg-teal text-white" : "bg-muted/70 text-foreground active:bg-muted",
                     )}
                   >
-                    <Icon className="size-4 shrink-0" />
-                    <span className="truncate">{c.nameAr}</span>
-                    {on ? <Check className="ms-auto size-3.5 shrink-0" /> : null}
+                    <Icon className="size-5" />
+                    <span className="text-center text-[11px] leading-tight font-bold">{c.nameAr}</span>
                   </button>
                 );
               })}
@@ -272,13 +251,11 @@ export default function Onboarding() {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">
-          يمكنك تعديل كل هذه البيانات لاحقاً من الملف الشخصي.
-        </p>
-        <Button size="lg" className="gap-2" onClick={save} disabled={saving}>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 px-4 pb-6">
+        <p className="text-[12px] text-muted-foreground">يمكنك تعديل كل هذه البيانات لاحقاً من الملف الشخصي.</p>
+        <Button size="lg" className="gap-2 rounded-full" onClick={() => void save()} disabled={saving}>
           {saving ? <Spinner /> : <ArrowLeft className="size-4" />}
-          حفظ والمتابعة إلى لوحتي
+          احفظ والمتابعة إلى لوحتي
         </Button>
       </div>
     </div>

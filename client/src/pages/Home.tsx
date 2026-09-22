@@ -1,9 +1,11 @@
-// ── الصفحة الرئيسية: تشرح الفكرة + دخول تجريبي بضغطة لِحسابين جاهزين ───────
-// الزائر يقدر يجرّب التطبيق فوراً بلا تسجيل: زر لكل دور، وكلمة المرور مثبّتة
-// لحسابين مُزروعين في البيانات التجريبية.
+// ── الصفحة الرئيسية: خريطة بطول الشاشة + شريحة تعريف + دخول تجريبي ──────────────────
+// نفس ترتيب شاشة inDrive الافتتاحية: خريطة تملأ الأعلى، ثم شريحة بيضاء بحواف علوية كبيرة
+// تحمل العنوان والأزرار. الزائر يجرّب التطبيق فوراً بحسابين مُزروعين في البيانات التجريبية.
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
+  UserCircle,
+  Briefcase,
   Send,
   CircleDollarSign,
   CheckCircle2,
@@ -14,42 +16,49 @@ import {
   ShieldCheck,
   MapPin,
   ArrowLeft,
-  UserCircle,
-  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/hirfi/primitives";
+import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
+import { LiveDot, Spinner } from "@/components/hirfi/primitives";
 import { useAuth } from "@/_core/useAuth";
 import { toast } from "@/lib/toast";
 import { errorMessage } from "@/lib/format";
 
 const DEMO_PASSWORD = "demo1234";
 
+/** دبابيس عرضية ثابتة — تُرسم بنسب مئوية فلا تتغيّر مع المقاس. */
+const HERO_PINS: MapPinSpec[] = [
+  { id: "me", x: 30, y: 76, kind: "me" },
+  { id: "p1", x: 55, y: 57, kind: "provider", label: "ك" },
+  { id: "p2", x: 75, y: 38, kind: "provider", label: "ي" },
+  { id: "p3", x: 41, y: 29, kind: "provider", label: "ح" },
+];
+
 const STEPS = [
   {
     icon: Send,
-    title: "١. انشر مشكلتك",
-    body: "صف العطل أو الخدمة التي تحتاجها، حدّد ميزانيتك المقترحة وموقعك والوقت المناسب — مثلما يقترح راكب inDrive سعره.",
+    title: "انشر مشكلتك",
+    body: "صف العطل أو الخدمة، وحدّد ميزانيتك المقترحة وموقعك — كما يقترح راكب inDrive سعره.",
   },
   {
     icon: CircleDollarSign,
-    title: "٢. استقبل العروض",
-    body: "الحرّافون القريبون يقرأون طلبك ويقدّمون عروضهم: سعر + مدة + رسالة. تقارن وتردّ وتتفاوض على السعر النهائي.",
+    title: "استقبل العروض",
+    body: "الحرفيون القريبون يقدّمون: سعر + مدة + رسالة. تقارن، تردّ، وتتفاوض على السعر النهائي.",
   },
   {
     icon: CheckCircle2,
-    title: "٣. اختر ونفّذ",
-    body: "تقبل العرض الأنسب، يثبت السعر، وتتابع الحالة: مقبول → قيد التنفيذ → منتهي. ثم تقييم متبادل وشارة موثّق.",
+    title: "اختر ونفّذ",
+    body: "اقبل العرض الأنسب فيثبت السعر، ثم تتابع: مقبول → قيد التنفيذ → منتهي، وتقييم متبادل.",
   },
 ];
 
 const FEATURES = [
-  { icon: Search, title: "طلبات قريبة مصفّاة", body: "الحرّاف يرى الطلبات المفتوحة ويفلترها بالفئة والمسافة (قريب/متوسط/بعيد) والميزانية والاستعجال." },
-  { icon: MessageSquare, title: "محادثة داخل كل طلب", body: "خيط محادثة خاص بين الطرفين على الطلب نفسه — يتحدّث تلقائياً وأنت تعمل." },
-  { icon: Wallet, title: "محفظة وسجل مدفوعات", body: "تثبيت السعر عند القبول، ثم دفع واستحقاق وعمولة منصّة مسجّلة وشفافة لكل طلب." },
-  { icon: Star, title: "تقييم متبادل ومراجعات", body: "بعد الإتمام يقيّم الطرفان بعضهما: نجوم + تعليق يظهر على الملف العام." },
-  { icon: ShieldCheck, title: "شارة موثّق", body: "حرّافون موثّقون بجانب إنجازاتهم وعدد أعمالهم المنجزة ومتوسّط تقييمهم." },
-  { icon: MapPin, title: "موقع مبسّط", body: "مدينة + حي من قائمة مغربية (الدار البيضاء، الرباط، مراكش، طنجة…) بدل خرائط معقّدة." },
+  { icon: Search, title: "طلبات قريبة مصفّاة", body: "الحرف يفلتر بالقرب والفئة والميزانية والاستعجال." },
+  { icon: MessageSquare, title: "محادثة داخل الطلب", body: "خيط خاص بين الطرفين، يتحدّث تلقائياً." },
+  { icon: Wallet, title: "محفظة وسجل مدفوعات", body: "دفع واستحقاق وعمولة منصّة 10%، كلها مسجّلة." },
+  { icon: Star, title: "تقييم متبادل", body: "بعد الإتمام يقيّم الطرفان، ويظهر على الملف العام." },
+  { icon: ShieldCheck, title: "شارة موثّق", body: "مع إنجازات الحرف وأعماله المنجزة ومتوسط تقييمه." },
+  { icon: MapPin, title: "موقع مبسّط", body: "مدينة + حي من قائمة مغربية — بلا خرائط GPS معقّدة." },
 ];
 
 /** زر دخول تجريبي — يشرح مَن ستدخل به ثم ينقل إلى لوحة التحكم. */
@@ -84,7 +93,7 @@ function DemoLogin({
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="grid gap-1">
       <Button
         size="lg"
         variant={variant === "primary" ? "default" : "outline"}
@@ -95,7 +104,7 @@ function DemoLogin({
         {busy ? <Spinner /> : <Icon className="size-4.5" />}
         دخول تجريبي — {label}
       </Button>
-      <p className="text-center text-[11px] text-muted-foreground">{hint}</p>
+      <p className="text-center text-[11px] leading-snug text-muted-foreground">{hint}</p>
     </div>
   );
 }
@@ -104,188 +113,148 @@ export default function Home() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* ترويسة الصفحة العامة */}
-      <header className="shell flex h-16 items-center justify-between py-3">
-        <div className="flex items-center gap-2.5">
-          <span className="grid size-9 place-items-center rounded-xl bg-brand-gradient font-display text-lg leading-none font-extrabold text-white">
-            ح
-          </span>
-          <b className="font-display text-lg font-extrabold tracking-tight">حِرْفي</b>
-        </div>
-        <div className="flex items-center gap-2">
-          {user ? (
-            <Button asChild size="sm" className="gap-1.5">
-              <Link href="/dashboard">
-                لوحة التحكم
-                <ArrowLeft className="size-3.5" />
-              </Link>
-            </Button>
-          ) : (
-            <>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/login">دخول</Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link href="/register">حساب جديد</Link>
-              </Button>
-            </>
-          )}
-        </div>
-      </header>
+    <div className="app-stage min-h-svh">
+      <div className="app-frame">
+        {/* الخريطة البطلة — تملأ أعلى العمود كما في شاشة inDrive الافتتاحية */}
+        <section className="relative">
+          <MapCanvas pins={HERO_PINS} showRoute height="42svh" />
 
-      {/* القسم البطل */}
-      <section className="bg-brand-gradient relative overflow-hidden text-white">
-        <div className="shell grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
-              <Briefcase className="size-3.5" />
-              منصة الخدمات والحرفيين في المغرب
+          {/* رمز التطبيق عائماً فوق الخريطة */}
+          <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full bg-background/95 py-1.5 ps-2 pe-4 shadow-md backdrop-blur">
+              <span className="grid size-8 place-items-center rounded-xl bg-brand font-display text-base leading-none font-black text-brand-ink">
+                ح
+              </span>
+              <span className="flex flex-col leading-none">
+                <b className="font-display text-[15px] font-black tracking-tight">حِرفي</b>
+                <span className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+                  خدمات وحرفيون قريبون
+                </span>
+              </span>
             </span>
-            <h1 className="mt-5 font-display text-3xl leading-tight font-extrabold text-balance sm:text-4xl lg:text-5xl">
-              انشر مشكلتك بميزانيتك…
-              <br />
-              والحرّافون يتنافسون عليك
+            <LiveDot label="٣ حرفيين قريبين" />
+          </div>
+
+          {/* الشريحة البيضاء — العنصر المميّز في كل شاشات inDrive */}
+          <div className="sheet relative z-10 -mt-7 px-5 pt-3 pb-6">
+            <DragHandle className="mb-4" />
+
+            <h1 className="text-[30px] leading-[1.14] font-black text-balance">
+              انشر مشكلتك، واقترح سعرك — والحرفيون يتنافسون عليك
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-white/90">
-              نفس فكرة inDrive — السعر يقترحه صاحب الطلب لا مقدّم الخدمة — لكن في مجال
-              الحِرَف والخدمات الصغيرة: سباكة، كهرباء، نجارة، صباغة، تكييف، تنظيف، نقل
-              أثاث، إصلاح إلكترونيات، خياطة، تصوير، دروس خصوصية وأكثر.
+            <p className="mt-3 text-[13.5px] leading-relaxed text-muted-foreground">
+              نفس فكرة <b className="font-bold text-foreground">inDrive</b>: السعر يقترحه صاحب الطلب لا مقدّم
+              الخدمة، لكن في مجال الحِرَف والخدمات الصغيرة — سباكة، كهرباء، نجارة، تكييف، نقل أثاث، دروس خصوصية
+              وأكثر.
             </p>
 
-            <div className="mt-7 grid max-w-md gap-3 sm:grid-cols-2">
+            <div className="mt-5 grid gap-3">
               {user ? (
-                <Button asChild size="lg" variant="secondary" className="sm:col-span-2">
-                  <Link href="/dashboard">
-                    ادخل إلى لوحتك
-                    <ArrowLeft className="size-4" />
-                  </Link>
-                </Button>
+                <>
+                  <Button asChild size="lg" className="w-full gap-2">
+                    <Link href="/dashboard">
+                      ادخل إلى لوحتك
+                      <ArrowLeft className="size-4.5" />
+                    </Link>
+                  </Button>
+                  <p className="text-center text-[11px] text-muted-foreground">
+                    أنت داخل بحساب {user.name ?? "مستخدم"} — الجلسة محفوظة في هذا المتصفح.
+                  </p>
+                </>
               ) : (
                 <>
                   <DemoLogin
                     email="sara@hirfi.ma"
                     label="زبون"
                     icon={UserCircle}
-                    hint="سارة — تنشر الطلبات وتقارن العروض"
+                    hint="سارة — تنشر الطلبات وتقارن العروض وتتفاوض"
                     variant="primary"
                   />
                   <DemoLogin
                     email="karim@hirfi.ma"
-                    label="حرّاف"
+                    label="حرفي"
                     icon={Briefcase}
-                    hint="كريم — كهربائي يقدّم العروض"
+                    hint="كريم — كهربائي يقدّم العروض وينفّذ ويستلم"
                     variant="outline"
                   />
+                  <p className="mt-1 text-center text-[11px] leading-relaxed text-muted-foreground">
+                    الحسابان جاهزان ببيانات واقعية. كلمة المرور{" "}
+                    <span className="font-mono font-bold text-foreground">{DEMO_PASSWORD}</span>
+                    {" — "}
+                    <Link href="/login" className="font-bold text-foreground underline">
+                      أو ادخل بحسابك
+                    </Link>
+                    {" · "}
+                    <Link href="/register" className="font-bold text-foreground underline">
+                      حساب جديد
+                    </Link>
+                  </p>
                 </>
               )}
             </div>
-
-            {!user ? (
-              <p className="mt-4 text-xs text-white/75">
-                الحسابان جاهزان ببيانات تجريبية واقعية (طلبات، عروض، محادثات، تقييمات).
-                كلمة المرور: <span className="font-mono">{DEMO_PASSWORD}</span>
-              </p>
-            ) : null}
           </div>
+        </section>
 
-          {/* معاينة مصغّرة توضّح جوهر التطبيق: طلب + عرضان */}
-          <div className="rounded-2xl bg-white/95 p-4 text-foreground shadow-2xl backdrop-blur lg:p-5">
-            <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
-              <span className="text-sm font-bold">تسريب ماء تحت حوض المطبخ</span>
-              <span className="rounded-full bg-brand/12 px-2.5 py-0.5 text-xs font-semibold text-brand-dark">
-                ميزانية 300 درهم
-              </span>
-            </div>
-            <div className="mt-3 grid gap-2">
-              {[
-                { n: "كريم — كهربائي", p: "280 درهم", d: "ساعتان", s: "موثّق" },
-                { n: "يوسف — سبّاك", p: "320 درهم", d: "ساعة", s: "★ 4.8" },
-                { n: "حمزة — سبّاك", p: "260 درهم", d: "٣ ساعات", s: "★ 4.5" },
-              ].map((o) => (
-                <div
-                  key={o.n}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
-                >
-                  <div>
-                    <div className="text-sm font-semibold">{o.n}</div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {o.d} — {o.s}
-                    </div>
-                  </div>
-                  <span className="font-display text-sm font-extrabold text-brand-dark">{o.p}</span>
-                </div>
-              ))}
-            </div>
-            <p className="mt-3 text-center text-[11px] text-muted-foreground">
-              ثلاثة عروض على طلب واحد — الزبون يقارن ويقبل أو يفاوض.
-            </p>
-          </div>
-        </div>
-      </section>
+        {/* كيف يعمل */}
+        <section className="px-5 pt-2 pb-4">
+          <h2 className="text-[17px] font-black">كيف يعمل «حِرفي»؟</h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">ثلاث خطوات، بنفس منطق التفاوض الذي جعل inDrive يعمل.</p>
 
-      {/* كيف يعمل */}
-      <section className="shell py-14">
-        <h2 className="text-center font-display text-2xl font-extrabold sm:text-3xl">
-          كيف يعمل «حِرْفي»؟
-        </h2>
-        <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-muted-foreground">
-          ثلاث خطوات فقط، بنفس منطق التفاوض الذي جعل inDrive يعمل — لكن بين زبون وحرّاف.
-        </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {STEPS.map((s) => (
-            <div key={s.title} className="card-warm rounded-xl border border-border bg-card p-5">
-              <span className="grid size-11 place-items-center rounded-xl bg-brand/10 text-brand-dark">
-                <s.icon className="size-5.5" />
-              </span>
-              <h3 className="mt-3.5 text-base font-bold">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* الميزات */}
-      <section className="border-y border-border bg-card/50 py-14">
-        <div className="shell">
-          <h2 className="text-center font-display text-2xl font-extrabold sm:text-3xl">
-            ماذا يوجد داخل التطبيق؟
-          </h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="flex gap-3 rounded-xl border border-border bg-card p-4">
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-teal-soft text-teal">
-                  <f.icon className="size-4.5" />
+          <ol className="mt-4 grid gap-2.5">
+            {STEPS.map((s, i) => (
+              <li
+                key={s.title}
+                className="flex items-start gap-3 rounded-3xl bg-card p-4"
+                style={{ boxShadow: "var(--shadow-card)" }}
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand text-brand-ink">
+                  <s.icon className="size-5" />
                 </span>
-                <div>
-                  <h3 className="text-sm font-bold">{f.title}</h3>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.body}</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-price text-[13px] text-muted-foreground">{i + 1}</span>
+                    <h3 className="text-[15px] font-black">{s.title}</h3>
+                  </div>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{s.body}</p>
                 </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* ما يوجد داخل التطبيق */}
+        <section className="px-5 pb-6">
+          <h2 className="text-[17px] font-black">ماذا يوجد داخل التطبيق؟</h2>
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="rounded-2xl bg-muted/70 p-3">
+                <span className="grid size-8 place-items-center rounded-full bg-background">
+                  <f.icon className="size-4" />
+                </span>
+                <h3 className="mt-2 text-[12.5px] leading-tight font-black">{f.title}</h3>
+                <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{f.body}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <footer className="shell flex flex-col items-center gap-3 py-10 text-center">
-        <span className="grid size-10 place-items-center rounded-xl bg-brand-gradient font-display text-lg font-extrabold text-white">
-          ح
-        </span>
-        <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
-          «حِرْفي» نموذج تطبيقي تعليمي — محفظة داخلية بلا بوابة دفع حقيقية، ولا خرائط GPS،
-          ولا إشعارات خارج التطبيق. جميع البيانات المعروضة تجريبية.
-        </p>
-        {!user ? (
-          <div className="mt-1 flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/login">دخول</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/register">أنشئ حساباً</Link>
-            </Button>
-          </div>
-        ) : null}
-      </footer>
+        <footer className="mt-auto grid gap-3 border-t border-border px-5 py-6">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            «حِرفي» نموذج تطبيقي تعليمي: محفظة داخلية بلا بوابة دفع حقيقية، وموقع مبسّط بلا خرائط GPS، وإشعارات
+            داخل التطبيق فقط بلا بريد أو SMS. كل البيانات المعروضة تجريبية.
+          </p>
+          {!user ? (
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/login">دخول</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href="/register">أنشئ حساباً</Link>
+              </Button>
+            </div>
+          ) : null}
+        </footer>
+      </div>
     </div>
   );
 }

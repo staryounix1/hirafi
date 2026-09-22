@@ -1,75 +1,101 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* ── نظام تصميم «حِرْفي» ────────────────────────────────────────────────────
-   Tailwind v4 هو CSS-first: لا tailwind.config ولا postcss. الألوان مبنية على
-   اتجاه «دافئ وموثوق»: برتقالي طوبي (#E8590C) أساس، تركوازي عميق للتمييز،
-   وخلفية كريمية — بدل الثيم الرصاصي الافتراضي للقالب. */
+/* ── نظام تصميم «حِرْفي» — توأم inDrive البصري ─────────────────────────────────
+   الهوية: أخضر ليموني #C1F11D + أسود + أبيض. لا برتقالي ولا كريمي.
+   القواعد المأخوذة من inDrive الحقيقي:
+     • الأخضر الليموني للون الإجراء فقط، ودائماً بنصّ أسود فوقه (تباين عالٍ).
+     • الشرائح والبطاقات بيضاء بلا حدود ثقيلة — الفصل بالتسطيح والظل الخفيف.
+     • حواف كبيرة (16–24px) وأزرار حبّية (pill) وأرقام ضخمة الوزن. */
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.85rem;
-  --background: hsl(33 55% 97%);
-  --foreground: hsl(25 30% 13%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(25 30% 13%);
-  --primary: hsl(21 90% 48%);
-  --primary-foreground: hsl(30 100% 99%);
-  --secondary: hsl(31 45% 93%);
-  --secondary-foreground: hsl(25 35% 18%);
-  --muted: hsl(31 40% 94%);
-  --muted-foreground: hsl(28 14% 43%);
-  --accent: hsl(179 45% 93%);
-  --accent-foreground: hsl(179 80% 22%);
-  --destructive: hsl(2 62% 51%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(30 30% 88%);
-  --input: hsl(30 28% 85%);
-  --ring: hsl(21 90% 48%);
+  --radius: 1.25rem;
 
-  /* رموز المجال — تُستعمل في الشرائح والشارات وحالات الطلب */
-  --brand: hsl(21 90% 48%);
-  --brand-dark: hsl(21 85% 38%);
-  --teal: hsl(179 80% 27%);
-  --teal-soft: hsl(179 42% 94%);
-  --success: hsl(158 64% 34%);
-  --success-soft: hsl(158 55% 94%);
-  --warn: hsl(36 92% 42%);
-  --warn-soft: hsl(38 90% 94%);
-  --info-soft: hsl(214 70% 95%);
-  --info: hsl(215 60% 40%);
-  --shadow-warm: 0 1px 2px hsl(25 40% 20% / 0.06), 0 8px 24px -12px hsl(25 40% 20% / 0.22);
+  --background: #ffffff;
+  --foreground: #0b0d0f;
+  --card: #ffffff;
+  --card-foreground: #0b0d0f;
+
+  /* الأخضر الليموني — لون الإجراء الوحيد. النصّ فوقه أسود دائماً. */
+  --primary: #c1f11d;
+  --primary-foreground: #0b0d0f;
+
+  --secondary: #f1f3f5;
+  --secondary-foreground: #0b0d0f;
+  --muted: #f4f5f7;
+  --muted-foreground: #6b7280;
+  --accent: #f1f3f5;
+  --accent-foreground: #0b0d0f;
+  --destructive: #e5484d;
+  --destructive-foreground: #ffffff;
+  --border: #e9ebee;
+  --input: #e3e6ea;
+  --ring: #a6d40f;
+
+  --brand: #c1f11d;
+  --brand-dark: #a8d40f;
+  --brand-ink: #0b0d0f;
+
+  /* رمز «الحياد الداكن» — يستعمل للشرائح المحايدة والنصّ الثانوي القوي. */
+  --teal: #101418;
+  --teal-soft: #eef0f2;
+
+  /* لوحة الخريطة — رمادية فاتحة مثل خرائط inDrive (لا ألوان دافئة). */
+  --map-bg: #eceef1;
+  --map-road: #ffffff;
+  --map-block: #e0e3e7;
+  --map-water: #d3e3f0;
+  --map-park: #dbe8d6;
+  --map-line: #c9ced4;
+
+  --success: #0f8a4a;
+  --success-soft: #e6f8ee;
+  --warn: #e08b00;
+  --warn-soft: #fff5e3;
+  --info: #1d6fd6;
+  --info-soft: #eaf2fd;
+
+  --shadow-sheet: 0 -6px 24px rgba(11, 13, 15, 0.1);
+  --shadow-card: 0 1px 2px rgba(11, 13, 15, 0.05), 0 10px 24px -14px rgba(11, 13, 15, 0.22);
 }
 
+/* inDrive لا يقدّم وضعاً داكناً — نحافظ على تماسك الرموز فقط. */
 .dark {
-  --background: hsl(25 22% 10%);
-  --foreground: hsl(33 30% 95%);
-  --card: hsl(25 20% 14%);
-  --card-foreground: hsl(33 30% 95%);
-  --primary: hsl(21 88% 56%);
-  --primary-foreground: hsl(25 30% 10%);
-  --secondary: hsl(25 16% 20%);
-  --secondary-foreground: hsl(33 30% 95%);
-  --muted: hsl(25 16% 19%);
-  --muted-foreground: hsl(30 14% 68%);
-  --accent: hsl(179 30% 20%);
-  --accent-foreground: hsl(179 60% 88%);
-  --destructive: hsl(2 62% 55%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(25 14% 24%);
-  --input: hsl(25 14% 26%);
-  --ring: hsl(21 88% 56%);
-  --brand: hsl(21 88% 56%);
-  --brand-dark: hsl(21 88% 46%);
-  --teal: hsl(179 55% 60%);
-  --teal-soft: hsl(179 30% 20%);
-  --success: hsl(158 50% 55%);
-  --success-soft: hsl(158 30% 20%);
-  --warn: hsl(38 85% 60%);
-  --warn-soft: hsl(38 40% 22%);
-  --info-soft: hsl(214 30% 22%);
-  --info: hsl(214 60% 72%);
-  --shadow-warm: 0 1px 2px hsl(0 0% 0% / 0.3), 0 8px 24px -12px hsl(0 0% 0% / 0.5);
+  --background: #0b0d0f;
+  --foreground: #f5f6f7;
+  --card: #14181c;
+  --card-foreground: #f5f6f7;
+  --primary: #c1f11d;
+  --primary-foreground: #0b0d0f;
+  --secondary: #1c2126;
+  --secondary-foreground: #f5f6f7;
+  --muted: #1a1f24;
+  --muted-foreground: #9aa3ad;
+  --accent: #1c2126;
+  --accent-foreground: #f5f6f7;
+  --destructive: #ff6369;
+  --destructive-foreground: #0b0d0f;
+  --border: #262c33;
+  --input: #2b3238;
+  --ring: #c1f11d;
+  --brand: #c1f11d;
+  --brand-dark: #d4ff3d;
+  --brand-ink: #0b0d0f;
+  --teal: #f5f6f7;
+  --teal-soft: #1c2126;
+  --map-bg: #14181c;
+  --map-road: #232a30;
+  --map-block: #1a1f24;
+  --map-water: #17242e;
+  --map-park: #16241a;
+  --map-line: #2b3238;
+  --success: #3dd68c;
+  --success-soft: #12251b;
+  --warn: #f5b544;
+  --warn-soft: #2a1f0d;
+  --info: #6aa9f5;
+  --info-soft: #101d2e;
 }
 
 @theme inline {
@@ -95,6 +121,7 @@
   --color-ring: var(--ring);
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
+  --color-brand-ink: var(--brand-ink);
   --color-teal: var(--teal);
   --color-teal-soft: var(--teal-soft);
   --color-success: var(--success);
@@ -103,12 +130,18 @@
   --color-warn-soft: var(--warn-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-map-bg: var(--map-bg);
+  --color-map-road: var(--map-road);
+  --color-map-block: var(--map-block);
+  --color-map-water: var(--map-water);
+  --color-map-park: var(--map-park);
+  --color-map-line: var(--map-line);
 
-  --radius-sm: calc(var(--radius) - 5px);
-  --radius-md: calc(var(--radius) - 3px);
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 5px);
-  --radius-2xl: calc(var(--radius) + 12px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
 }
 
 @layer base {
@@ -120,59 +153,70 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    /* الأرقام لاتينية والكلمات عربية — قراءة أنظف للأسعار والتواريخ */
+    /* الأرقام لاتينية (مثل، عدّاد، تاريخ) والكلمات عربية — قراءة أنظف للأسعار. */
     font-feature-settings: "tnum" 1;
+    font-weight: 500;
   }
   h1,
   h2,
   h3,
   h4 {
     @apply font-display;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-weight: 800;
+    letter-spacing: -0.015em;
   }
-  /* الحقول في RTL: مسافة داخلية صحيحة والحقل يبدأ من اليمين تلقائياً */
   input,
   textarea,
   select {
     text-align: start;
   }
   ::selection {
-    background: hsl(21 90% 48% / 0.18);
+    background: hsl(72 88% 53% / 0.42);
+  }
+  /* لا يكسر أي عنصر خارج عمود التطبيق أفقياً. */
+  html,
+  body {
+    overflow-x: hidden;
   }
 }
 
 @layer utilities {
-  /* تدرّج العلامة المستعمل في الترويسة والصفحة الرئيسية */
-  .bg-brand-gradient {
-    background-image: linear-gradient(135deg, hsl(21 90% 48%) 0%, hsl(14 84% 44%) 55%, hsl(179 70% 26%) 100%);
+  /* العمود الخارجي للتطبيق على الحاسوب — رمادي مثل خلفية inDrive التسويقية. */
+  .app-stage {
+    background: #dfe2e6;
   }
-  .text-balance {
-    text-wrap: balance;
+  /* إطار الهاتف: بعرض الجوال على الحاسوب، بكامل العرض على الجوال. */
+  .app-frame {
+    @apply relative mx-auto flex w-full max-w-[460px] flex-col bg-background;
+    min-height: 100svh;
   }
-  /* حاوية الصفحة الموحّدة */
-  .shell {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
-  }
-  /* ارتفاع يمنع الشريط السفلي من تغطية آخر عنصر في القائمة */
-  .pb-safe-nav {
-    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
-  }
-  @media (min-width: 768px) {
-    .pb-safe-nav {
-      padding-bottom: 2rem;
+  @media (min-width: 640px) {
+    .app-frame {
+      min-height: 100svh;
+      box-shadow: 0 0 0 1px rgba(11, 13, 15, 0.06), 0 30px 60px -30px rgba(11, 13, 15, 0.35);
     }
   }
-  .card-warm {
-    box-shadow: var(--shadow-warm);
+  /* شريحة بيضاء بحواف علوية كبيرة — النمط الأساسي في inDrive. */
+  .sheet {
+    @apply rounded-t-[26px] bg-card;
+    box-shadow: var(--shadow-sheet);
   }
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  .card-flat {
+    @apply rounded-2xl bg-card;
+    box-shadow: var(--shadow-card);
   }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 9999px;
+  .text-price {
+    @apply font-display font-black tabular-nums;
+    letter-spacing: -0.03em;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .safe-b {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
@@ -188,4 +232,23 @@
 .hirfi-skeleton {
   animation: hirfi-pulse 1.6s ease-in-out infinite;
   background: var(--muted);
+}
+
+/* نبضة نقطة الحالة المباشرة — مثل مؤشّر «البحث جارٍ» في inDrive. */
+@keyframes hirfi-ping {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+.hirfi-ping {
+  animation: hirfi-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
