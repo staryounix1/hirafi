@@ -43,7 +43,7 @@ const STEPS = [
   {
     icon: CircleDollarSign,
     title: "استقبل العروض",
-    body: "الحرفيون القريبون يقدّمون: سعر + مدة + رسالة. تقارن، تردّ، وتتفاوض على السعر النهائي.",
+    body: "الحرّافون القريبون يقدّمون السعر والمدة والرسالة. تقارن العروض، وتردّ عليها، وتتفاوض على السعر النهائي.",
   },
   {
     icon: CheckCircle2,
@@ -53,11 +53,11 @@ const STEPS = [
 ];
 
 const FEATURES = [
-  { icon: Search, title: "طلبات قريبة مصفّاة", body: "الحرف يفلتر بالقرب والفئة والميزانية والاستعجال." },
+  { icon: Search, title: "طلبات قريبة مصفّاة", body: "الحرّاف يفلتر الطلبات بالقرب والفئة والميزانية والاستعجال." },
   { icon: MessageSquare, title: "محادثة داخل الطلب", body: "خيط خاص بين الطرفين، يتحدّث تلقائياً." },
   { icon: Wallet, title: "محفظة وسجل مدفوعات", body: "دفع واستحقاق وعمولة منصّة 10%، كلها مسجّلة." },
   { icon: Star, title: "تقييم متبادل", body: "بعد الإتمام يقيّم الطرفان، ويظهر على الملف العام." },
-  { icon: ShieldCheck, title: "شارة موثّق", body: "مع إنجازات الحرف وأعماله المنجزة ومتوسط تقييمه." },
+  { icon: ShieldCheck, title: "شارة موثّق", body: "مع إنجازات الحرّاف وأعماله المنجزة ومتوسط تقييمه." },
   { icon: MapPin, title: "موقع مبسّط", body: "مدينة + حي من قائمة مغربية — بلا خرائط GPS معقّدة." },
 ];
 
@@ -128,11 +128,11 @@ export default function Home() {
               <span className="flex flex-col leading-none">
                 <b className="font-display text-[15px] font-black tracking-tight">حِرفي</b>
                 <span className="mt-0.5 text-[10px] font-medium text-muted-foreground">
-                  خدمات وحرفيون قريبون
+                  خدمات وحرّافون قريبون
                 </span>
               </span>
             </span>
-            <LiveDot label="٣ حرفيين قريبين" />
+            <LiveDot label="3 حرّافين قريبين" />
           </div>
 
           {/* الشريحة البيضاء — العنصر المميّز في كل شاشات inDrive */}
@@ -140,7 +140,7 @@ export default function Home() {
             <DragHandle className="mb-4" />
 
             <h1 className="text-[30px] leading-[1.14] font-black text-balance">
-              انشر مشكلتك، واقترح سعرك — والحرفيون يتنافسون عليك
+              انشر مشكلتك، واقترح سعرك — والحرّافون يتنافسون عليك
             </h1>
             <p className="mt-3 text-[13.5px] leading-relaxed text-muted-foreground">
               نفس فكرة <b className="font-bold text-foreground">inDrive</b>: السعر يقترحه صاحب الطلب لا مقدّم
@@ -172,7 +172,7 @@ export default function Home() {
                   />
                   <DemoLogin
                     email="karim@hirfi.ma"
-                    label="حرفي"
+                    label="حرّاف"
                     icon={Briefcase}
                     hint="كريم — كهربائي يقدّم العروض وينفّذ ويستلم"
                     variant="outline"

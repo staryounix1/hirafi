@@ -33,7 +33,7 @@ import { useCategories, useMyProfile } from "@/lib/hooks";
 import { useImageUpload, validateImage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { categoryIcon, errorMessage, formatDateAr, formatMAD, madNumber, ratingAvg } from "@/lib/format";
+import { categoryIcon, countAr, errorMessage, formatDateAr, formatMAD, madNumber, ratingAvg } from "@/lib/format";
 import { MOROCCAN_CITIES, DISTRICTS_BY_CITY, type AppRole } from "@shared/constants";
 import { isValidMoroccanPhone } from "@shared/types";
 
@@ -203,9 +203,9 @@ export default function Profile() {
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <Badge tone={isProvider ? "teal" : "brand"} icon={isProvider ? Briefcase : UserCircle}>
-                  {isProvider ? "حساب حرف" : "حساب زبون"}
+                  {isProvider ? "حساب حرّاف" : "حساب زبون"}
                 </Badge>
-                {isProvider ? <Badge tone="success">{p.completedJobs} عمل منجز</Badge> : null}
+                {isProvider ? <Badge tone="success">{countAr(p.completedJobs, ["عمل", "عملان", "أعمال"], "عملاً")} منجز</Badge> : null}
               </div>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function Profile() {
                 </span>
                 <Stars value={avg ?? 0} size="sm" />
               </div>
-              <div className="mt-0.5 text-[10px] text-muted-foreground">{p.ratingCount} تقييم</div>
+              <div className="mt-0.5 text-[10px] text-muted-foreground">{countAr(p.ratingCount, ["تقييم", "تقييمان", "تقييمات"], "تقييماً")}</div>
             </div>
             <div className="rounded-2xl bg-muted/70 px-3 py-2.5">
               <div className="flex items-center gap-1 text-[10.5px] font-bold text-muted-foreground">
@@ -231,7 +231,7 @@ export default function Profile() {
               </div>
               <div className="text-price mt-1 flex items-baseline gap-1 text-[19px] leading-none">
                 {madNumber(q.data.balance)}
-                <span className="text-[10px] font-bold text-muted-foreground">د.م</span>
+                <span className="text-[10px] font-bold text-muted-foreground">درهم</span>
               </div>
               <Link href="/wallet" className="mt-0.5 block text-[10px] font-bold text-brand-dark underline">
                 افتح المحفظة

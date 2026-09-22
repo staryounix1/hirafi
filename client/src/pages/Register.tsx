@@ -30,7 +30,7 @@ export function AuthShell({
         <span className="flex flex-col leading-none">
           <b className="font-display text-[22px] font-black tracking-tight">حِرفي</b>
           <span className="mt-1 text-[11.5px] text-muted-foreground">
-            حرفيّون وخدمات قريبة منك
+            حرّافون وخدمات قريبة منك
           </span>
         </span>
       </Link>

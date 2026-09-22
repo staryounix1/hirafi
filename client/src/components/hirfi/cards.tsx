@@ -25,6 +25,7 @@ import {
   distanceBand,
   DISTANCE_LABELS,
   truncate,
+  countAr,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -105,7 +106,7 @@ export function RequestCard({
               {madNumber(amount)}
             </div>
             <div className="mt-1 text-[10.5px] font-bold text-muted-foreground">
-              {request.agreedAmount ? "السعر المتفق عليه" : "درهم — السعر المقترح"}
+              {request.agreedAmount ? "درهم — السعر المتفق عليه" : "درهم — سعرك المقترح"}
             </div>
           </div>
         </div>
@@ -118,7 +119,7 @@ export function RequestCard({
           <Badge tone={meta.tone}>{meta.label}</Badge>
           {offers > 0 ? (
             <Badge tone="teal" icon={MessageSquare}>
-              {offers} عرض
+              {countAr(offers, ["عرض", "عرضان", "عروض"], "عرضاً")}
             </Badge>
           ) : (
             <Badge tone="muted" icon={Hourglass}>
@@ -239,7 +240,7 @@ export function OfferCard({
                   ) : null}
                 </span>
                 {band ? <span className="font-bold">{DISTANCE_LABELS[band].label}</span> : null}
-                <span>{offer.providerCompletedJobs} عمل</span>
+                <span>{countAr(offer.providerCompletedJobs, ["عمل", "عملان", "أعمال"], "عملاً")}</span>
               </div>
             </div>
 

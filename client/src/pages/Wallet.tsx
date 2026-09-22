@@ -86,7 +86,7 @@ export default function Wallet() {
       <PageHeader
         icon={WalletIcon}
         title="المحفظة"
-        description="رصيدك الداخلي وكل حركة عليه: دفع مقابل طلب، استحقاق حرف، عمولة المنصّة، وطلبات السحب."
+        description="رصيدك الداخلي وكل حركة عليه: دفع مقابل طلب، استحقاق حرّاف، عمولة المنصّة، وطلبات السحب."
       />
 
       {/* بطاقة الرصيد — الرقم الضخم أولاً كما في بطاقات inDrive */}
@@ -109,14 +109,14 @@ export default function Wallet() {
               <div className="text-[10px] font-bold text-background/60">إجمالي الداخل</div>
               <div className="text-price mt-1 flex items-baseline gap-1 text-[17px] leading-none">
                 {madNumber(earnings)}
-                <span className="text-[10px] font-bold text-background/60">د.م</span>
+                <span className="text-[10px] font-bold text-background/60">درهم</span>
               </div>
             </div>
             <div className="rounded-2xl bg-background/10 px-3 py-2.5">
               <div className="text-[10px] font-bold text-background/60">إجمالي الخارج</div>
               <div className="text-price mt-1 flex items-baseline gap-1 text-[17px] leading-none">
                 {madNumber(Math.abs(spend))}
-                <span className="text-[10px] font-bold text-background/60">د.م</span>
+                <span className="text-[10px] font-bold text-background/60">درهم</span>
               </div>
             </div>
           </div>

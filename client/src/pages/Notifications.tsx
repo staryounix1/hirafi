@@ -123,7 +123,7 @@ export default function Notifications() {
           <EmptyState
             icon={Bell}
             title="لا إشعارات بعد"
-            description="أول ما ينشر زبون طلباً أو يقدّم حرف عرضاً على طلبك، سيظهر الإشعار هنا مع رابط مباشر إلى الطلب."
+            description="أول ما ينشر زبون طلبًا أو يقدّم حرّاف عرضًا على طلبك، سيظهر الإشعار هنا مع رابط مباشر إلى الطلب."
             actionLabel="عُد إلى لوحة التحكم"
             actionHref="/dashboard"
           />

@@ -48,32 +48,39 @@ export function formatMAD(amount: number | null | undefined): string {
   return `${new Intl.NumberFormat("fr-MA", { maximumFractionDigits: 0 }).format(amount)} درهم`;
 }
 
-/** مدة بالدقائق ← نص مقروء. */
+/**
+ * مدة بالدقائق ← نص مقروء بالعربية الفصيحة.
+ * يراعي صيغ العدد: 1 مفرد، 2 مثنّى، 3–10 جمع، 11+ تمييز مفرد.
+ */
 export function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} دقيقة`;
+  if (minutes < 60) {
+    return countAr(minutes, ["دقيقة", "دقيقتان", "دقائق"], "دقيقة", "واحدة");
+  }
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   if (h >= 24) {
     const d = Math.floor(h / 24);
     const rh = h % 24;
-    return rh ? `${d} يوم و${rh} ساعة` : `${d} يوم`;
+    const days = countAr(d, ["يوم", "يومان", "أيام"], "يوماً");
+    return rh ? `${days} و${countAr(rh, ["ساعة", "ساعتان", "ساعات"], "ساعة", "واحدة")}` : days;
   }
-  return m ? `${h} ساعة و${m} دقيقة` : `${h} ساعة`;
+  const hours = countAr(h, ["ساعة", "ساعتان", "ساعات"], "ساعة", "واحدة");
+  return m ? `${hours} و${countAr(m, ["دقيقة", "دقيقتان", "دقائق"], "دقيقة", "واحدة")}` : hours;
 }
 
-/** «منذ 3 ساعات» بصيغة عربية مبسّطة. */
+/** «منذ 3 ساعات» بصيغ الجمع العربية الصحيحة (2 ← ساعتين، 11+ ← ساعة). */
 export function timeAgoAr(input: Date | string | number): string {
   const then = new Date(input).getTime();
   const diff = Math.max(0, Date.now() - then);
   const min = Math.floor(diff / 60000);
   if (min < 1) return "الآن";
-  if (min < 60) return `منذ ${min} دقيقة`;
+  if (min < 60) return `منذ ${countAr(min, ["دقيقة", "دقيقتين", "دقائق"], "دقيقة", "واحدة")}`;
   const h = Math.floor(min / 60);
-  if (h < 24) return `منذ ${h === 1 ? "ساعة" : h === 2 ? "ساعتين" : `${h} ساعات`}`;
+  if (h < 24) return `منذ ${countAr(h, ["ساعة", "ساعتين", "ساعات"], "ساعة", "واحدة")}`;
   const d = Math.floor(h / 24);
-  if (d < 30) return `منذ ${d === 1 ? "يوم" : d === 2 ? "يومين" : `${d} أيام`}`;
+  if (d < 30) return `منذ ${countAr(d, ["يوم", "يومين", "أيام"], "يوماً")}`;
   const mo = Math.floor(d / 30);
-  return `منذ ${mo === 1 ? "شهر" : `${mo} أشهر`}`;
+  return `منذ ${countAr(mo, ["شهر", "شهرين", "أشهر"], "شهراً")}`;
 }
 
 /** تاريخ مختصر بالعربية — `22 شتنبر 2026`. */
@@ -145,7 +152,7 @@ export interface StatusMeta {
 
 export const REQUEST_STATUS_META: Record<string, StatusMeta> = {
   open: { label: "منشور — ينتظر عروضاً", tone: "brand", icon: Send },
-  accepted: { label: "مقبول — تمّ الاتفاق", tone: "teal", icon: CheckCircle2 },
+  accepted: { label: "مقبول — تم الاتفاق", tone: "teal", icon: CheckCircle2 },
   in_progress: { label: "قيد التنفيذ", tone: "warn", icon: Hourglass },
   completed: { label: "منتهي", tone: "success", icon: CheckCircle2 },
   cancelled: { label: "ملغى", tone: "muted", icon: Ban },
@@ -248,9 +255,15 @@ export function errorMessage(e: unknown): string {
  * عدّ اسم بالعربية الصحيحة: 0 → «لا مفرد»، 1 → مفرد، 2 → مثنّى، 3–10 → جمع، 11+ → تمييز مفرد.
  * مثال: countAr(9, ["حركة", "حركتان", "حركات"], "حركة") → «9 حركات»
  */
-export function countAr(n: number, forms: [string, string, string], many: string): string {
+export function countAr(
+  n: number,
+  forms: [string, string, string],
+  many: string,
+  /** صيغة المفرد المُعدود به: «واحد» للمذكر، «واحدة» للمؤنث (دقيقة، ساعة، حركة). */
+  one = "واحد",
+): string {
   if (n === 0) return `لا ${forms[0]}`;
-  if (n === 1) return `${forms[0]} واحدة`;
+  if (n === 1) return `${forms[0]} ${one}`;
   if (n === 2) return forms[1];
   if (n <= 10) return `${n} ${forms[2]}`;
   return `${n} ${many}`;

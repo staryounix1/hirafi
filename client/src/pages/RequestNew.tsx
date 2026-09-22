@@ -118,7 +118,7 @@ export default function RequestNew() {
         imageUrls: images.map((i) => i.url),
       });
       await utils.invalidate();
-      toast.success("نُشر طلبك — سيبدأ الحرفيون القريبون بإرسال العروض");
+      toast.success("نُشر طلبك — سيبدأ الحرّافون القريبون بإرسال العروض");
       navigate(`/requests/${detail.request.id}`);
     } catch (e) {
       toast.error(errorMessage(e));
@@ -131,7 +131,7 @@ export default function RequestNew() {
       <header className="px-4 pt-5 pb-3">
         <h1 className="text-[26px] leading-tight font-black">اطلب خدمة</h1>
         <p className="mt-1.5 text-[13px] text-muted-foreground">
-          حدّد مشكلتك واقترح سعرك — الحرفيون سيتنافسون بعروضهم عليه.
+          حدّد مشكلتك واقترح سعرك — الحرّافون سيتنافسون بعروضهم عليه.
         </p>
       </header>
 
@@ -184,7 +184,7 @@ export default function RequestNew() {
             <h2 className="text-[15px] font-black">ميزانيتك المقترحة</h2>
             <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-1 text-[10.5px] font-black text-brand-ink">
               <Sparkles className="size-3" />
-              يراها الحرفيون
+              يراها الحرّافون
             </span>
           </div>
 
@@ -264,7 +264,7 @@ export default function RequestNew() {
             <p className="mt-2 text-[11px] font-bold text-brand">{errors.budget}</p>
           ) : (
             <p className="mt-2.5 text-[11px] leading-relaxed text-background/60">
-              الحرفي يرى هذا المبلغ مع الفئة والمسافة قبل أن يقرّر تقديم عرض — وقد يزيد أو ينقص، والقرار يبقى لك.
+              الحرّاف يرى هذا المبلغ مع الفئة والمسافة قبل أن يقرّر تقديم عرض — وقد يزيد أو ينقص، والقرار يبقى لك.
             </p>
           )}
         </section>
@@ -272,7 +272,7 @@ export default function RequestNew() {
         {/* 3 — الوصف */}
         <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
           <SectionHeading title="اشرح مشكلتك" />
-          <Field label="العنوان" hint="سطر واحد مختصر يجذب انتباه الحرفيين" required error={errors.title}>
+          <Field label="العنوان" hint="سطر واحد مختصر يجذب انتباه الحرّافين" required error={errors.title}>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -372,7 +372,7 @@ export default function RequestNew() {
             </Select>
           </div>
 
-          <Field label="الحي" required error={errors.district} hint="نفس الحي = «قريب» عند الحرفي">
+          <Field label="الحي" required error={errors.district} hint="نفس الحي = «قريب» عند الحرّاف">
             <Select value={district} onChange={(e) => setDistrict(e.target.value)}>
               <option value="">— اختر الحي —</option>
               {districts.map((d) => (
@@ -400,7 +400,7 @@ export default function RequestNew() {
 
           <p className="flex items-start gap-1.5 rounded-2xl bg-muted/70 px-3 py-2.5 text-[11.5px] leading-relaxed text-muted-foreground">
             <MapPin className="mt-0.5 size-3.5 shrink-0" />
-            سنعرض طلبك على الحرفيين في {city}
+            سنعرض طلبك على الحرّافين في {city}
             {district ? ` — ${district}` : ""} حسب فئته وميزانيته.
           </p>
         </section>

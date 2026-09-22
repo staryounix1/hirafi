@@ -10,7 +10,7 @@ import {
   VerifiedBadge,
 } from "@/components/hirfi/primitives";
 import { trpc } from "@/_core/trpc";
-import { categoryIcon, errorMessage, formatDateAr, ratingAvg } from "@/lib/format";
+import { categoryIcon, countAr, errorMessage, formatDateAr, ratingAvg } from "@/lib/format";
 
 export default function ProviderPublic() {
   const params = useParams() as { id?: string };
@@ -80,7 +80,7 @@ export default function ProviderPublic() {
           <div className="mt-1.5">
             <Stars value={avg ?? 0} size="sm" />
           </div>
-          <div className="mt-0.5 text-[10px] text-muted-foreground">{profile.ratingCount} تقييم</div>
+          <div className="mt-0.5 text-[10px] text-muted-foreground">{countAr(profile.ratingCount, ["تقييم", "تقييمان", "تقييمات"], "تقييماً")}</div>
         </div>
 
         <div className="card-flat p-3">

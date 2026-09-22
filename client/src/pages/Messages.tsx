@@ -98,7 +98,9 @@ export default function Messages() {
           categoryName: r.categoryName,
           categoryIcon: r.categoryIcon,
           counterpart:
-            (r.offerCount ?? 0) > 0 ? `${r.offerCount} حرف تواصل معك` : "الحرف المختار",
+            (r.offerCount ?? 0) > 0
+              ? `${countAr(r.offerCount ?? 0, ["حرّاف", "حرّافان", "حرّافين"], "حرّافاً")} تواصل معك`
+              : "الحرّاف المختار",
           statusLabel: sm.label,
           metaNote: r.agreedAmount
             ? `اتفقتما على ${formatMAD(r.agreedAmount)}`
@@ -132,7 +134,7 @@ export default function Messages() {
             description={
               isProvider
                 ? "المحادثة تُفتح تلقائياً لحظة تقديمك عرضاً على طلب، فتقدّم بعرضك الأول وستظهر الخيوط هنا."
-                : "المحادثة تُفتح لحظة وصول أول عرض على طلبك — انشر طلباً وسيبدأ الحرفيون بالتواصل."
+                : "المحادثة تُفتح لحظة وصول أول عرض على طلبك — انشر طلباً وسيبدأ الحرّافون بالتواصل."
             }
             actionLabel={isProvider ? "تصفّح الطلبات القريبة" : "انشر طلباً جديداً"}
             actionHref={isProvider ? "/browse" : "/requests/new"}

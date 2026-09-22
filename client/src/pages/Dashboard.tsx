@@ -30,7 +30,7 @@ import { RequestCard, type RequestCardData } from "@/components/hirfi/cards";
 import { trpc } from "@/_core/trpc";
 import { useAuth } from "@/_core/useAuth";
 import { useAppRole } from "@/lib/hooks";
-import { errorMessage, formatMAD, madNumber, requestStatusMeta } from "@/lib/format";
+import { countAr, errorMessage, formatMAD, madNumber, requestStatusMeta } from "@/lib/format";
 
 /** مواضع ثابتة للدبابيس — ثابتة كي لا ترتجف الخريطة في كل تصيير. */
 const PIN_SPOTS = [
@@ -113,12 +113,12 @@ function CustomerDashboard() {
 
         <div className="absolute inset-x-4 top-3 flex items-center justify-between gap-2">
           <LiveDot
-            label={c?.open ? `${c.open} طلب مفتوح` : "لا طلبات مفتوحة"}
+            label={c?.open ? `${countAr(c.open, ["طلب", "طلبان", "طلبات"], "طلباً")} مفتوح` : "لا طلبات مفتوحة"}
           />
           {c?.pendingOffers ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-background/95 px-3 py-1.5 text-[12px] font-black shadow-md backdrop-blur">
               <Hourglass className="size-3.5 text-brand-dark" />
-              {c.pendingOffers} عرض ينتظر ردك
+              {countAr(c.pendingOffers, ["عرض", "عرضان", "عروض"], "عرضاً")} في انتظار ردّك
             </span>
           ) : null}
         </div>
@@ -132,7 +132,7 @@ function CustomerDashboard() {
                 {firstName ? `أهلاً ${firstName}` : "لوحة الزبون"}
               </h1>
               <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">
-                انشر طلبك، قارن عروض الحرفيين، وتابع التنفيذ حتى التقييم.
+                انشر طلبك، قارن عروض الحرّافين، وتابع التنفيذ حتى التقييم.
               </p>
             </div>
             <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand font-display text-lg font-black text-brand-ink">
@@ -159,13 +159,13 @@ function CustomerDashboard() {
                   {madNumber(active.agreedAmount ?? active.budgetAmount)}
                 </div>
                 <div className="mt-1 text-[10.5px] font-bold text-muted-foreground">
-                  {active.agreedAmount ? "د.م — متفق عليه" : "د.م — مقترحك"}
+                  {active.agreedAmount ? "درهم — السعر المتفق عليه" : "درهم — سعرك المقترح"}
                 </div>
               </div>
             </Link>
           ) : (
             <p className="mt-4 rounded-3xl bg-muted/70 px-3.5 py-4 text-center text-[12.5px] text-muted-foreground">
-              لا طلب نشط حالياً — انشر طلباً ليبدأ الحرفيون القريبون بتقديم عروضهم.
+              لا طلب نشط حالياً — انشر طلباً ليبدأ الحرّافون القريبون بتقديم عروضهم.
             </p>
           )}
 
@@ -239,7 +239,7 @@ function CustomerDashboard() {
           <EmptyState
             icon={ClipboardList}
             title="لا طلبات بعد"
-            description="انشر أول طلب لك: صف المشكلة أو الخدمة، حدّد ميزانيتك المقترحة وموقعك، وسيبدأ الحرفيون القريبون بتقديم عروضهم."
+            description="انشر أول طلب لك: صف المشكلة أو الخدمة، حدّد ميزانيتك المقترحة وموقعك، وسيبدأ الحرّافون القريبون بتقديم عروضهم."
             actionLabel="انشر أول طلب"
             actionHref="/requests/new"
           />
@@ -255,7 +255,7 @@ function CustomerDashboard() {
   );
 }
 
-// ── لوحة الحرفي ─────────────────────────────────────────────────────────────────
+// ── لوحة الحرّاف ─────────────────────────────────────────────────────────────────
 function ProviderDashboard() {
   const q = trpc.dashboard.provider.useQuery();
 
@@ -304,11 +304,11 @@ function ProviderDashboard() {
         <MapCanvas pins={pins} height="34svh" />
 
         <div className="absolute inset-x-4 top-3 flex items-center justify-between gap-2">
-          <LiveDot label={`${c?.openNear ?? 0} طلب قريب`} />
+          <LiveDot label={`${countAr(c?.openNear ?? 0, ["طلب", "طلبان", "طلبات"], "طلباً")} قريب`} />
           {c?.offersPending ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-background/95 px-3 py-1.5 text-[12px] font-black shadow-md backdrop-blur">
               <Send className="size-3.5 text-brand-dark" />
-              {c.offersPending} عرض معلّق
+              {countAr(c.offersPending, ["عرض", "عرضان", "عروض"], "عرضاً")} في انتظار ردّك
             </span>
           ) : null}
         </div>
@@ -320,7 +320,7 @@ function ProviderDashboard() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 <h1 className="text-[22px] leading-tight font-black">
-                  {p ? p.displayName : "لوحة الحرفي"}
+                  {p ? p.displayName : "لوحة الحرّاف"}
                 </h1>
                 {p?.isVerified ? <VerifiedBadge /> : null}
               </div>
@@ -333,25 +333,25 @@ function ProviderDashboard() {
                   {p?.city}
                   {p?.district ? ` — ${p.district}` : ""}
                 </span>
-                <span>{p?.completedJobs ?? 0} عمل منجز</span>
+                <span>{countAr(p?.completedJobs ?? 0, ["عمل", "عملان", "أعمال"], "عملاً")} منجز</span>
               </p>
             </div>
           </div>
 
-          {/* أرقام الحرفي */}
+          {/* أرقام الحرّاف */}
           <div className="mt-4 grid grid-cols-2 gap-2">
             <div className="rounded-2xl bg-muted/70 px-3 py-2.5">
               <div className="text-[10.5px] font-bold text-muted-foreground">إجمالي استحقاقي</div>
               <div className="text-price mt-1 text-[22px] leading-none">
                 {madNumber(c?.earnings ?? 0)}
-                <span className="ms-1 text-[10.5px] font-bold text-muted-foreground">د.م</span>
+                <span className="ms-1 text-[10.5px] font-bold text-muted-foreground">درهم</span>
               </div>
             </div>
             <div className="rounded-2xl bg-muted/70 px-3 py-2.5">
               <div className="text-[10.5px] font-bold text-muted-foreground">رصيد متاح</div>
               <div className="text-price mt-1 text-[22px] leading-none">
                 {madNumber(c?.walletBalance ?? 0)}
-                <span className="ms-1 text-[10.5px] font-bold text-muted-foreground">د.م</span>
+                <span className="ms-1 text-[10.5px] font-bold text-muted-foreground">درهم</span>
               </div>
             </div>
           </div>

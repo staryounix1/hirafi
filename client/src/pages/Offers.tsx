@@ -1,4 +1,4 @@
-// ── عروضي (الحرفي): كل ما أرسلته + الأعمال التي أُسندت إليّ ─────────────────────────
+// ── عروضي (الحرّاف): كل ما أرسلته + الأعمال التي أُسندت إليّ ─────────────────────────
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
@@ -35,6 +35,7 @@ import {
   offerStatusMeta,
   requestStatusMeta,
   timeAgoAr,
+  countAr,
 } from "@/lib/format";
 
 type Tab = "offers" | "jobs";
@@ -148,7 +149,7 @@ export default function Offers() {
                 <div className="flex items-start gap-2 rounded-3xl bg-warn-soft px-3.5 py-3">
                   <Hourglass className="mt-0.5 size-4 shrink-0 text-warn" />
                   <p className="text-[12.5px] leading-relaxed font-bold text-warn">
-                    لديك {counters.length} عرض مضاد من الزبائن ينتظر ردّك — افتح الطلب لتراجع السعر وتوافق أو ترفض.
+                    لديك {countAr(counters.length, ["عرض مضاد", "عرضان مضادان", "عروض مضادة"], "عرضاً مضاداً")} من الزبائن، في انتظار ردّك — افتح الطلب لتراجع السعر وتوافق أو ترفض.
                   </p>
                 </div>
               ) : null}
@@ -196,7 +197,7 @@ export default function Offers() {
                           <div className="text-[10.5px] font-bold text-muted-foreground">عرضي</div>
                           <div className="text-price mt-0.5 flex items-baseline gap-1 text-[23px] leading-none">
                             {madNumber(o.price)}
-                            <span className="text-[11px] font-bold text-muted-foreground">د.م</span>
+                            <span className="text-[11px] font-bold text-muted-foreground">درهم</span>
                           </div>
                         </div>
                         <div className="text-end text-[11px] leading-snug text-muted-foreground">
