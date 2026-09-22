@@ -14,8 +14,6 @@ import { getJob } from "../server/_core/jobs";
 import { mountClient } from "../server/_core/serve";
 import { handle } from "hono/vercel";
 
-export const config = { runtime: "nodejs20.x" };
-
 const app = new Hono().basePath("/").onError((err, c) => {
   console.error("[server] unhandled", err);
   return c.json({ error: "internal error" }, 500);
