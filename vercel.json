@@ -4,10 +4,19 @@
   "framework": null,
   "builds": [
     {
-      "src": "api/index.ts",
+      "src": "api/index.js",
       "use": "@vercel/node",
-      "config": { "includeFiles": ["dist/public/**"] }
+      "config": {
+        "includeFiles": [
+          "dist/public/**"
+        ]
+      }
     }
   ],
-  "routes": [{ "src": "/(.*)", "dest": "api/index.ts" }]
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.js"
+    }
+  ]
 }
