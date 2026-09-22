@@ -1,8 +1,35 @@
+# ===== الحزم =====
 node_modules/
+.pnpm-store/
+
+# ===== مخرجات البناء =====
 dist/
+build/
+*.tsbuildinfo
+
+# ===== متغيّرات البيئة (لا تُرفع أبداً) =====
 .env
 .env.*
 !.env.example
-.webapp-logs/
+
+# ===== السجلات =====
 *.log
+logs/
+.webapp-logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# ===== الكاش =====
+.cache/
+.vite/
+.turbo/
+coverage/
+
+# ===== المحرّرات ونظام التشغيل =====
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.local
+tmp/
