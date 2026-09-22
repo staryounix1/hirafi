@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm build",
+  "framework": null,
+  "builds": [
+    {
+      "src": "api/index.ts",
+      "use": "@vercel/node",
+      "config": { "includeFiles": ["dist/public/**"] }
+    }
+  ],
+  "routes": [{ "src": "/(.*)", "dest": "api/index.ts" }]
+}
