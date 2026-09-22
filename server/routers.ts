@@ -1,33 +1,72 @@
-// ── AGENT-OWNED: tRPC API surface ────────────────────────────────────────────
-// Compose the app's procedures here. Keep them thin: validate input with zod,
-// call server/db.ts for data and server/services/* for external integrations.
-// Auth is provided by _core — do NOT reimplement sessions. Access levels:
-// publicProcedure (anyone) / protectedProcedure (ctx.user set) / adminProcedure.
+// ── AGENT-OWNED: tRPC API surface ─────────────────────────────────────────────
+// Thin procedures only: validate with zod, delegate to server/db.ts, translate
+// domain errors into TRPCErrors whose messages are written FOR THE USER.
+// Auth comes from _core — never reimplement sessions here.
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "./_core/trpc";
 import { authProvider, registerLocalUser, AuthError, EmailTakenError } from "./_core/auth";
-import { storageCommit, storageDeleteOwned, storageListByOwner, storagePutUrl, StorageError } from "./_core/storage";
+import {
+  storageCommit,
+  storageDeleteOwned,
+  storageListByOwner,
+  storagePutUrl,
+  StorageError,
+} from "./_core/storage";
 import * as q from "./db";
+import {
+  APP_ROLES,
+  URGENCIES,
+  MOROCCAN_CITIES,
+  PLATFORM_FEE_PERCENT,
+} from "../shared/constants";
 
-// Auth: login/logout are provider-agnostic (go through the AuthProvider).
-// signup is LOCAL-only (SSO signup happens at the IdP) — guard if you switch.
+/** كل خطأ مجال مُصنَّف يُترجَم هنا إلى رمز مفهوم ورسالة عربية قابلة للتنفيذ. */
+function toTRPCError(e: unknown): never {
+  if (e instanceof q.NotFoundError) throw new TRPCError({ code: "NOT_FOUND", message: e.message });
+  if (e instanceof q.ForbiddenError) throw new TRPCError({ code: "FORBIDDEN", message: e.message });
+  if (e instanceof q.ConflictError) throw new TRPCError({ code: "CONFLICT", message: e.message });
+  if (e instanceof q.InvalidStateError) throw new TRPCError({ code: "BAD_REQUEST", message: e.message });
+  if (q.isUniqueViolation(e)) {
+    throw new TRPCError({ code: "CONFLICT", message: "هذه القيمة مستعملة من قبل" });
+  }
+  throw e;
+}
+
+/** ينفّذ منطق المجال ويترجم أخطاءه المُصنَّفة — فلا تتسرّب أخطاء SQL كخطأ 500 مبهم. */
+function guarded<R>(fn: () => Promise<R>): Promise<R> {
+  return fn().catch((e: unknown) => toTRPCError(e));
+}
+
+/** يرفع خطأ tRPC برسالة عربية جاهزة للعرض. */
+function fail(code: "BAD_REQUEST" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT" | "UNAUTHORIZED", message: string): never {
+  throw new TRPCError({ code, message });
+}
+
+// ── المصادقة ────────────────────────────────────────────────────────────────
 const authRouter = router({
   me: publicProcedure.query(({ ctx }) => ctx.user),
 
   signup: publicProcedure
-    .input(z.object({ email: z.email(), password: z.string().min(8), name: z.string().optional() }))
+    .input(
+      z.object({
+        email: z.email(),
+        password: z.string().min(8),
+        name: z.string().min(2).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       try {
         const user = await registerLocalUser(input.email, input.password, input.name);
-        await authProvider().login(ctx.c, input.email, input.password); // set session cookie
+        await q.ensureProfile({
+          userId: user.id,
+          displayName: input.name ?? user.email.split("@")[0],
+          city: MOROCCAN_CITIES[0],
+        });
+        await authProvider().login(ctx.c, input.email, input.password);
         return user;
       } catch (e: unknown) {
-        // CONFLICT, not a 500: the request was well-formed, the address is just
-        // taken. registerLocalUser has already turned the driver's SQLSTATE
-        // 23505 into this type — never pattern-match a DB error message here,
-        // Drizzle hides it behind a "Failed query: <sql>" wrapper.
-        if (e instanceof EmailTakenError) throw new TRPCError({ code: "CONFLICT", message: e.message });
+        if (e instanceof EmailTakenError) return fail("CONFLICT", e.message);
         throw e;
       }
     }),
@@ -36,9 +75,16 @@ const authRouter = router({
     .input(z.object({ email: z.email(), password: z.string() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        return await authProvider().login(ctx.c, input.email, input.password);
+        const user = await authProvider().login(ctx.c, input.email, input.password);
+        // ملف ناقص/قديم يُستدرَك عند أول دخول (حساب أُنشئ قبل الـ seed مثلاً).
+        await q.ensureProfile({
+          userId: user.id,
+          displayName: user.name ?? user.email.split("@")[0],
+          city: MOROCCAN_CITIES[0],
+        });
+        return user;
       } catch (e) {
-        if (e instanceof AuthError) throw new TRPCError({ code: "UNAUTHORIZED", message: e.message });
+        if (e instanceof AuthError) return fail("UNAUTHORIZED", e.message);
         throw e;
       }
     }),
@@ -49,66 +95,303 @@ const authRouter = router({
   }),
 });
 
-// Example business router (items). Every procedure is owner-scoped via ctx.user.
-const itemsRouter = router({
-  list: protectedProcedure.query(({ ctx }) => q.listItemsByOwner(ctx.user.id)),
-
-  create: protectedProcedure
-    .input(z.object({ title: z.string().min(1), notes: z.string().optional(), coverUrl: z.string().optional() }))
-    .mutation(({ ctx, input }) => q.createItem({ ownerId: ctx.user.id, ...input })),
-
-  remove: protectedProcedure
-    .input(z.object({ id: z.uuid() }))
-    .mutation(({ ctx, input }) => q.deleteItem(input.id, ctx.user.id)),
+// ── الفئات ──────────────────────────────────────────────────────────────────
+const categoriesRouter = router({
+  list: publicProcedure.query(() => q.listCategories()),
 });
 
-// Sanitize a caller-supplied filename down to a safe key BASENAME: take the
-// last path segment (so "/../shared/report.pdf" can't steer the rest of the
-// key), keep only [A-Za-z0-9._-], strip leading dots (so a survivor of "." or
-// ".." can't slip through as a bare segment), and fall back to a fixed constant
-// when nothing survives. Exported so it can be unit-tested directly.
-//
-// The stem and the extension are sanitized SEPARATELY, and that split is the
-// whole point. Sanitizing the basename as one string used to destroy the
-// extension of any file whose stem was entirely non-ASCII: the allowlist below
-// deleted every CJK character in "风景.png", leaving ".png", and the leading-dot
-// strip — there to kill "." / ".." / dotfiles — then ate the extension
-// separator, because by that point it was the only dot left. The object landed
-// in storage as "<uuid>-png". Splitting first means the leading-dot rule only
-// ever sees the stem, where a leading dot really is a dotfile prefix.
+// ── الملف الشخصي ─────────────────────────────────────────────────────────────
+const profileRouter = router({
+  /** ملفي + مهاراتي + أعمالي (يُنشَأ الملف تلقائياً إن لم يوجد). */
+  me: protectedProcedure.query(async ({ ctx }) => {
+    const profile = await q.ensureProfile({
+      userId: ctx.user.id,
+      displayName: ctx.user.name ?? ctx.user.email.split("@")[0],
+      city: MOROCCAN_CITIES[0],
+    });
+    const [skills, works, wallet] = await Promise.all([
+      q.listMySkills(ctx.user.id),
+      q.listWorks(ctx.user.id),
+      q.listWallet(ctx.user.id),
+    ]);
+    return {
+      profile,
+      skillIds: skills.map((s) => s.categoryId),
+      works,
+      balance: wallet.balance,
+    };
+  }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        displayName: z.string().min(2).optional(),
+        phone: z.string().max(20).nullable().optional(),
+        bio: z.string().max(600).nullable().optional(),
+        city: z.enum(MOROCCAN_CITIES).optional(),
+        district: z.string().max(60).nullable().optional(),
+        yearsExperience: z.number().int().min(0).max(60).optional(),
+        hourlyNote: z.string().max(160).nullable().optional(),
+        isVerified: z.boolean().optional(),
+      }),
+    )
+    .mutation(({ ctx, input }) => guarded(() => q.updateProfile(ctx.user.id, input))),
+
+  setRole: protectedProcedure
+    .input(z.object({ role: z.enum(APP_ROLES) }))
+    .mutation(({ ctx, input }) => guarded(() => q.setRole(ctx.user.id, input.role))),
+
+  setSkills: protectedProcedure
+    .input(z.object({ categoryIds: z.array(z.uuid()).max(12) }))
+    .mutation(({ ctx, input }) =>
+      guarded(async () => {
+        await q.setSkills(ctx.user.id, input.categoryIds);
+        return { ok: true, count: input.categoryIds.length };
+      }),
+    ),
+
+  addWork: protectedProcedure
+    .input(z.object({ imageUrl: z.string().min(1), caption: z.string().max(160).nullable().optional() }))
+    .mutation(({ ctx, input }) => guarded(() => q.addWork({ providerUserId: ctx.user.id, ...input }))),
+
+  removeWork: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(({ ctx, input }) => guarded(() => q.removeWork(input.id, ctx.user.id))),
+
+  /** الملف العام لأي مستخدم. */
+  public: protectedProcedure
+    .input(z.object({ userId: z.uuid() }))
+    .query(({ input }) => guarded(() => q.getPublicProvider(input.userId))),
+
+  /** المراجعات المستلمة على ملفي. */
+  reviews: protectedProcedure.query(({ ctx }) => q.listReviewsForUser(ctx.user.id)),
+});
+
+// ── الطلبات ──────────────────────────────────────────────────────────────────
+const requestsRouter = router({
+  mine: protectedProcedure.query(({ ctx }) => q.listMyRequests(ctx.user.id)),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        categoryId: z.uuid(),
+        title: z.string().min(6).max(120),
+        description: z.string().min(15).max(2000),
+        budgetAmount: z.number().int().min(20).max(200000),
+        city: z.enum(MOROCCAN_CITIES),
+        district: z.string().min(1).max(60),
+        urgency: z.enum(URGENCIES),
+        scheduledFor: z.date().nullable().optional(),
+        imageUrls: z.array(z.string().min(1)).max(4).default([]),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        q.createRequest({
+          customerId: ctx.user.id,
+          ...input,
+          scheduledFor: input.scheduledFor ?? null,
+          imageUrls: input.imageUrls,
+        }),
+      ),
+    ),
+
+  detail: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .query(({ ctx, input }) =>
+      guarded(async () => {
+        const d = await q.getRequestDetail(input.id, ctx.user.id);
+        if (!d) return fail("FORBIDDEN", "لا تملك صلاحية الوصول إلى هذا الطلب");
+        return d;
+      }),
+    ),
+
+  browse: protectedProcedure
+    .input(
+      z.object({
+        categoryId: z.uuid().optional(),
+        city: z.string().optional(),
+        district: z.string().optional(),
+        distance: z.enum(["near", "medium", "far", "all"]).default("all"),
+        budgetMin: z.number().int().min(0).optional(),
+        budgetMax: z.number().int().min(0).optional(),
+        urgency: z.enum(URGENCIES).optional(),
+        search: z.string().max(80).optional(),
+        excludeOwnOffers: z.boolean().default(false),
+        sort: z.enum(["newest", "budget_desc", "budget_asc"]).default("newest"),
+      }),
+    )
+    .query(({ ctx, input }) =>
+      guarded(async () => {
+        const me = await q.getProfile(ctx.user.id);
+        return q.browseOpenRequests({
+          providerUserId: ctx.user.id,
+          providerCity: me?.city ?? MOROCCAN_CITIES[0],
+          providerDistrict: me?.district ?? null,
+          ...input,
+        });
+      }),
+    ),
+
+  setStatus: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+        next: z.enum(["in_progress", "completed", "cancelled"]),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() => q.updateRequestStatus({ requestId: input.id, viewerId: ctx.user.id, next: input.next })),
+    ),
+});
+
+// ── العروض ──────────────────────────────────────────────────────────────────
+const offersRouter = router({
+  mine: protectedProcedure.query(({ ctx }) => q.listMyOffers(ctx.user.id)),
+
+  myJobs: protectedProcedure.query(({ ctx }) => q.listMyAcceptedJobs(ctx.user.id)),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        requestId: z.uuid(),
+        price: z.number().int().min(20).max(200000),
+        durationMinutes: z.number().int().min(15).max(10080),
+        message: z.string().min(10).max(800),
+      }),
+    )
+    .mutation(({ ctx, input }) => guarded(() => q.createOffer({ providerUserId: ctx.user.id, ...input }))),
+
+  withdraw: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(({ ctx, input }) => guarded(() => q.withdrawOffer(input.id, ctx.user.id))),
+
+  accept: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(({ ctx, input }) => guarded(() => q.acceptOffer(input.id, ctx.user.id))),
+
+  reject: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(({ ctx, input }) => guarded(() => q.rejectOffer(input.id, ctx.user.id))),
+
+  counter: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+        price: z.number().int().min(20).max(200000),
+        durationMinutes: z.number().int().min(15).max(10080),
+        message: z.string().min(5).max(600),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() => q.counterOffer({ offerId: input.id, customerId: ctx.user.id, ...input })),
+    ),
+
+  respondCounter: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+        accept: z.boolean(),
+        price: z.number().int().min(20).max(200000).optional(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        q.respondToCounter({
+          counterId: input.id,
+          providerUserId: ctx.user.id,
+          accept: input.accept,
+          price: input.price,
+        }),
+      ),
+    ),
+});
+
+// ── المحادثة ─────────────────────────────────────────────────────────────────
+const messagesRouter = router({
+  list: protectedProcedure
+    .input(z.object({ requestId: z.uuid() }))
+    .query(({ ctx, input }) => guarded(() => q.listMessages(input.requestId, ctx.user.id))),
+
+  send: protectedProcedure
+    .input(z.object({ requestId: z.uuid(), body: z.string().min(1).max(1000) }))
+    .mutation(({ ctx, input }) =>
+      guarded(() => q.sendMessage({ requestId: input.requestId, senderId: ctx.user.id, body: input.body })),
+    ),
+});
+
+// ── التقييمات ────────────────────────────────────────────────────────────────
+const reviewsRouter = router({
+  create: protectedProcedure
+    .input(
+      z.object({
+        requestId: z.uuid(),
+        rating: z.number().int().min(1).max(5),
+        comment: z.string().max(600).nullable().optional(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        q.createReview({
+          requestId: input.requestId,
+          authorId: ctx.user.id,
+          rating: input.rating,
+          comment: input.comment ?? null,
+        }),
+      ),
+    ),
+
+  forUser: protectedProcedure
+    .input(z.object({ userId: z.uuid() }))
+    .query(({ input }) => q.listReviewsForUser(input.userId)),
+});
+
+// ── المحفظة ──────────────────────────────────────────────────────────────────
+const walletRouter = router({
+  me: protectedProcedure.query(({ ctx }) => q.listWallet(ctx.user.id)),
+
+  requestPayout: protectedProcedure
+    .input(z.object({ amount: z.number().int().min(50).max(100000) }))
+    .mutation(({ ctx, input }) => guarded(() => q.requestPayout(ctx.user.id, input.amount))),
+
+  feePercent: publicProcedure.query(() => PLATFORM_FEE_PERCENT),
+});
+
+// ── الإشعارات ────────────────────────────────────────────────────────────────
+const notificationsRouter = router({
+  list: protectedProcedure.query(({ ctx }) => q.listNotifications(ctx.user.id)),
+
+  unreadCount: protectedProcedure.query(({ ctx }) => q.unreadNotificationCount(ctx.user.id)),
+
+  markRead: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(({ ctx, input }) => guarded(() => q.markNotificationRead(input.id, ctx.user.id))),
+
+  markAllRead: protectedProcedure.mutation(({ ctx }) => q.markAllNotificationsRead(ctx.user.id)),
+});
+
+// ── لوحات التحكم ─────────────────────────────────────────────────────────────
+const dashboardRouter = router({
+  customer: protectedProcedure.query(({ ctx }) => q.customerDashboard(ctx.user.id)),
+  provider: protectedProcedure.query(({ ctx }) => q.providerDashboard(ctx.user.id)),
+});
+
+// ── رفع الصور ────────────────────────────────────────────────────────────────
+/** يجرّد الاسم إلى basename آمن (يمنع اجتياز المسار ورؤوس HTTP غير المتوقّعة). */
 export function sanitizeBasename(name: string): string {
-  // Split on "\\" too: it cannot steer a path segment (the key joins on "/"),
-  // but a Windows path would otherwise fold its directories into the stem.
   const last = name.split(/[/\\]/).pop() ?? "";
-  // `> 0`, not `>= 0`: in ".gitignore" the dot is a dotfile prefix, not an
-  // extension separator, so the whole name is the stem.
   const dot = last.lastIndexOf(".");
   const rawStem = dot > 0 ? last.slice(0, dot) : last;
   const rawExt = dot > 0 ? last.slice(dot + 1) : "";
-  const stem =
-    rawStem.replace(/[^A-Za-z0-9._-]/g, "").replace(/^\.+/, "") || "upload";
-  // No dots or separators in an extension, and capped — the key is
-  // `${uuid}-${basename}`, so a long tail buys nothing.
+  const stem = rawStem.replace(/[^A-Za-z0-9._-]/g, "").replace(/^\.+/, "") || "upload";
   const ext = rawExt.replace(/[^A-Za-z0-9]/g, "").slice(0, 10);
   return ext ? `${stem}.${ext}` : stem;
 }
 
-// Example file-upload router. The three-step protocol matters: the browser PUTs
-// straight to object storage, so the server only learns the upload succeeded when
-// the client calls `commit`. Skipping commit leaves an unindexed orphan object —
-// never a row pointing at nothing.
-//
-//   1. uploadUrl  → signed PUT URL + the key to commit later
-//   2. browser    → PUT the bytes to uploadUrl
-//   3. commit     → index it (size/type are read back from storage)
 const filesRouter = router({
   uploadUrl: protectedProcedure
     .input(z.object({ name: z.string().min(1), contentType: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      // The uuid prefix makes the key unguessable ONLY if the rest of the key
-      // isn't attacker-controlled — sanitizeBasename strips the client-supplied
-      // `name` down to a safe basename first, so it can't steer path segments
-      // (e.g. "/../report.pdf") into someone else's key.
       const key = `${crypto.randomUUID()}-${sanitizeBasename(input.name)}`;
       try {
         const { uploadUrl, publicPath } = await storagePutUrl(key, input.contentType, {
@@ -117,12 +400,7 @@ const filesRouter = router({
         return { key, uploadUrl, publicPath };
       } catch (e) {
         if (e instanceof StorageError && e.code === "failed") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message:
-              "upload rejected by storage — check contentType is on the platform's whitelist " +
-              "(see AGENT.md: png/jpeg/gif/webp/avif, pdf, text/plain, csv, json, mpeg/wav audio, mp4/webm video)",
-          });
+          return fail("BAD_REQUEST", "نوع الملف غير مدعوم — استعمل صوراً PNG أو JPEG أو WebP");
         }
         throw e;
       }
@@ -135,10 +413,10 @@ const filesRouter = router({
         return await storageCommit(input.key, { ownerId: ctx.user.id, name: input.name });
       } catch (e) {
         if (e instanceof StorageError && e.code === "not_found") {
-          throw new TRPCError({ code: "NOT_FOUND", message: "upload not found — did the PUT succeed?" });
+          return fail("NOT_FOUND", "لم يكتمل رفع الملف");
         }
         if (e instanceof StorageError && e.code === "forbidden") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "that key belongs to another user" });
+          return fail("FORBIDDEN", "هذا الملف يخصّ مستخدماً آخر");
         }
         throw e;
       }
@@ -153,7 +431,7 @@ const filesRouter = router({
         return await storageDeleteOwned(ctx.user.id, input.key);
       } catch (e) {
         if (e instanceof StorageError && e.code === "forbidden") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "malformed key" });
+          return fail("BAD_REQUEST", "مفتاح ملف غير صالح");
         }
         throw e;
       }
@@ -162,7 +440,15 @@ const filesRouter = router({
 
 export const appRouter = router({
   auth: authRouter,
-  items: itemsRouter,
+  categories: categoriesRouter,
+  profile: profileRouter,
+  requests: requestsRouter,
+  offers: offersRouter,
+  messages: messagesRouter,
+  reviews: reviewsRouter,
+  wallet: walletRouter,
+  notifications: notificationsRouter,
+  dashboard: dashboardRouter,
   files: filesRouter,
 });
 

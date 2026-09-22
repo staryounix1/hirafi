@@ -1,54 +1,81 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Tailwind v4 is CSS-first: no tailwind.config / postcss / autoprefixer.
-   Dark mode is class-based (add `dark` on <html>/<body>); shadcn/ui token set. */
+/* ── نظام تصميم «حِرْفي» ────────────────────────────────────────────────────
+   Tailwind v4 هو CSS-first: لا tailwind.config ولا postcss. الألوان مبنية على
+   اتجاه «دافئ وموثوق»: برتقالي طوبي (#E8590C) أساس، تركوازي عميق للتمييز،
+   وخلفية كريمية — بدل الثيم الرصاصي الافتراضي للقالب. */
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.5rem;
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(222.2 84% 4.9%);
+  --radius: 0.85rem;
+  --background: hsl(33 55% 97%);
+  --foreground: hsl(25 30% 13%);
   --card: hsl(0 0% 100%);
-  --card-foreground: hsl(222.2 84% 4.9%);
-  --primary: hsl(222.2 47.4% 11.2%);
-  --primary-foreground: hsl(210 40% 98%);
-  --secondary: hsl(210 40% 96.1%);
-  --secondary-foreground: hsl(222.2 47.4% 11.2%);
-  --muted: hsl(210 40% 96.1%);
-  --muted-foreground: hsl(215.4 16.3% 46.9%);
-  --accent: hsl(210 40% 96.1%);
-  --accent-foreground: hsl(222.2 47.4% 11.2%);
-  --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(210 40% 98%);
-  --border: hsl(214.3 31.8% 91.4%);
-  --input: hsl(214.3 31.8% 91.4%);
-  --ring: hsl(222.2 84% 4.9%);
+  --card-foreground: hsl(25 30% 13%);
+  --primary: hsl(21 90% 48%);
+  --primary-foreground: hsl(30 100% 99%);
+  --secondary: hsl(31 45% 93%);
+  --secondary-foreground: hsl(25 35% 18%);
+  --muted: hsl(31 40% 94%);
+  --muted-foreground: hsl(28 14% 43%);
+  --accent: hsl(179 45% 93%);
+  --accent-foreground: hsl(179 80% 22%);
+  --destructive: hsl(2 62% 51%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(30 30% 88%);
+  --input: hsl(30 28% 85%);
+  --ring: hsl(21 90% 48%);
+
+  /* رموز المجال — تُستعمل في الشرائح والشارات وحالات الطلب */
+  --brand: hsl(21 90% 48%);
+  --brand-dark: hsl(21 85% 38%);
+  --teal: hsl(179 80% 27%);
+  --teal-soft: hsl(179 42% 94%);
+  --success: hsl(158 64% 34%);
+  --success-soft: hsl(158 55% 94%);
+  --warn: hsl(36 92% 42%);
+  --warn-soft: hsl(38 90% 94%);
+  --info-soft: hsl(214 70% 95%);
+  --info: hsl(215 60% 40%);
+  --shadow-warm: 0 1px 2px hsl(25 40% 20% / 0.06), 0 8px 24px -12px hsl(25 40% 20% / 0.22);
 }
 
 .dark {
-  --background: hsl(222.2 84% 4.9%);
-  --foreground: hsl(210 40% 98%);
-  --card: hsl(222.2 84% 4.9%);
-  --card-foreground: hsl(210 40% 98%);
-  --primary: hsl(210 40% 98%);
-  --primary-foreground: hsl(222.2 47.4% 11.2%);
-  --secondary: hsl(217.2 32.6% 17.5%);
-  --secondary-foreground: hsl(210 40% 98%);
-  --muted: hsl(217.2 32.6% 17.5%);
-  --muted-foreground: hsl(215 20.2% 65.1%);
-  --accent: hsl(217.2 32.6% 17.5%);
-  --accent-foreground: hsl(210 40% 98%);
-  --destructive: hsl(0 62.8% 30.6%);
-  --destructive-foreground: hsl(210 40% 98%);
-  --border: hsl(217.2 32.6% 17.5%);
-  --input: hsl(217.2 32.6% 17.5%);
-  --ring: hsl(212.7 26.8% 83.9%);
+  --background: hsl(25 22% 10%);
+  --foreground: hsl(33 30% 95%);
+  --card: hsl(25 20% 14%);
+  --card-foreground: hsl(33 30% 95%);
+  --primary: hsl(21 88% 56%);
+  --primary-foreground: hsl(25 30% 10%);
+  --secondary: hsl(25 16% 20%);
+  --secondary-foreground: hsl(33 30% 95%);
+  --muted: hsl(25 16% 19%);
+  --muted-foreground: hsl(30 14% 68%);
+  --accent: hsl(179 30% 20%);
+  --accent-foreground: hsl(179 60% 88%);
+  --destructive: hsl(2 62% 55%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(25 14% 24%);
+  --input: hsl(25 14% 26%);
+  --ring: hsl(21 88% 56%);
+  --brand: hsl(21 88% 56%);
+  --brand-dark: hsl(21 88% 46%);
+  --teal: hsl(179 55% 60%);
+  --teal-soft: hsl(179 30% 20%);
+  --success: hsl(158 50% 55%);
+  --success-soft: hsl(158 30% 20%);
+  --warn: hsl(38 85% 60%);
+  --warn-soft: hsl(38 40% 22%);
+  --info-soft: hsl(214 30% 22%);
+  --info: hsl(214 60% 72%);
+  --shadow-warm: 0 1px 2px hsl(0 0% 0% / 0.3), 0 8px 24px -12px hsl(0 0% 0% / 0.5);
 }
 
-/* Map design tokens to Tailwind's theme so utilities (bg-primary, border-border,
-   rounded-lg, …) resolve. @theme inline references the vars above unwrapped. */
 @theme inline {
+  --font-sans: "Tajawal", "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cairo", "Tajawal", ui-sans-serif, sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -66,17 +93,99 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --radius-sm: calc(var(--radius) - 5px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 5px);
+  --radius-2xl: calc(var(--radius) + 12px);
 }
 
 @layer base {
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
+  html {
+    -webkit-text-size-adjust: 100%;
   }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    /* الأرقام لاتينية والكلمات عربية — قراءة أنظف للأسعار والتواريخ */
+    font-feature-settings: "tnum" 1;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  /* الحقول في RTL: مسافة داخلية صحيحة والحقل يبدأ من اليمين تلقائياً */
+  input,
+  textarea,
+  select {
+    text-align: start;
+  }
+  ::selection {
+    background: hsl(21 90% 48% / 0.18);
+  }
+}
+
+@layer utilities {
+  /* تدرّج العلامة المستعمل في الترويسة والصفحة الرئيسية */
+  .bg-brand-gradient {
+    background-image: linear-gradient(135deg, hsl(21 90% 48%) 0%, hsl(14 84% 44%) 55%, hsl(179 70% 26%) 100%);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* حاوية الصفحة الموحّدة */
+  .shell {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+  /* ارتفاع يمنع الشريط السفلي من تغطية آخر عنصر في القائمة */
+  .pb-safe-nav {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+  @media (min-width: 768px) {
+    .pb-safe-nav {
+      padding-bottom: 2rem;
+    }
+  }
+  .card-warm {
+    box-shadow: var(--shadow-warm);
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
+  }
+}
+
+@keyframes hirfi-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.hirfi-skeleton {
+  animation: hirfi-pulse 1.6s ease-in-out infinite;
+  background: var(--muted);
 }

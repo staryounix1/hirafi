@@ -1,69 +1,138 @@
-import { useState, type FormEvent } from "react";
-import { Link, Redirect } from "wouter";
-import { useAuth } from "@/_core/useAuth";
+// ── دخول: بريد + كلمة مرور، مع أزرار الحسابين التجريبيين ─────────────────
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { LogOut, UserCircle, Briefcase, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, Spinner } from "@/components/hirfi/primitives";
+import { useAuth } from "@/_core/useAuth";
+import { toast } from "@/lib/toast";
+import { errorMessage } from "@/lib/format";
+import { AuthShell } from "@/pages/Register";
 
 export default function Login() {
-  const { login, user } = useAuth();
+  const { login } = useAuth();
+  const [, navigate] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [demoBusy, setDemoBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!email.trim() || !password) {
+      setError("أدخل البريد وكلمة المرور");
+      return;
+    }
     setBusy(true);
     try {
-      await login(email, password);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      await login(email.trim(), password);
+      toast.success("تم الدخول");
+      navigate("/dashboard");
+    } catch (e2) {
+      setError(errorMessage(e2));
     } finally {
       setBusy(false);
     }
   }
 
-  // Declarative, not `navigate()` straight after the await. The auth query's
-  // cache update and this component's re-render are not the same tick, so an
-  // imperative jump reaches the guarded route while `user` is still null, and
-  // <Protected> bounces it right back here — the user has signed up or logged
-  // in successfully and is looking at a login form. Rendering a Redirect once
-  // `user` actually exists waits for the state to arrive.
-  if (user) return <Redirect to="/dashboard" />;
+  async function demo(demoEmail: string, label: string) {
+    setDemoBusy(demoEmail);
+    setError(null);
+    try {
+      await login(demoEmail, "demo1234");
+      toast.success(`دخلت كـ${label}`);
+      navigate("/dashboard");
+    } catch (e2) {
+      setError(errorMessage(e2));
+    } finally {
+      setDemoBusy(null);
+    }
+  }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Log in to your account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={busy}>
-              {busy ? "Logging in…" : "Log in"}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            No account?{" "}
-            <Link to="/signup" className="underline">
-              Sign up
-            </Link>
+    <AuthShell
+      title="تسجيل الدخول"
+      subtitle="أدخل بياناتك، أو استعمل أحد الحسابين التجريبيين لتجربة التطبيق فوراً."
+      footer={
+        <>
+          ليس لديك حساب؟{" "}
+          <Link href="/register" className="font-semibold text-brand-dark hover:underline">
+            أنشئ حساباً جديداً
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={submit} className="grid gap-4">
+        <Field label="البريد الإلكتروني" required>
+          <Input
+            type="email"
+            dir="ltr"
+            autoComplete="email"
+            placeholder="name@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </Field>
+        <Field label="كلمة المرور" required>
+          <Input
+            type="password"
+            dir="ltr"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+
+        {error ? (
+          <p className="rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive">
+            {error}
           </p>
-        </CardContent>
-      </Card>
-    </main>
+        ) : null}
+
+        <Button type="submit" size="lg" className="gap-2" disabled={busy}>
+          {busy ? <Spinner /> : <LogOut className="size-4" />}
+          دخول
+        </Button>
+      </form>
+
+      <div className="mt-6 grid gap-2.5 border-t border-border pt-5">
+        <p className="text-center text-xs font-semibold text-muted-foreground">
+          أو استعمل حساباً تجريبياً (كلمة المرور: <span className="font-mono">demo1234</span>)
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => demo("sara@hirfi.ma", "زبون")}
+            disabled={demoBusy !== null}
+          >
+            {demoBusy === "sara@hirfi.ma" ? <Spinner /> : <UserCircle className="size-4" />}
+            سارة — زبون
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => demo("karim@hirfi.ma", "حرّاف")}
+            disabled={demoBusy !== null}
+          >
+            {demoBusy === "karim@hirfi.ma" ? <Spinner /> : <Briefcase className="size-4" />}
+            كريم — حرّاف
+          </Button>
+        </div>
+        <Link
+          href="/"
+          className="mt-1 inline-flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" />
+          العودة إلى الصفحة الرئيسية
+        </Link>
+      </div>
+    </AuthShell>
   );
 }
