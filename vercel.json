@@ -1,10 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "hono",
+  "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
   "functions": {
     "api/index.ts": {
+      "runtime": "nodejs22.x",
       "includeFiles": "dist/public/**"
     }
   },
