@@ -16,6 +16,10 @@ import {
   ShieldCheck,
   MapPin,
   ArrowLeft,
+  ShoppingBag,
+  ListChecks,
+  KeyRound,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
@@ -38,7 +42,7 @@ const STEPS = [
   {
     icon: Send,
     title: "انشر مشكلتك",
-    body: "صف العطل أو الخدمة، وحدّد ميزانيتك المقترحة وموقعك — كما يقترح راكب inDrive سعره.",
+    body: "صف الخدمة، حدّد ميزانيتك المقترحة وموقعك، وخلي الطلب يوصل لمقدمي الخدمة القريبين.",
   },
   {
     icon: CircleDollarSign,
@@ -59,6 +63,13 @@ const FEATURES = [
   { icon: Star, title: "تقييم متبادل", body: "بعد الإتمام يقيّم الطرفان، ويظهر على الملف العام." },
   { icon: ShieldCheck, title: "شارة موثّق", body: "مع إنجازات الحرّاف وأعماله المنجزة ومتوسط تقييمه." },
   { icon: MapPin, title: "موقع مبسّط", body: "مدينة + حي من قائمة مغربية — بلا خرائط GPS معقّدة." },
+];
+
+const SERVICE_MODES = [
+  { title: "حِرفة قريبة", description: "حرفي يجي لعندك", icon: Wrench },
+  { title: "قضاء الأغراض", description: "شراء وتوصيل", icon: ShoppingBag },
+  { title: "الوقوف فالطابور", description: "نقضي الإجراء بلا بيك", icon: ListChecks },
+  { title: "الكراء", description: "أداة أو معدة", icon: KeyRound },
 ];
 
 /** زر دخول تجريبي — يشرح مَن ستدخل به ثم ينقل إلى لوحة التحكم. */
@@ -140,12 +151,11 @@ export default function Home() {
             <DragHandle className="mb-4" />
 
             <h1 className="text-[30px] leading-[1.14] font-black text-balance">
-              انشر مشكلتك، واقترح سعرك — والحرّافون يتنافسون عليك
+              اختار الخدمة، اقترح الثمن، وخلي الحرّافين يتنافسو عليك
             </h1>
             <p className="mt-3 text-[13.5px] leading-relaxed text-muted-foreground">
-              نفس فكرة <b className="font-bold text-foreground">inDrive</b>: السعر يقترحه صاحب الطلب لا مقدّم
-              الخدمة، لكن في مجال الحِرَف والخدمات الصغيرة — سباكة، كهرباء، نجارة، تكييف، نقل أثاث، دروس خصوصية
-              وأكثر.
+              حِرفي كيجمعك بمقدمي خدمات قريبين منك. أنت كتشرح المطلوب وكتقترح ميزانيتك، وهما كيرسلو عروضهم بالثمن
+              والمدة والتفاصيل.
             </p>
 
             <div className="mt-5 grid gap-3">
@@ -195,10 +205,38 @@ export default function Home() {
           </div>
         </section>
 
+        {/* One app, many services — the service picker is the app's first real action. */}
+        <section className="px-5 pt-2 pb-4">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-[17px] font-black">شنو بغيتي اليوم؟</h2>
+              <p className="mt-1 text-[12px] text-muted-foreground">اختار نوع الخدمة وبدأ طلبك.</p>
+            </div>
+            <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">خدمات قريبة</span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            {SERVICE_MODES.map((service) => (
+              <Link
+                key={service.title}
+                href="/requests/new"
+                className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
+                style={{ boxShadow: "var(--shadow-card)" }}
+              >
+                <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                  <service.icon className="size-5" />
+                </span>
+                <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
+                <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* كيف يعمل */}
         <section className="px-5 pt-2 pb-4">
           <h2 className="text-[17px] font-black">كيف يعمل «حِرفي»؟</h2>
-          <p className="mt-1 text-[13px] text-muted-foreground">ثلاث خطوات، بنفس منطق التفاوض الذي جعل inDrive يعمل.</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">ثلاث خطوات واضحة من الطلب حتى الاتفاق والتنفيذ.</p>
 
           <ol className="mt-4 grid gap-2.5">
             {STEPS.map((s, i) => (
