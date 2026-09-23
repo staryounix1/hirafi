@@ -12,7 +12,8 @@ import { env } from "./env";
 const PUBLIC_DIR = "dist/public";
 
 export function mountClient(app: Hono): void {
-  if (!env.isProd) return;
+  // Vercel sets VERCEL even when NODE_ENV is not configured in the project.
+  if (!env.isProd && process.env.VERCEL !== "1") return;
   app.use("/*", serveStatic({ root: `./${PUBLIC_DIR}` }));
   app.get("*", async (c) => {
     const html = await readFile(path.resolve(PUBLIC_DIR, "index.html"), "utf-8");

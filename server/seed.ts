@@ -34,7 +34,7 @@ const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
 const hoursAgo = (n: number) => new Date(NOW.getTime() - n * 3_600_000);
 const daysAhead = (n: number) => new Date(NOW.getTime() + n * 86_400_000);
 
-// ── الفئات الاثنتا عشرة ───────────────────────────────────────────────────────
+// ── الفئات الخمس عشرة ─────────────────────────────────────────────────────────
 const CATEGORIES = [
   { slug: "plumbing", nameAr: "سباكة", icon: "Wrench" },
   { slug: "electrical", nameAr: "كهرباء", icon: "Zap" },
@@ -48,6 +48,9 @@ const CATEGORIES = [
   { slug: "photography", nameAr: "تصوير", icon: "Camera" },
   { slug: "tutoring", nameAr: "دروس خصوصية", icon: "GraduationCap" },
   { slug: "handyman", nameAr: "خدمات عامة", icon: "Settings" },
+  { slug: "grocery", nameAr: "قضاء الأغراض", icon: "ShoppingBasket" },
+  { slug: "queue", nameAr: "الوقوف فالطابور", icon: "ListChecks" },
+  { slug: "rental", nameAr: "الكراء", icon: "KeyRound" },
 ];
 
 // ── صور واقعية مطابقة لكل فئة ────────────────────────────────────────────────
@@ -281,6 +284,47 @@ const USERS: UserSpec[] = [
       { caption: "قفطان مخملي مطرّز بالعقيق" },
       { caption: "تعديل ثلاثة بدلات رجالية" },
     ],
+  },
+  {
+    email: "meryem@hirfi.ma",
+    name: "مريم السالمي",
+    role: "provider",
+    city: "الدار البيضاء",
+    district: "بوركون",
+    bio: "قضاء الأغراض من الأسواق والمحلات. أرسل لك صورة الفاتورة وأوصل مشترياتك حتى الباب.",
+    years: 3,
+    verified: true,
+    phone: "0661234515",
+    skills: ["grocery"],
+    baseJobs: 74,
+    works: [{ caption: "قفة أسبوعية من سوق السلام" }, { caption: "شراء دواء وتوصيله للمنزل" }],
+  },
+  {
+    email: "ayoub@hirfi.ma",
+    name: "أيوب المريني",
+    role: "provider",
+    city: "الرباط",
+    district: "أكدال",
+    bio: "خدمة الوقوف فالطابور وقضاء الإجراءات البسيطة مع تحديثات مباشرة للزبون.",
+    years: 2,
+    phone: "0661234516",
+    skills: ["queue", "handyman"],
+    baseJobs: 39,
+    works: [{ caption: "إيداع ملف إداري بالنيابة" }],
+  },
+  {
+    email: "tarik@hirfi.ma",
+    name: "طارق بنصالح",
+    role: "provider",
+    city: "الدار البيضاء",
+    district: "عين الشق",
+    bio: "كراء معدات منزلية وأدوات الورش مع توصيل واسترجاع في الموعد.",
+    years: 6,
+    verified: true,
+    phone: "0661234517",
+    skills: ["rental", "handyman"],
+    baseJobs: 61,
+    works: [{ caption: "كراء مثقاب وأدوات تركيب" }, { caption: "كراء معدات حفلة صغيرة" }],
   },
   // زبائن آخرون (تنويع الطلبات والمدن)
   {
@@ -665,6 +709,51 @@ const REQUESTS: ReqSpec[] = [
     offers: [
       { by: "hamza@hirfi.ma", price: 750, durationMinutes: 240, message: "شاحنتي تتّسع لمكتب كامل، ومعي مساعد. الرافعة الصغيرة أستأجرها وأضيف ثمنها للفاتورة.", status: "pending", daysAgo: 4 },
       { by: "reda@hirfi.ma", price: 800, durationMinutes: 300, message: "أعمل في النقل بمساعدة شريك، لكن يجب فصل الأسلاك والتجهيزات قبل النقل.", status: "pending", daysAgo: 4 },
+    ],
+  },
+  {
+    customer: "sara@hirfi.ma",
+    category: "grocery",
+    title: "جيب ليا قفة من سوق السلام",
+    description: "بغيت قفة فيها خضر وفواكه وحليب وخبز. صيفط ليا صورة المشتريات قبل الأداء وخلي التوصيل حتى باب الدار.",
+    budget: 80,
+    city: "الدار البيضاء",
+    district: "المعاريف",
+    urgency: "today",
+    status: "open",
+    postedDaysAgo: 0,
+    offers: [
+      { by: "meryem@hirfi.ma", price: 35, durationMinutes: 75, message: "نقدر نمشي للسوق دابا ونصيفط الصور والفاتورة قبل التوصيل.", status: "pending", daysAgo: 0 },
+    ],
+  },
+  {
+    customer: "amine@hirfi.ma",
+    category: "queue",
+    title: "وقف فالطابور بالنيابة",
+    description: "خاصني واحد يوقف ليا فالطابور ديال مصلحة إدارية صباحاً ويبقى يصيفط ليا التحديثات حتى يجي دوري.",
+    budget: 120,
+    city: "الرباط",
+    district: "أكدال",
+    urgency: "today",
+    status: "open",
+    postedDaysAgo: 1,
+    offers: [
+      { by: "ayoub@hirfi.ma", price: 100, durationMinutes: 180, message: "نكون تما قبل الموعد ونبقى نخبرك بالترتيب والوقت المتوقع.", status: "pending", daysAgo: 0 },
+    ],
+  },
+  {
+    customer: "khadija@hirfi.ma",
+    category: "rental",
+    title: "كراء مثقاب وأدوات تركيب",
+    description: "محتاج مثقاب قوي مع رؤوس الحفر ليوم واحد، والتوصيل والاسترجاع يكونو من عين الشق.",
+    budget: 180,
+    city: "الدار البيضاء",
+    district: "عين الشق",
+    urgency: "flexible",
+    status: "open",
+    postedDaysAgo: 2,
+    offers: [
+      { by: "tarik@hirfi.ma", price: 150, durationMinutes: 1440, message: "المثقاب متوفر مع 6 رؤوس، ونقدر نوصلو ونرجعو في نفس العنوان.", status: "pending", daysAgo: 1 },
     ],
   },
 ];
