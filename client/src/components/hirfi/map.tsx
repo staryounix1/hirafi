@@ -1,10 +1,9 @@
-// ── خريطة «حِرْفي» — لوحة SVG مرسومة يدوياً تحاكي خريطة inDrive ────────────────
-// لا خدمة خرائط حقيقية في هذا النطاق (خارج النطاق صراحةً)، لكن الواجهة تحتاج
-// «بانر خريطة» بارزاً كما في inDrive: خلفية رمادية فاتحة، طرق بيضاء، كتل بناء،
-// حديقة وماء، ثم دبابيس متحرّكة ومسار متقطّع بين نقطتين.
+// ── خريطة «حِرْفي» — خريطة ويب تفاعلية مع احتياط بصري ──────────────────────────
+// الخريطة الحقيقية تستعمل بلاطات OpenStreetMap، مع دبابيس ومسار فوقها.
+// تبقى لوحة SVG كاحتياط إذا انقطع تحميل مكتبة الخريطة أو الشبكة.
 //
 // كل الدبابيس تُوضع بنسب مئوية داخل حاوية نسبية، فتتكيّف مع أي مقاس.
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export interface MapPinSpec {
@@ -13,18 +12,88 @@ export interface MapPinSpec {
   x: number;
   /** الإحداثي الرأسي 0–100 (%). */
   y: number;
+  /** إحداثيات حقيقية اختيارية للخريطة التفاعلية. */
+  lat?: number;
+  lng?: number;
   /** حرف يظهر داخل الدبوس (اسم مقدّم الخدمة مثلاً). */
   label?: string;
   kind?: "provider" | "request" | "me";
 }
 
-/** طرق الخريطة — ثابتة كي لا تُعاد رسمها بشكل مختلف في كل تصيير. */
-const H_ROADS = [12, 34, 57, 80, 94];
-const V_ROADS = [9, 28, 46, 68, 88];
-
 /** مسار متقطّع يشبه مسار inDrive بين الالتقاط والوصول. */
 const ROUTE_PATH =
   "M 62 245 C 96 232 118 196 150 188 C 186 179 208 152 232 130 C 258 106 288 96 318 78 C 336 66 352 58 366 46";
+
+type MapCanvasProps = {
+  pins?: MapPinSpec[];
+  showRoute?: boolean;
+  height?: number | string;
+  className?: string;
+  children?: ReactNode;
+  dim?: boolean;
+};
+
+type LeafletLayer = { addTo: (map: LeafletMap) => LeafletLayer };
+type LeafletMap = {
+  setView: (center: [number, number], zoom: number) => LeafletMap;
+  invalidateSize: () => void;
+  remove: () => void;
+};
+type LeafletApi = {
+  map: (container: HTMLElement, options?: Record<string, unknown>) => LeafletMap;
+  tileLayer: (url: string, options?: Record<string, unknown>) => LeafletLayer;
+  marker: (position: [number, number], options?: Record<string, unknown>) => LeafletLayer;
+  divIcon: (options: Record<string, unknown>) => unknown;
+  polyline: (positions: [number, number][], options?: Record<string, unknown>) => LeafletLayer;
+};
+
+declare global {
+  interface Window {
+    L?: LeafletApi;
+  }
+}
+
+const MAP_CENTER: [number, number] = [33.5731, -7.5898];
+const LEAFLET_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+function loadLeaflet(): Promise<LeafletApi> {
+  if (typeof window !== "undefined" && window.L) return Promise.resolve(window.L);
+
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>("script[data-leaflet]");
+    const script = existing ?? document.createElement("script");
+
+    const finish = () => {
+      if (window.L) resolve(window.L);
+      else reject(new Error("Leaflet لم يتم تحميله"));
+    };
+
+    script.addEventListener("load", finish, { once: true });
+    script.addEventListener("error", () => reject(new Error("تعذر تحميل الخريطة")), { once: true });
+
+    if (!existing) {
+      script.dataset.leaflet = "true";
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  });
+}
+
+function pinPosition(pin: MapPinSpec): [number, number] {
+  if (pin.lat !== undefined && pin.lng !== undefined) return [pin.lat, pin.lng];
+  return [MAP_CENTER[0] + (50 - pin.y) * 0.0012, MAP_CENTER[1] + (pin.x - 50) * 0.0016];
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[character] ?? character);
+}
 
 export function MapCanvas({
   pins = [],
@@ -33,27 +102,95 @@ export function MapCanvas({
   className,
   children,
   dim = false,
-}: {
-  pins?: MapPinSpec[];
-  showRoute?: boolean;
-  height?: number | string;
-  className?: string;
-  children?: ReactNode;
-  /** تعتيم خفيف يبرز الشريحة البيضاء فوقه — كما في شاشة عرض السعر. */
-  dim?: boolean;
-}) {
+}: MapCanvasProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const pinSignature = pins.map((pin) => `${pin.id}:${pin.x}:${pin.y}:${pin.lat ?? ""}:${pin.lng ?? ""}`).join("|");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("loading");
+
+    async function renderMap() {
+      try {
+        const L = await loadLeaflet();
+        if (cancelled || !containerRef.current) return;
+
+        const map = L.map(containerRef.current, { zoomControl: false }).setView(MAP_CENTER, 12);
+        L.tileLayer(LEAFLET_TILE_URL, {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+        }).addTo(map);
+
+        pins.forEach((pin) => {
+          const kind = pin.kind === "me" ? "me" : pin.kind === "request" ? "request" : "provider";
+          const label = pin.kind === "me" ? "●" : escapeHtml((pin.label ?? "").trim().charAt(0));
+          const icon = L.divIcon({
+            className: "hirfi-leaflet-pin",
+            html: `<span class="hirfi-map-pin hirfi-map-pin--${kind}">${label}</span>`,
+            iconSize: [38, 44],
+            iconAnchor: [19, 22],
+          });
+          L.marker(pinPosition(pin), { icon }).addTo(map);
+        });
+
+        const start = pins.find((pin) => pin.kind === "me");
+        const end = pins.find((pin) => pin.kind === "request");
+        if (showRoute && start && end) {
+          L.polyline([pinPosition(start), pinPosition(end)], {
+            color: "#111315",
+            weight: 5,
+            opacity: 0.85,
+            dashArray: "9 11",
+          }).addTo(map);
+        }
+
+        mapRef.current = map;
+        setStatus("ready");
+        window.setTimeout(() => map.invalidateSize(), 0);
+      } catch {
+        if (!cancelled) setStatus("error");
+      }
+    }
+
+    void renderMap();
+    return () => {
+      cancelled = true;
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, [pinSignature, showRoute]);
+
   return (
     <div
       className={cn("relative overflow-hidden bg-map-bg", className)}
       style={{ height }}
-      aria-hidden="true"
+      role="application"
+      aria-label="خريطة الحرّافين"
     >
-      <svg
-        viewBox="0 0 400 300"
-        preserveAspectRatio="none"
-        className="absolute inset-0 size-full"
-      >
-        {/* الكتل العمرانية */}
+      {status !== "ready" ? <StaticMapFallback pins={pins} showRoute={showRoute} height="100%" /> : null}
+      <div ref={containerRef} className={cn("hirfi-leaflet absolute inset-0", status !== "ready" && "opacity-0")} />
+      {dim ? <div className="absolute inset-0 z-[400] bg-foreground/10" /> : null}
+      {status === "loading" ? (
+        <div className="absolute inset-x-0 top-3 z-[500] text-center text-[11px] font-bold text-muted-foreground">
+          جارٍ تحميل الخريطة…
+        </div>
+      ) : null}
+
+      {children}
+    </div>
+  );
+}
+
+function StaticMapFallback({
+  pins = [],
+  showRoute = false,
+  height = 260,
+}: Pick<MapCanvasProps, "pins" | "showRoute" | "height">) {
+  return (
+    <div className="absolute inset-0 bg-map-bg" style={{ height }} aria-hidden="true">
+      <svg viewBox="0 0 400 300" preserveAspectRatio="none" className="absolute inset-0 size-full">
         <g fill="var(--map-block)">
           <rect x="14" y="16" width="90" height="60" rx="7" />
           <rect x="118" y="16" width="70" height="60" rx="7" />
@@ -69,68 +206,32 @@ export function MapCanvas({
           <rect x="14" y="244" width="150" height="46" rx="7" />
           <rect x="178" y="244" width="208" height="46" rx="7" />
         </g>
-
-        {/* حديقة وماء — لمسة واحدة فقط لكل منهما كي لا تصير الخريطة ملوّنة */}
         <rect x="292" y="196" width="94" height="34" rx="10" fill="var(--map-park)" />
         <ellipse cx="66" cy="160" rx="52" ry="24" fill="var(--map-water)" opacity="0.75" />
-
-        {/* الطرق: عريضة بيضاء بلا حدود — نمط خرائط inDrive */}
         <g stroke="var(--map-road)" strokeLinecap="round">
-          {H_ROADS.map((y) => (
+          {[12, 34, 57, 80, 94].map((y) => (
             <line key={`h${y}`} x1="-10" y1={y * 3} x2="410" y2={y * 3} strokeWidth="13" />
           ))}
-          {V_ROADS.map((x) => (
+          {[9, 28, 46, 68, 88].map((x) => (
             <line key={`v${x}`} x1={x * 4} y1="-10" x2={x * 4} y2="310" strokeWidth="11" />
           ))}
-          {/* طريق رئيسي قطري — يكسر الشبكة المنتظمة */}
           <line x1="-10" y1="300" x2="410" y2="120" strokeWidth="16" />
         </g>
-
-        {/* خطوط رقيقة داخل الطرق */}
         <g stroke="var(--map-line)" strokeWidth="0.8" opacity="0.55">
-          {H_ROADS.map((y) => (
-            <line
-              key={`hl${y}`}
-              x1="0"
-              y1={y * 3}
-              x2="400"
-              y2={y * 3}
-              strokeDasharray="7 9"
-            />
+          {[12, 34, 57, 80, 94].map((y) => (
+            <line key={`hl${y}`} x1="0" y1={y * 3} x2="400" y2={y * 3} strokeDasharray="7 9" />
           ))}
         </g>
-
-        {/* المسار بين الطرفين */}
         {showRoute ? (
           <>
-            <path
-              d={ROUTE_PATH}
-              fill="none"
-              stroke="var(--foreground)"
-              strokeWidth="5"
-              strokeLinecap="round"
-              opacity="0.85"
-            />
-            <path
-              d={ROUTE_PATH}
-              fill="none"
-              stroke="var(--map-road)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="9 11"
-            />
+            <path d={ROUTE_PATH} fill="none" stroke="var(--foreground)" strokeWidth="5" strokeLinecap="round" opacity="0.85" />
+            <path d={ROUTE_PATH} fill="none" stroke="var(--map-road)" strokeWidth="2" strokeLinecap="round" strokeDasharray="9 11" />
           </>
         ) : null}
       </svg>
-
-      {dim ? <div className="absolute inset-0 bg-foreground/10" /> : null}
-
-      {/* الدبابيس */}
-      {pins.map((p) => (
-        <Pin key={p.id} pin={p} />
+      {pins.map((pin) => (
+        <Pin key={pin.id} pin={pin} />
       ))}
-
-      {children}
     </div>
   );
 }
