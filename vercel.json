@@ -3,10 +3,16 @@
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
+  "outputDirectory": "dist/public",
   "functions": {
     "api/index.js": {
       "includeFiles": "dist/public/**"
     }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index.js" }]
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index.js" },
+    { "source": "/trpc/:path*", "destination": "/api/index.js" },
+    { "source": "/app-storage/:path*", "destination": "/api/index.js" },
+    { "source": "/:path*", "destination": "/index.html" }
+  ]
 }
