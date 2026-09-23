@@ -2,21 +2,17 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointer
 import { Link } from "wouter";
 import { KeyRound, ListChecks, ShoppingBag, Wrench } from "lucide-react";
 import { DragHandle } from "@/components/hirfi/map";
-import { ErrorState } from "@/components/hirfi/primitives";
-import { useCategories } from "@/lib/hooks";
-import { categoryIcon, errorMessage } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const QUICK_SERVICES = [
-  { slug: "handyman", title: "حِرفة قريبة", icon: Wrench },
-  { slug: "grocery", title: "قضاء الأغراض", icon: ShoppingBag },
-  { slug: "queue", title: "الوقوف فالطابور", icon: ListChecks },
-  { slug: "rental", title: "الكراء", icon: KeyRound },
+  { slug: "handyman", title: "حِرفة قريبة", description: "حرفي يجي لعندك", icon: Wrench },
+  { slug: "grocery", title: "قضاء الأغراض", description: "شراء وتوصيل", icon: ShoppingBag },
+  { slug: "queue", title: "الوقوف فالطابور", description: "نقضي الإجراء بلا بيك", icon: ListChecks },
+  { slug: "rental", title: "الكراء", description: "أداة أو معدة", icon: KeyRound },
 ];
 
 export function ServicePickerSheet({ className }: { className?: string }) {
-  const categories = useCategories();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const startY = useRef<number | null>(null);
 
   function startDrag(event: ReactPointerEvent<HTMLButtonElement>) {
@@ -78,56 +74,27 @@ export function ServicePickerSheet({ className }: { className?: string }) {
           <h2 className="text-[19px] font-black">شنو بغيتي اليوم؟</h2>
           <p className="mt-1 text-[12px] text-muted-foreground">اضغط هنا باش تشوف الخدمات</p>
         </div>
-        <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">
-          {categories.data?.length ?? 15} خدمة
-        </span>
+        <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">خدمات قريبة</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 pt-3">
+      <div className="grid grid-cols-2 gap-2.5 pt-3">
         {QUICK_SERVICES.map((service) => {
           const Icon = service.icon;
           return (
             <Link
               key={service.slug}
               href={`/requests/new?service=${service.slug}`}
-              className="grid min-h-20 place-items-center rounded-2xl bg-brand/12 px-1 py-2 text-center transition-transform active:scale-[0.97]"
+              className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
             >
-              <span className="grid size-8 place-items-center rounded-full bg-brand text-brand-ink">
-                <Icon className="size-4.5" />
+              <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                <Icon className="size-5" />
               </span>
-              <span className="mt-1 text-[10px] leading-tight font-black">{service.title}</span>
+              <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
+              <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
             </Link>
           );
         })}
       </div>
-
-      {categories.isLoading ? (
-        <div className="grid grid-cols-3 gap-2.5 pt-3">
-          {Array.from({ length: 15 }).map((_, index) => (
-            <div key={index} className="hirfi-skeleton min-h-28 rounded-[2.25rem]" />
-          ))}
-        </div>
-      ) : categories.isError ? (
-        <div className="pt-3">
-          <ErrorState message={errorMessage(categories.error)} onRetry={() => void categories.refetch()} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-2.5 pt-3">
-          {(categories.data ?? []).map((category) => {
-            const Icon = categoryIcon(category.icon);
-            return (
-              <Link
-                key={category.id}
-                href={`/requests/new?service=${category.slug}`}
-                className="grid min-h-28 place-items-center rounded-[2.25rem] bg-muted/65 px-2 py-4 text-center transition-transform active:scale-[0.98]"
-              >
-                <Icon className="size-8 stroke-[1.8]" />
-                <span className="mt-2 text-[13px] leading-tight font-black">{category.nameAr}</span>
-              </Link>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
