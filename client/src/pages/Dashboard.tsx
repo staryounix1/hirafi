@@ -74,7 +74,7 @@ export default function Dashboard() {
 function CustomerDashboard() {
   const { user } = useAuth();
   const q = trpc.dashboard.customer.useQuery();
-  const [sheetOpen, setSheetOpen] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const sheetStartY = useRef<number | null>(null);
 
   if (q.isLoading) {
