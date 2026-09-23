@@ -60,7 +60,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-stage min-h-svh">
-      <div className="app-frame">
+      <div className="app-frame shell-frame">
         {/* الشريط العلوي — رمز الحرف في مربّع ليموني، وبدونه لا يُقرأ كهوية inDrive. */}
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md">
           <Link href="/dashboard" className="flex items-center gap-2.5">
@@ -101,7 +101,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">{children}</main>
 
         {/* التنقّل السفلي — sticky داخل العمود فيبقى مرئياً ويبقى داخل الإطار. */}
         <nav className="safe-b sticky bottom-0 z-40 shrink-0 border-t border-border bg-background/95 backdrop-blur-md">

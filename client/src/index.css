@@ -190,6 +190,10 @@
     @apply relative mx-auto flex w-full max-w-[460px] flex-col bg-background;
     min-height: 100svh;
   }
+  .shell-frame {
+    height: 100svh;
+    overflow: hidden;
+  }
   @media (min-width: 640px) {
     .app-frame {
       min-height: 100svh;
