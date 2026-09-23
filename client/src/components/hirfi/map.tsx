@@ -232,7 +232,7 @@ export function MapCanvas({
         type="button"
         onClick={locateUser}
         disabled={isLocating}
-        className="absolute start-3 top-16 z-[500] inline-flex h-10 items-center gap-1.5 rounded-full bg-success px-3 text-xs font-black text-white shadow-lg transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-70"
+        className="absolute start-3 top-16 z-[500] inline-flex h-10 items-center gap-1.5 rounded-full bg-brand px-3 text-xs font-black text-brand-ink shadow-lg transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-70"
         aria-label="موقعي"
       >
         <LocateFixed className={cn("size-4", isLocating && "animate-pulse")} aria-hidden="true" />
