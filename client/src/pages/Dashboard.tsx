@@ -14,6 +14,10 @@ import {
   Bell,
   Hourglass,
   ArrowLeft,
+  KeyRound,
+  ListChecks,
+  ShoppingBag,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
@@ -41,6 +45,13 @@ const PIN_SPOTS = [
   { x: 66, y: 63 },
 ];
 const ME_PIN: MapPinSpec = { id: "me", x: 22, y: 82, kind: "me" };
+
+const SERVICE_MODES = [
+  { slug: "handyman", title: "حِرفة قريبة", description: "حرفي يجي لعندك", icon: Wrench },
+  { slug: "grocery", title: "قضاء الأغراض", description: "شراء وتوصيل", icon: ShoppingBag },
+  { slug: "queue", title: "الوقوف فالطابور", description: "نقضي الإجراء بلا بيك", icon: ListChecks },
+  { slug: "rental", title: "الكراء", description: "أداة أو معدة", icon: KeyRound },
+];
 
 export default function Dashboard() {
   const { role, isLoading: roleLoading } = useAppRole();
@@ -215,6 +226,34 @@ function CustomerDashboard() {
               </div>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* اختيار الخدمة يبقى متاحاً من لوحة الزبون، لا من الصفحة التعريفية فقط. */}
+      <section className="px-4 pt-4">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black">شنو بغيتي اليوم؟</h2>
+            <p className="mt-1 text-[12px] text-muted-foreground">اختار نوع الخدمة وبدأ طلبك.</p>
+          </div>
+          <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">خدمات قريبة</span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          {SERVICE_MODES.map((service) => (
+            <Link
+              key={service.slug}
+              href={`/requests/new?service=${service.slug}`}
+              className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
+              style={{ boxShadow: "var(--shadow-card)" }}
+            >
+              <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                <service.icon className="size-5" />
+              </span>
+              <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
+              <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
+            </Link>
+          ))}
         </div>
       </section>
 
