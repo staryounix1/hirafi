@@ -100,7 +100,7 @@ function CustomerDashboard() {
   return (
     <div className="grid">
       {/* الخريطة + نافذة الخدمات القابلة للسحب */}
-      <section className="relative h-[min(70svh,620px)] overflow-hidden">
+      <section className="relative h-[calc(100svh-7.25rem)] overflow-hidden">
         <MapCanvas pins={pins} showRoute={hasActiveRequest} height="100%" />
 
         <div className="absolute inset-x-4 top-3 flex items-center justify-between gap-2">
