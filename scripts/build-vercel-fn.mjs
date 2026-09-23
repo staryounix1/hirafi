@@ -1,4 +1,5 @@
-// Bundle the Vercel handler before deployment so Vercel does not need to
+// The generated file is checked in because Vercel discovers function paths
+// before running the build. Bundle the handler so Vercel does not need to
 // transpile the app's extensionless TypeScript imports itself.
 import * as esbuild from "esbuild";
 
