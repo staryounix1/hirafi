@@ -46,6 +46,7 @@ export function ServicePickerSheet({ className }: { className?: string }) {
     <div
       className={cn(
         "sheet absolute inset-x-0 bottom-0 z-20 max-h-full overflow-y-auto px-3.5 pb-5 pt-3.5 transition-transform duration-300 ease-out",
+        open && "min-h-full",
         className,
       )}
       style={{ transform: open ? "translateY(0)" : "translateY(calc(100% - 250px))" }}
