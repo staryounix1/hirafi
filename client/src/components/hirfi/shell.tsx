@@ -154,6 +154,8 @@ export function Protected({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!user) return <Redirect to={`/login?next=${encodeURIComponent(path)}`} />;
+  const destination =
+    typeof window === "undefined" ? path : `${path}${window.location.search}`;
+  if (!user) return <Redirect to={`/login?next=${encodeURIComponent(destination)}`} />;
   return <Shell>{children}</Shell>;
 }
