@@ -110,6 +110,7 @@ export function MapCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const locationMarkerRef = useRef<LeafletLayer | null>(null);
+  const autoLocationRequestedRef = useRef(false);
   const pinSignature = pins.map((pin) => `${pin.id}:${pin.x}:${pin.y}:${pin.lat ?? ""}:${pin.lng ?? ""}`).join("|");
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [isLocating, setIsLocating] = useState(false);
@@ -195,9 +196,13 @@ export function MapCanvas({
           }).addTo(map);
         }
 
-      mapRef.current = map;
-      locationMarkerRef.current = null;
-      setStatus("ready");
+        mapRef.current = map;
+        locationMarkerRef.current = null;
+        setStatus("ready");
+        if (!autoLocationRequestedRef.current) {
+          autoLocationRequestedRef.current = true;
+          locateUser();
+        }
         window.setTimeout(() => map.invalidateSize(), 0);
       } catch {
         if (!cancelled) setStatus("error");
