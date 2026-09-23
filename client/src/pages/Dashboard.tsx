@@ -1,9 +1,9 @@
 // ── لوحة التحكم: خريطة + شريحة سفلية عائمة — اللوحة تتبدّل بحسب الدور ───────────────
 // الشكل مقصود ليطابق شاشة inDrive الرئيسية: الطلب النشط أو الطلبات القريبة على الخريطة،
 // ثم شريحة بيضاء تحمل الحالة والإجراء التالي. الأرقام ضخمة والزرّ الحبّة واحد واضح.
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Link } from "wouter";
 import {
-  ClipboardList,
   CircleDollarSign,
   Wallet,
   Search,
@@ -74,6 +74,8 @@ export default function Dashboard() {
 function CustomerDashboard() {
   const { user } = useAuth();
   const q = trpc.dashboard.customer.useQuery();
+  const [sheetOpen, setSheetOpen] = useState(true);
+  const sheetStartY = useRef<number | null>(null);
 
   if (q.isLoading) {
     return (
@@ -116,11 +118,26 @@ function CustomerDashboard() {
 
   const activeMeta = active ? requestStatusMeta(active.status) : null;
 
+  function startSheetDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    sheetStartY.current = event.clientY;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function finishSheetDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const startY = sheetStartY.current;
+    if (startY === null) return;
+    const delta = event.clientY - startY;
+    sheetStartY.current = null;
+    if (delta < -32) setSheetOpen(true);
+    else if (delta > 32) setSheetOpen(false);
+    else setSheetOpen((open) => !open);
+  }
+
   return (
     <div className="grid">
       {/* الخريطة + الشريحة */}
-      <section className="relative">
-        <MapCanvas pins={pins} showRoute={!!active} height="34svh" />
+      <section className="relative h-[min(70svh,620px)]">
+        <MapCanvas pins={pins} showRoute={!!active} height="100%" />
 
         <div className="absolute inset-x-4 top-3 flex items-center justify-between gap-2">
           <LiveDot
@@ -134,8 +151,23 @@ function CustomerDashboard() {
           ) : null}
         </div>
 
-        <div className="sheet relative z-10 -mt-7 px-4 pt-3 pb-5">
-          <DragHandle className="mb-4" />
+        <div
+          className="sheet absolute inset-x-0 bottom-0 z-10 max-h-full overflow-y-auto px-4 pt-3 pb-5 transition-transform duration-300 ease-out"
+          style={{ transform: sheetOpen ? "translateY(0)" : "translateY(calc(100% - 96px))" }}
+        >
+          <button
+            type="button"
+            aria-label={sheetOpen ? "طي لوحة التحكم" : "فتح لوحة التحكم"}
+            aria-expanded={sheetOpen}
+            className="mb-4 flex w-full cursor-grab touch-none justify-center active:cursor-grabbing"
+            onPointerDown={startSheetDrag}
+            onPointerUp={finishSheetDrag}
+            onPointerCancel={() => {
+              sheetStartY.current = null;
+            }}
+          >
+            <DragHandle />
+          </button>
 
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -257,39 +289,6 @@ function CustomerDashboard() {
         </div>
       </section>
 
-      {/* الطلبات الأخيرة */}
-      <section className="grid gap-3 px-4 pt-4 pb-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 text-[17px] font-black">
-            <ClipboardList className="size-4.5 text-brand-dark" />
-            أحدث طلباتي
-          </h2>
-          {recent.length > 0 ? (
-            <Button asChild variant="ghost" size="sm" className="gap-1">
-              <Link href="/requests">
-                الكل
-                <ArrowLeft className="size-3.5" />
-              </Link>
-            </Button>
-          ) : null}
-        </div>
-
-        {recent.length === 0 ? (
-          <EmptyState
-            icon={ClipboardList}
-            title="لا طلبات بعد"
-            description="انشر أول طلب لك: صف المشكلة أو الخدمة، حدّد ميزانيتك المقترحة وموقعك، وسيبدأ الحرّافون القريبون بتقديم عروضهم."
-            actionLabel="انشر أول طلب"
-            actionHref="/requests/new"
-          />
-        ) : (
-          <div className="grid gap-3">
-            {recent.map((r) => (
-              <RequestCard key={r.id} request={r} href={`/requests/${r.id}`} />
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 }
