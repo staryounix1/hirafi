@@ -209,6 +209,11 @@
     z-index: 0;
     font-family: inherit;
   }
+  .hirfi-leaflet .leaflet-tile {
+    width: 256px !important;
+    height: 256px !important;
+    max-width: none !important;
+  }
   .hirfi-leaflet .leaflet-control-attribution {
     font-size: 9px;
     direction: ltr;
