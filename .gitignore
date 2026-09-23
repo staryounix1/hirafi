@@ -33,6 +33,7 @@ Thumbs.db
 .vscode/
 *.local
 tmp/
+api/index.js
 
 # ===== مخرجات Vercel =====
 .vercel/
