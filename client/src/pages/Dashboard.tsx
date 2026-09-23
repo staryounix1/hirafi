@@ -1,17 +1,13 @@
-// ── لوحة التحكم: خريطة + شريحة سفلية عائمة — اللوحة تتبدّل بحسب الدور ───────────────
-// الشكل مقصود ليطابق شاشة inDrive الرئيسية: الطلب النشط أو الطلبات القريبة على الخريطة،
-// ثم شريحة بيضاء تحمل الحالة والإجراء التالي. الأرقام ضخمة والزرّ الحبّة واحد واضح.
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+// ── لوحة التحكم: خريطة واختيارات الخدمة — اللوحة تتبدّل بحسب الدور ───────────────
+// الشكل مقصود ليطابق شاشة inDrive الرئيسية: الطلبات القريبة على الخريطة،
+// ثم اختيارات واضحة للخدمة التالية.
 import { Link } from "wouter";
 import {
   CircleDollarSign,
-  Wallet,
   Search,
   Briefcase,
   Send,
-  Plus,
   Star,
-  Bell,
   Hourglass,
   ArrowLeft,
   KeyRound,
@@ -32,9 +28,8 @@ import {
 } from "@/components/hirfi/primitives";
 import { RequestCard, type RequestCardData } from "@/components/hirfi/cards";
 import { trpc } from "@/_core/trpc";
-import { useAuth } from "@/_core/useAuth";
 import { useAppRole } from "@/lib/hooks";
-import { countAr, errorMessage, formatMAD, madNumber, requestStatusMeta } from "@/lib/format";
+import { countAr, errorMessage, madNumber, requestStatusMeta } from "@/lib/format";
 
 /** مواضع ثابتة للدبابيس — ثابتة كي لا ترتجف الخريطة في كل تصيير. */
 const PIN_SPOTS = [
@@ -72,10 +67,7 @@ export default function Dashboard() {
 
 // ── لوحة الزبون ──────────────────────────────────────────────────────────────────
 function CustomerDashboard() {
-  const { user } = useAuth();
   const q = trpc.dashboard.customer.useQuery();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const sheetStartY = useRef<number | null>(null);
 
   if (q.isLoading) {
     return (
@@ -99,8 +91,7 @@ function CustomerDashboard() {
 
   const c = q.data?.counts;
   const recent = (q.data?.recent ?? []) as RequestCardData[];
-  const active = recent.find((r) => r.status !== "completed" && r.status !== "cancelled");
-  const firstName = (user?.name ?? "").split(" ")[0];
+  const hasActiveRequest = recent.some((r) => r.status !== "completed" && r.status !== "cancelled");
 
   const pins: MapPinSpec[] = [
     ME_PIN,
@@ -116,28 +107,11 @@ function CustomerDashboard() {
       })),
   ];
 
-  const activeMeta = active ? requestStatusMeta(active.status) : null;
-
-  function startSheetDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    sheetStartY.current = event.clientY;
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function finishSheetDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    const startY = sheetStartY.current;
-    if (startY === null) return;
-    const delta = event.clientY - startY;
-    sheetStartY.current = null;
-    if (delta < -32) setSheetOpen(true);
-    else if (delta > 32) setSheetOpen(false);
-    else setSheetOpen((open) => !open);
-  }
-
   return (
     <div className="grid">
-      {/* الخريطة + الشريحة */}
-      <section className="relative h-[min(70svh,620px)]">
-        <MapCanvas pins={pins} showRoute={!!active} height="100%" />
+      {/* الخريطة — بدون لوحة الحالة القديمة */}
+      <section className="relative h-[min(48svh,430px)]">
+        <MapCanvas pins={pins} showRoute={hasActiveRequest} height="100%" />
 
         <div className="absolute inset-x-4 top-3 flex items-center justify-between gap-2">
           <LiveDot
@@ -151,114 +125,6 @@ function CustomerDashboard() {
           ) : null}
         </div>
 
-        <div
-          className="sheet absolute inset-x-0 bottom-0 z-10 max-h-full overflow-y-auto px-4 pt-3 pb-5 transition-transform duration-300 ease-out"
-          style={{ transform: sheetOpen ? "translateY(0)" : "translateY(calc(100% - 96px))" }}
-        >
-          <button
-            type="button"
-            aria-label={sheetOpen ? "طي لوحة التحكم" : "فتح لوحة التحكم"}
-            aria-expanded={sheetOpen}
-            className="mb-4 flex w-full cursor-grab touch-none justify-center active:cursor-grabbing"
-            onPointerDown={startSheetDrag}
-            onPointerUp={finishSheetDrag}
-            onPointerCancel={() => {
-              sheetStartY.current = null;
-            }}
-          >
-            <DragHandle />
-          </button>
-
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-[22px] leading-tight font-black">
-                {firstName ? `أهلاً ${firstName}` : "لوحة الزبون"}
-              </h1>
-              <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">
-                انشر طلبك، قارن عروض الحرّافين، وتابع التنفيذ حتى التقييم.
-              </p>
-            </div>
-            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand font-display text-lg font-black text-brand-ink">
-              {(firstName || "ز").charAt(0)}
-            </span>
-          </div>
-
-          {/* الطلب النشط — البطاقة الأهم في الشريحة */}
-          {active && activeMeta ? (
-            <Link
-              href={`/requests/${active.id}`}
-              className="mt-4 flex items-center gap-3 rounded-3xl bg-muted/70 p-3.5 transition-colors active:bg-muted"
-            >
-              <div className="min-w-0 flex-1">
-                <Badge tone={activeMeta.tone}>{activeMeta.label}</Badge>
-                <h2 className="mt-1.5 truncate text-[15px] font-black">{active.title}</h2>
-                <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                  {active.categoryName} · {active.city}
-                  {active.district ? ` — ${active.district}` : ""}
-                </p>
-              </div>
-              <div className="shrink-0 text-end">
-                <div className="text-price text-[24px] leading-none">
-                  {madNumber(active.agreedAmount ?? active.budgetAmount)}
-                </div>
-                <div className="mt-1 text-[10.5px] font-bold text-muted-foreground">
-                  {active.agreedAmount ? "درهم — السعر المتفق عليه" : "درهم — سعرك المقترح"}
-                </div>
-              </div>
-            </Link>
-          ) : (
-            <p className="mt-4 rounded-3xl bg-muted/70 px-3.5 py-4 text-center text-[12.5px] text-muted-foreground">
-              لا طلب نشط حالياً — انشر طلباً ليبدأ الحرّافون القريبون بتقديم عروضهم.
-            </p>
-          )}
-
-          {/* إحصاءات سريعة بثلاثة أرقام كبيرة */}
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {[
-              { label: "منشورة", value: c?.open ?? 0 },
-              { label: "قيد التنفيذ", value: c?.active ?? 0 },
-              { label: "منتهية", value: c?.completed ?? 0 },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl bg-muted/70 px-3 py-2.5 text-center">
-                <div className="text-price text-[22px] leading-none">{s.value}</div>
-                <div className="mt-1 text-[10.5px] font-bold text-muted-foreground">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <Button asChild size="lg" className="mt-4 w-full gap-2">
-            <Link href="/requests/new">
-              <Plus className="size-5" />
-              انشر طلباً جديداً
-            </Link>
-          </Button>
-
-          {/* روابط سريعة */}
-          <div className="mt-2.5 grid grid-cols-2 gap-2">
-            <Link
-              href="/wallet"
-              className="flex items-center gap-2 rounded-2xl bg-muted/70 px-3 py-2.5 transition-colors active:bg-muted"
-            >
-              <Wallet className="size-4 text-teal" />
-              <div className="min-w-0">
-                <div className="text-[11px] font-bold text-muted-foreground">المحفظة</div>
-                <div className="truncate text-[12.5px] font-black">{formatMAD(c?.walletBalance ?? 0)}</div>
-              </div>
-            </Link>
-            <Link
-              href="/notifications"
-              className="flex items-center gap-2 rounded-2xl bg-muted/70 px-3 py-2.5 transition-colors active:bg-muted"
-            >
-              <Bell className="size-4 text-warn" />
-              <div className="min-w-0">
-                <div className="text-[11px] font-bold text-muted-foreground">الإشعارات</div>
-                <div className="truncate text-[12.5px] font-black">
-                  {c?.unread ?? 0} غير مقروء
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
       </section>
 
       {/* اختيار الخدمة يبقى متاحاً من لوحة الزبون، لا من الصفحة التعريفية فقط. */}
