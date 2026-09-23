@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
+  "framework": "hono",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm build:vercel"
+  "buildCommand": "pnpm build",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": ["dist/public/**"]
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }

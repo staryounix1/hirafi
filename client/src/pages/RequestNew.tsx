@@ -32,6 +32,34 @@ const URGENCY_LABEL: Record<string, string> = {
   urgent: "عاجل جداً",
 };
 
+/** إرشادات قصيرة حسب نوع الخدمة حتى لا تبدو كل الطلبات كأنها أعطال منزلية. */
+const SERVICE_GUIDANCE: Record<
+  string,
+  { heading: string; description: string; title: string; details: string; location: string }
+> = {
+  grocery: {
+    heading: "شنو بغيتي نشريو؟",
+    description: "حدد اللائحة، السوق أو المحل، وطريقة تأكيد المشتريات.",
+    title: "مثال: قفة أسبوعية من سوق السلام",
+    details: "كتب اللائحة والكميات، واش بغيتي صورة الفاتورة قبل الأداء، وفين يكون التوصيل؟",
+    location: "المكان اللي غادي يتشرا منو والحي ديال التوصيل",
+  },
+  queue: {
+    heading: "شنو الإجراء اللي خاصك؟",
+    description: "حدد المصلحة، وقت الحضور، وكيفاش نبقاو نخبرّوك بالدور.",
+    title: "مثال: الوقوف فالطابور فمصلحة إدارية",
+    details: "كتب اسم المصلحة والوثائق المطلوبة والوقت اللي خاص مقدم الخدمة يكون فيه.",
+    location: "موقع المصلحة أو المكان اللي غادي يتوقف فيه مقدم الخدمة",
+  },
+  rental: {
+    heading: "شنو بغيتي تكري؟",
+    description: "حدد الأداة أو المعدة، المدة، والتوصيل أو الاسترجاع.",
+    title: "مثال: كراء مثقاب ليوم واحد",
+    details: "كتب النوع والمدة والاستعمال، وواش محتاج التوصيل أو التركيب مع الكراء.",
+    location: "مكان التسليم والاسترجاع أو مكان استعمال المعدة",
+  },
+};
+
 /** زيادات سريعة بالميزانية — كما يرفع راكب inDrive سعره بضغطة. */
 const QUICK_STEPS = [50, 100, 200];
 
@@ -56,6 +84,21 @@ export default function RequestNew() {
   const districts = DISTRICTS_BY_CITY[city] ?? [];
   const budgetNum = Number(budget);
   const selectedCat = (cats.data ?? []).find((c) => c.id === categoryId);
+  const guidance = selectedCat
+    ? (SERVICE_GUIDANCE[selectedCat.slug] ?? {
+        heading: "اشرح مشكلتك",
+        description: "صف الخدمة بوضوح باش توصلك عروض مناسبة.",
+        title: "مثال: تسريب ماء تحت حوض المطبخ",
+        details: "صف المطلوب، المواد المتوفرة، وما الأفضل تجنّبه.",
+        location: "المدينة والحي يكفيان لحساب المسافة",
+      })
+    : {
+        heading: "اشرح مشكلتك",
+        description: "اختر الفئة أولاً ثم اكتب التفاصيل.",
+        title: "مثال: تسريب ماء تحت حوض المطبخ",
+        details: "صف المطلوب، المواد المتوفرة، وما الأفضل تجنّبه.",
+        location: "المدينة والحي يكفيان لحساب المسافة",
+      };
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -271,18 +314,18 @@ export default function RequestNew() {
 
         {/* 3 — الوصف */}
         <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-          <SectionHeading title="اشرح مشكلتك" />
+          <SectionHeading title={guidance.heading} description={guidance.description} />
           <Field label="العنوان" hint="سطر واحد مختصر يجذب انتباه الحرّافين" required error={errors.title}>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={120}
-              placeholder="مثال: تسريب ماء تحت حوض المطبخ"
+              placeholder={guidance.title}
             />
           </Field>
           <Field
             label="التفاصيل"
-            hint="صف العطل، هل لديك المواد؟ وما الأفضل تجنّبه؟"
+            hint={guidance.details}
             required
             error={errors.description}
           >
@@ -291,7 +334,7 @@ export default function RequestNew() {
               onChange={(e) => setDescription(e.target.value)}
               maxLength={2000}
               className="min-h-28"
-              placeholder="مثال: التسريب يظهر عند تشغيل الماء الساخن. الحوض من النوع العادي ولديّ السيفون الجديد…"
+              placeholder={guidance.details}
             />
           </Field>
 
@@ -337,7 +380,7 @@ export default function RequestNew() {
         <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
           <SectionHeading
             title="أين ومتى؟"
-            description="المدينة والحي يكفيان لحساب المسافة (قريب / متوسط / بعيد)."
+            description={guidance.location}
           />
 
           <div className="grid gap-1.5">

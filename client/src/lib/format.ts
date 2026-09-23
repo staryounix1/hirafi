@@ -13,6 +13,9 @@ import {
   Camera,
   GraduationCap,
   Settings,
+  ShoppingBasket,
+  ListChecks,
+  KeyRound,
   CircleDollarSign,
   CheckCircle2,
   Hourglass,
@@ -36,6 +39,9 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Camera,
   GraduationCap,
   Settings,
+  ShoppingBasket,
+  ListChecks,
+  KeyRound,
 };
 
 export function categoryIcon(name: string | null | undefined): LucideIcon {

@@ -15,7 +15,7 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "build:vercel": "pnpm build:web && pnpm build:api && node scripts/build-vercel-output.mjs"
+    "build:vercel": "pnpm build"
   },
   "dependencies": {
     "@hono/node-server": "2.0.11",
