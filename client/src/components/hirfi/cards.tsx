@@ -81,7 +81,7 @@ export function RequestCard({
 
   return (
     <article
-      className="rounded-3xl bg-card p-4"
+      className="min-w-0 rounded-3xl bg-card p-4"
       style={{ boxShadow: "var(--shadow-card)" }}
     >
       <Link href={href} className="block active:opacity-95">
