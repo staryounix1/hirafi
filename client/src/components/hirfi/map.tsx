@@ -4,6 +4,7 @@
 //
 // كل الدبابيس تُوضع بنسب مئوية داخل حاوية نسبية، فتتكيّف مع أي مقاس.
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface MapPinSpec {
@@ -33,7 +34,10 @@ type MapCanvasProps = {
   dim?: boolean;
 };
 
-type LeafletLayer = { addTo: (map: LeafletMap) => LeafletLayer };
+type LeafletLayer = {
+  addTo: (map: LeafletMap) => LeafletLayer;
+  setLatLng?: (position: [number, number]) => LeafletLayer;
+};
 type LeafletMap = {
   setView: (center: [number, number], zoom: number) => LeafletMap;
   invalidateSize: () => void;
@@ -105,8 +109,53 @@ export function MapCanvas({
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+  const locationMarkerRef = useRef<LeafletLayer | null>(null);
   const pinSignature = pins.map((pin) => `${pin.id}:${pin.x}:${pin.y}:${pin.lat ?? ""}:${pin.lng ?? ""}`).join("|");
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  function locateUser() {
+    if (!navigator.geolocation) {
+      setLocationError("الموقع غير متاح فهاد الجهاز");
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const map = mapRef.current;
+        const L = window.L;
+        if (!map || !L) {
+          setLocationError("الخريطة مازال كتوجد");
+          setIsLocating(false);
+          return;
+        }
+
+        const position: [number, number] = [coords.latitude, coords.longitude];
+        if (locationMarkerRef.current) {
+          locationMarkerRef.current.setLatLng?.(position);
+        } else {
+          const icon = L.divIcon({
+            className: "hirfi-leaflet-pin",
+            html: '<span class="hirfi-map-pin hirfi-map-pin--location">●</span>',
+            iconSize: [38, 44],
+            iconAnchor: [19, 22],
+          });
+          locationMarkerRef.current = L.marker(position, { icon }).addTo(map);
+        }
+
+        map.setView(position, 15);
+        setIsLocating(false);
+      },
+      () => {
+        setLocationError("سمح لينا بالوصول لموقعك باش نحددو بلاصتك");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -146,8 +195,9 @@ export function MapCanvas({
           }).addTo(map);
         }
 
-        mapRef.current = map;
-        setStatus("ready");
+      mapRef.current = map;
+      locationMarkerRef.current = null;
+      setStatus("ready");
         window.setTimeout(() => map.invalidateSize(), 0);
       } catch {
         if (!cancelled) setStatus("error");
@@ -159,6 +209,7 @@ export function MapCanvas({
       cancelled = true;
       mapRef.current?.remove();
       mapRef.current = null;
+      locationMarkerRef.current = null;
     };
   }, [pinSignature, showRoute]);
 
@@ -175,6 +226,21 @@ export function MapCanvas({
       {status === "loading" ? (
         <div className="absolute inset-x-0 top-3 z-[500] text-center text-[11px] font-bold text-muted-foreground">
           جارٍ تحميل الخريطة…
+        </div>
+      ) : null}
+      <button
+        type="button"
+        onClick={locateUser}
+        disabled={isLocating}
+        className="absolute start-3 top-16 z-[500] inline-flex h-10 items-center gap-1.5 rounded-full bg-success px-3 text-xs font-black text-white shadow-lg transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-70"
+        aria-label="موقعي"
+      >
+        <LocateFixed className={cn("size-4", isLocating && "animate-pulse")} aria-hidden="true" />
+        <span>موقعي</span>
+      </button>
+      {locationError ? (
+        <div className="absolute start-3 top-[7.25rem] z-[500] max-w-[210px] rounded-xl bg-card px-3 py-2 text-[10px] font-bold text-destructive shadow-lg">
+          {locationError}
         </div>
       ) : null}
 

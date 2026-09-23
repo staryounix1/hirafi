@@ -238,6 +238,10 @@
     background: var(--foreground);
     color: var(--background);
   }
+  .hirfi-map-pin--location {
+    background: var(--success);
+    color: white;
+  }
   .hirfi-map-pin--request,
   .hirfi-map-pin--provider {
     background: var(--brand);
