@@ -350,7 +350,7 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-start justify-between gap-3 px-4 pt-5">
+    <header className="flex w-full min-w-0 flex-wrap items-start justify-between gap-3 px-4 pt-5">
       <div className="flex min-w-0 items-start gap-3">
         {Icon ? (
           <span className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-2xl bg-brand text-brand-ink">
