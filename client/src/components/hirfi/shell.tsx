@@ -101,7 +101,9 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">{children}</main>
+        <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [&>*]:min-w-0">
+          {children}
+        </main>
 
         {/* التنقّل السفلي — sticky داخل العمود فيبقى مرئياً ويبقى داخل الإطار. */}
         <nav className="safe-b sticky bottom-0 z-40 shrink-0 border-t border-border bg-background/95 backdrop-blur-md">
