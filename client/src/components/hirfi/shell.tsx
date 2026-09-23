@@ -64,12 +64,12 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* الشريط العلوي — رمز الحرف في مربّع ليموني، وبدونه لا يُقرأ كهوية inDrive. */}
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <span className="grid size-8 place-items-center rounded-xl bg-brand font-display text-base leading-none font-black text-brand-ink">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand font-display text-base leading-none font-black text-brand-ink">
               ح
             </span>
-            <span className="flex flex-col leading-none">
-              <b className="font-display text-[15px] font-black tracking-tight">حِرْفي</b>
-              <span className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="flex min-w-0 flex-col items-start gap-1 leading-none">
+              <b className="font-display text-[15px] leading-none font-black tracking-tight">حِرْفي</b>
+              <span className="whitespace-nowrap text-[10px] leading-none font-medium text-muted-foreground">
                 {isProvider ? "حساب حرّاف" : "حساب زبون"}
               </span>
             </span>

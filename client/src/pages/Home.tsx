@@ -132,13 +132,13 @@ export default function Home() {
 
           {/* رمز التطبيق عائماً فوق الخريطة */}
           <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-background/95 py-1.5 ps-2 pe-4 shadow-md backdrop-blur">
-              <span className="grid size-8 place-items-center rounded-xl bg-brand font-display text-base leading-none font-black text-brand-ink">
+            <span className="inline-flex items-center gap-2.5 rounded-full bg-background/95 py-2 ps-2 pe-4 shadow-md backdrop-blur">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand font-display text-base leading-none font-black text-brand-ink">
                 ح
               </span>
-              <span className="flex flex-col leading-none">
-                <b className="font-display text-[15px] font-black tracking-tight">حِرفي</b>
-                <span className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="flex min-w-0 flex-col items-start gap-1 leading-none">
+                <b className="font-display text-[15px] leading-none font-black tracking-tight">حِرفي</b>
+                <span className="whitespace-nowrap text-[10px] leading-none font-medium text-muted-foreground">
                   خدمات وحرّافون قريبون
                 </span>
               </span>
