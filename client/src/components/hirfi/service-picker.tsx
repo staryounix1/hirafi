@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export function ServicePickerSheet({ className }: { className?: string }) {
   const categories = useCategories();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const startY = useRef<number | null>(null);
 
   function startDrag(event: ReactPointerEvent<HTMLButtonElement>) {
