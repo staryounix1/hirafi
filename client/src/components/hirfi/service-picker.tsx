@@ -1,10 +1,18 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { Link } from "wouter";
+import { KeyRound, ListChecks, ShoppingBag, Wrench } from "lucide-react";
 import { DragHandle } from "@/components/hirfi/map";
 import { ErrorState } from "@/components/hirfi/primitives";
 import { useCategories } from "@/lib/hooks";
 import { categoryIcon, errorMessage } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+const QUICK_SERVICES = [
+  { slug: "handyman", title: "حِرفة قريبة", icon: Wrench },
+  { slug: "grocery", title: "قضاء الأغراض", icon: ShoppingBag },
+  { slug: "queue", title: "الوقوف فالطابور", icon: ListChecks },
+  { slug: "rental", title: "الكراء", icon: KeyRound },
+];
 
 export function ServicePickerSheet({ className }: { className?: string }) {
   const categories = useCategories();
@@ -44,7 +52,7 @@ export function ServicePickerSheet({ className }: { className?: string }) {
         "sheet absolute inset-x-0 bottom-0 z-20 max-h-full overflow-y-auto px-3.5 pb-5 pt-3.5 transition-transform duration-300 ease-out",
         className,
       )}
-       style={{ transform: open ? "translateY(0)" : "translateY(calc(100% - 250px))" }}
+      style={{ transform: open ? "translateY(0)" : "translateY(calc(100% - 250px))" }}
       role={!open ? "button" : undefined}
       tabIndex={!open ? 0 : undefined}
       aria-label={!open ? "افتح نافذة الخدمات" : undefined}
@@ -73,6 +81,24 @@ export function ServicePickerSheet({ className }: { className?: string }) {
         <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">
           {categories.data?.length ?? 15} خدمة
         </span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 pt-3">
+        {QUICK_SERVICES.map((service) => {
+          const Icon = service.icon;
+          return (
+            <Link
+              key={service.slug}
+              href={`/requests/new?service=${service.slug}`}
+              className="grid min-h-20 place-items-center rounded-2xl bg-brand/12 px-1 py-2 text-center transition-transform active:scale-[0.97]"
+            >
+              <span className="grid size-8 place-items-center rounded-full bg-brand text-brand-ink">
+                <Icon className="size-4.5" />
+              </span>
+              <span className="mt-1 text-[10px] leading-tight font-black">{service.title}</span>
+            </Link>
+          );
+        })}
       </div>
 
       {categories.isLoading ? (
