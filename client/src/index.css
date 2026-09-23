@@ -198,6 +198,9 @@
     min-width: 0;
     grid-template-columns: minmax(0, 1fr);
   }
+  .shell-frame > main .grid {
+    min-width: 0;
+  }
   @media (min-width: 640px) {
     .app-frame {
       min-height: 100svh;
