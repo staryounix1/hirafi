@@ -1,7 +1,7 @@
 // ── نشر طلب جديد: الفئة، الوصف، الميزانية المقترحة (واجهة المزايدة)، الموقع، الصور ──
 // هذا هو جوهر نقل فكرة inDrive: السعر يقترحه صاحب الطلب لا مقدّم الخدمة، فالحقل الأهم هنا
 // هو «عرضك»: رقم ضخم مع أزرار زيادة سريعة (+50/+100/+200) بدل حقل رقم صامت.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Send,
@@ -80,6 +80,15 @@ export default function RequestNew() {
   const [scheduled, setScheduled] = useState("");
   const [images, setImages] = useState<{ key: string; url: string; name: string }[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const requestedService =
+    typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("service") ?? "";
+
+  useEffect(() => {
+    if (categoryId || !requestedService || !cats.data) return;
+    const requestedCategory = cats.data.find((category) => category.slug === requestedService);
+    if (requestedCategory) setCategoryId(requestedCategory.id);
+  }, [categoryId, cats.data, requestedService]);
 
   const districts = DISTRICTS_BY_CITY[city] ?? [];
   const budgetNum = Number(budget);

@@ -13,6 +13,9 @@ import { AuthShell } from "@/pages/Register";
 export default function Login() {
   const { login } = useAuth();
   const [, navigate] = useLocation();
+  const requestedPath =
+    typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("next") ?? "";
+  const destination = requestedPath.startsWith("/") && !requestedPath.startsWith("//") ? requestedPath : "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -30,7 +33,7 @@ export default function Login() {
     try {
       await login(email.trim(), password);
       toast.success("تم الدخول");
-      navigate("/dashboard");
+      navigate(destination);
     } catch (e2) {
       setError(errorMessage(e2));
     } finally {
@@ -44,7 +47,7 @@ export default function Login() {
     try {
       await login(demoEmail, "demo1234");
       toast.success(`دخلت كـ${label}`);
-      navigate("/dashboard");
+      navigate(destination);
     } catch (e2) {
       setError(errorMessage(e2));
     } finally {

@@ -142,6 +142,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
 /** حاجز المسارات: يحوّل المجهول إلى /login ويُظهر دوراناً حتى يُحسم أمر الجلسة. */
 export function Protected({ children }: { children: ReactNode }) {
+  const [path] = useLocation();
   const { user, isLoading } = useAuth();
   if (isLoading) {
     return (
@@ -153,6 +154,6 @@ export function Protected({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!user) return <Redirect to="/login" />;
+  if (!user) return <Redirect to={`/login?next=${encodeURIComponent(path)}`} />;
   return <Shell>{children}</Shell>;
 }
