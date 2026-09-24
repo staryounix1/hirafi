@@ -399,8 +399,13 @@ const filesRouter = router({
         });
         return { key, uploadUrl, publicPath };
       } catch (e) {
-        if (e instanceof StorageError && e.code === "failed") {
-          return fail("BAD_REQUEST", "نوع الملف غير مدعوم — استعمل صوراً أو فيديوهات بصيغة مدعومة");
+        if (e instanceof StorageError) {
+          if (e.code === "failed") {
+            return fail("BAD_REQUEST", "تعذّر تخزين الملف — أعد المحاولة بعد لحظات");
+          }
+          if (e.code === "not_configured") {
+            return fail("BAD_REQUEST", "رفع الملفات غير مفعّل حالياً");
+          }
         }
         throw e;
       }
