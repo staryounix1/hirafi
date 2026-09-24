@@ -189,46 +189,64 @@ export default function RequestNew() {
 
       <form onSubmit={submit} className="grid gap-3 px-4 pb-6">
         {/* 1 — الفئة */}
-        <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-          <SectionHeading title="ما نوع الخدمة؟" />
-          {cats.isLoading ? (
-            <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="hirfi-skeleton h-12 rounded-2xl" />
-              ))}
-            </div>
-          ) : cats.isError ? (
-            <ErrorState message={errorMessage(cats.error)} onRetry={() => void cats.refetch()} />
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {(cats.data ?? []).map((c) => {
-                const Icon = categoryIcon(c.icon);
-                const on = categoryId === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => {
-                      setCategoryId(c.id);
-                      setErrors((p) => ({ ...p, categoryId: "" }));
-                    }}
-                    className={cn(
-                      "relative flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 transition-colors",
-                      on ? "bg-brand text-brand-ink" : "bg-muted/70 text-foreground active:bg-muted",
-                    )}
-                  >
-                    {on ? <Check className="absolute end-1.5 top-1.5 size-3.5" strokeWidth={3} /> : null}
+        {requestedService && selectedCat ? (
+          <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+            <SectionHeading title="الخدمة المختارة" description="تم اختيار الفئة من قائمة الخدمات." />
+            {(() => {
+              const Icon = categoryIcon(selectedCat.icon);
+              return (
+                <div className="flex items-center gap-3 rounded-2xl bg-brand/15 px-3.5 py-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink">
                     <Icon className="size-5" />
-                    <span className="text-center text-[11.5px] leading-tight font-bold">{c.nameAr}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          {errors.categoryId ? (
-            <p className="text-[11px] font-bold text-destructive">{errors.categoryId}</p>
-          ) : null}
-        </section>
+                  </span>
+                  <span className="flex-1 text-[14px] font-black">{selectedCat.nameAr}</span>
+                  <Check className="size-5 text-teal" strokeWidth={3} />
+                </div>
+              );
+            })()}
+          </section>
+        ) : (
+          <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+            <SectionHeading title="ما نوع الخدمة؟" />
+            {cats.isLoading ? (
+              <div className="grid grid-cols-3 gap-2">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <div key={i} className="hirfi-skeleton h-12 rounded-2xl" />
+                ))}
+              </div>
+            ) : cats.isError ? (
+              <ErrorState message={errorMessage(cats.error)} onRetry={() => void cats.refetch()} />
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {(cats.data ?? []).map((c) => {
+                  const Icon = categoryIcon(c.icon);
+                  const on = categoryId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setCategoryId(c.id);
+                        setErrors((p) => ({ ...p, categoryId: "" }));
+                      }}
+                      className={cn(
+                        "relative flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 transition-colors",
+                        on ? "bg-brand text-brand-ink" : "bg-muted/70 text-foreground active:bg-muted",
+                      )}
+                    >
+                      {on ? <Check className="absolute end-1.5 top-1.5 size-3.5" strokeWidth={3} /> : null}
+                      <Icon className="size-5" />
+                      <span className="text-center text-[11.5px] leading-tight font-bold">{c.nameAr}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {errors.categoryId ? (
+              <p className="text-[11px] font-bold text-destructive">{errors.categoryId}</p>
+            ) : null}
+          </section>
+        )}
 
         {/* 2 — واجهة الميزانية: قلب الشاشة */}
         <section className="rounded-3xl bg-foreground p-4 text-background" style={{ boxShadow: "var(--shadow-card)" }}>
