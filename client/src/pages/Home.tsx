@@ -16,14 +16,11 @@ import {
   ShieldCheck,
   MapPin,
   ArrowLeft,
-  ShoppingBag,
-  ListChecks,
-  KeyRound,
-  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
 import { LiveDot, Spinner } from "@/components/hirfi/primitives";
+import { PROFESSIONAL_CRAFTS, SERVICE_MODES } from "@/components/hirfi/service-picker";
 import { useAuth } from "@/_core/useAuth";
 import { toast } from "@/lib/toast";
 import { errorMessage } from "@/lib/format";
@@ -63,13 +60,6 @@ const FEATURES = [
   { icon: Star, title: "تقييم متبادل", body: "بعد الإتمام يقيّم الطرفان، ويظهر على الملف العام." },
   { icon: ShieldCheck, title: "شارة موثّق", body: "مع إنجازات الحرّاف وأعماله المنجزة ومتوسط تقييمه." },
   { icon: MapPin, title: "موقع مبسّط", body: "مدينة + حي من قائمة مغربية — بلا خرائط GPS معقّدة." },
-];
-
-const SERVICE_MODES = [
-  { slug: "handyman", title: "حِرفة قريبة", description: "حرفي يجي لعندك", icon: Wrench },
-  { slug: "grocery", title: "قضاء الأغراض", description: "شراء وتوصيل", icon: ShoppingBag },
-  { slug: "queue", title: "الوقوف فالطابور", description: "نقضي الإجراء بلا بيك", icon: ListChecks },
-  { slug: "rental", title: "الكراء", description: "أداة أو معدة", icon: KeyRound },
 ];
 
 /** زر دخول تجريبي — يشرح مَن ستدخل به ثم ينقل إلى لوحة التحكم. */
@@ -122,6 +112,7 @@ function DemoLogin({
 
 export default function Home() {
   const { user } = useAuth();
+  const [craftsOpen, setCraftsOpen] = useState(false);
 
   return (
     <div className="app-stage min-h-svh">
@@ -215,22 +206,65 @@ export default function Home() {
             <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">خدمات قريبة</span>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
-            {SERVICE_MODES.map((service) => (
-              <Link
-                key={service.slug}
-                href={`/requests/new?service=${service.slug}`}
-                className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
-                style={{ boxShadow: "var(--shadow-card)" }}
+          {craftsOpen ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setCraftsOpen(false)}
+                className="mt-3 rounded-full bg-muted px-3 py-1.5 text-[11px] font-black"
               >
-                <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
-                  <service.icon className="size-5" />
-                </span>
-                <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
-                <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
-              </Link>
-            ))}
-          </div>
+                رجوع للخدمات
+              </button>
+              <div className="mt-3 grid grid-cols-2 gap-2.5">
+                {PROFESSIONAL_CRAFTS.map((craft) => (
+                  <Link
+                    key={craft.slug}
+                    href={`/requests/new?service=${craft.slug}`}
+                    className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  >
+                    <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                      <craft.icon className="size-5" />
+                    </span>
+                    <h3 className="mt-3 text-[13px] font-black">{craft.title}</h3>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {SERVICE_MODES.map((service) =>
+                service.slug === "professional-crafts" ? (
+                  <button
+                    key={service.slug}
+                    type="button"
+                    onClick={() => setCraftsOpen(true)}
+                    className="group rounded-3xl bg-card p-3.5 text-start transition-transform active:scale-[0.98]"
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  >
+                    <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                      <service.icon className="size-5" />
+                    </span>
+                    <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
+                  </button>
+                ) : (
+                  <Link
+                    key={service.slug}
+                    href={`/requests/new?service=${service.slug}`}
+                    className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  >
+                    <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                      <service.icon className="size-5" />
+                    </span>
+                    <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
+                  </Link>
+                ),
+              )}
+            </div>
+          )}
         </section>
 
         {/* كيف يعمل */}
