@@ -154,11 +154,12 @@ export default function RequestNew() {
   const serviceLabel = isProfessionalCraft ? PROFESSIONAL_CRAFT_LABELS[requestedService] : undefined;
 
   useEffect(() => {
+    if (locationSource !== "profile") return;
     const p = profile.data?.profile;
     if (!p) return;
     setCity(p.city || MOROCCAN_CITIES[0]);
     setDistrict(p.district || "الموقع الحالي");
-  }, [profile.data]);
+  }, [locationSource, profile.data]);
 
   useEffect(() => {
     let cancelled = false;
@@ -185,7 +186,7 @@ export default function RequestNew() {
             if (!cancelled) setLocationSource("gps");
           },
           () => undefined,
-          { enableHighAccuracy: true, maximumAge: 60_000, timeout: 8_000 },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 8_000 },
         );
       })
       .catch(() => undefined);
