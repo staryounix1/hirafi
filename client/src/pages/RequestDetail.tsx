@@ -59,6 +59,10 @@ import {
   urgencyMeta,
 } from "@/lib/format";
 
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov|ogg)(?:[?#]|$)/i.test(url);
+}
+
 export default function RequestDetail() {
   const params = useParams() as { id?: string };
   const id = params.id ?? "";
@@ -124,6 +128,8 @@ export default function RequestDetail() {
   const catIcon = categoryIcon(r.categoryIcon);
   const sm = requestStatusMeta(r.status);
   const urg = urgencyMeta(r.urgency);
+  const displayedAmount = r.agreedAmount ?? r.budgetAmount;
+  const hasBudget = displayedAmount > 0;
 
   const customerAvg = r.customerRatingCount
     ? Math.round((r.customerRatingSum / r.customerRatingCount) * 10) / 10
@@ -189,12 +195,16 @@ export default function RequestDetail() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
                 <CircleDollarSign className="size-3.5" />
-                {r.agreedAmount ? "السعر المتفق عليه" : "الميزانية المقترحة للزبون"}
+                 {r.agreedAmount ? "السعر المتفق عليه" : hasBudget ? "الميزانية المقترحة للزبون" : "بدون ميزانية مسبقة"}
               </div>
-              <div className="text-price mt-1 flex items-baseline gap-1.5 text-[30px] leading-none">
-                {madNumber(r.agreedAmount ?? r.budgetAmount)}
-                <span className="text-[12px] font-bold text-muted-foreground">درهم</span>
-              </div>
+              {hasBudget ? (
+                <div className="text-price mt-1 flex items-baseline gap-1.5 text-[30px] leading-none">
+                  {madNumber(displayedAmount)}
+                  <span className="text-[12px] font-bold text-muted-foreground">درهم</span>
+                </div>
+              ) : (
+                <div className="mt-1 text-[22px] leading-none font-black text-teal">الحرّاف يرسل عرضه</div>
+              )}
             </div>
             <RefCode id={r.id} />
           </div>
@@ -253,11 +263,20 @@ export default function RequestDetail() {
                   rel="noreferrer"
                   className="group relative aspect-square overflow-hidden rounded-2xl"
                 >
-                  <img
-                    src={img.imageUrl}
-                    alt="صورة توضيحية للطلب"
-                    className="size-full object-cover transition-transform group-active:scale-105"
-                  />
+                  {isVideoUrl(img.imageUrl) ? (
+                    <video
+                      src={img.imageUrl}
+                      controls
+                      playsInline
+                      className="size-full object-cover transition-transform group-active:scale-105"
+                    />
+                  ) : (
+                    <img
+                      src={img.imageUrl}
+                      alt="صورة توضيحية للطلب"
+                      className="size-full object-cover transition-transform group-active:scale-105"
+                    />
+                  )}
                   <span className="absolute inset-0 grid place-items-center bg-foreground/0 text-background opacity-0 transition-opacity group-hover:bg-foreground/35 group-hover:opacity-100">
                     <Eye className="size-5" />
                   </span>
@@ -844,7 +863,7 @@ function OfferForm({
 }) {
   const create = trpc.offers.create.useMutation();
   const utils = trpc.useUtils();
-  const [price, setPrice] = useState(String(budget));
+  const [price, setPrice] = useState(budget > 0 ? String(budget) : "");
   const [dur, setDur] = useState("60");
   const [msg, setMsg] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -893,7 +912,9 @@ function OfferForm({
         قدّم عرضك على هذا الطلب
       </h2>
       <p className="mt-1.5 text-[12.5px] leading-relaxed opacity-80">
-        الزبون اقترح {formatMAD(budget)} — أنت من يقترح السعر النهائي والمدة وطريقة التنفيذ.
+        {budget > 0
+          ? `الزبون اقترح ${formatMAD(budget)} — أنت من يقترح السعر النهائي والمدة وطريقة التنفيذ.`
+          : "الزبون لم يحدّد ميزانية — اقترح السعر النهائي والمدة وطريقة التنفيذ."}
       </p>
 
       <form onSubmit={submit} className="mt-3 grid gap-3 rounded-2xl bg-background p-3.5">

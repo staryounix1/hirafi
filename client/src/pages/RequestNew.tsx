@@ -1,4 +1,4 @@
-// ── نشر طلب جديد: الفئة، الوصف، الميزانية المقترحة (واجهة المزايدة)، الموقع، الصور ──
+// ── نشر طلب جديد: الفئة، الوصف، الميزانية عند الحاجة، الموقع، والوسائط ──────────
 // هذا هو جوهر نقل فكرة inDrive: السعر يقترحه صاحب الطلب لا مقدّم الخدمة، فالحقل الأهم هنا
 // هو «عرضك»: رقم ضخم مع أزرار زيادة سريعة (+50/+100/+200) بدل حقل رقم صامت.
 import { useEffect, useState } from "react";
@@ -12,6 +12,8 @@ import {
   Sparkles,
   Minus,
   Plus,
+  Video,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Chip, ErrorState, Field, SectionHeading, Spinner } from "@/components/hirfi/primitives";
 import { trpc } from "@/_core/trpc";
 import { useCategories } from "@/lib/hooks";
-import { useImageUpload, validateImage } from "@/lib/upload";
+import { useMediaUpload, type UploadedImage } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { categoryIcon, errorMessage, madNumber } from "@/lib/format";
@@ -30,6 +32,32 @@ const URGENCY_LABEL: Record<string, string> = {
   flexible: "مرن في الوقت",
   today: "اليوم",
   urgent: "عاجل جداً",
+};
+
+const PROFESSIONAL_CRAFT_LABELS: Record<string, string> = {
+  painting: "صباغة",
+  plaster: "جبس",
+  construction: "بناء",
+  tiling: "زليج",
+  marble: "رخام",
+  electrician: "طريسيان",
+  plumber: "بلومبي",
+  carpenter: "نجار",
+  aluminum: "المينيزم",
+  tailoring: "خياطة",
+};
+
+const PROFESSIONAL_CRAFT_CATEGORY_SLUGS: Record<string, string> = {
+  painting: "painting",
+  plaster: "handyman",
+  construction: "handyman",
+  tiling: "handyman",
+  marble: "handyman",
+  electrician: "electrical",
+  plumber: "plumbing",
+  carpenter: "carpentry",
+  aluminum: "handyman",
+  tailoring: "tailoring",
 };
 
 /** إرشادات قصيرة حسب نوع الخدمة حتى لا تبدو كل الطلبات كأنها أعطال منزلية. */
@@ -58,6 +86,13 @@ const SERVICE_GUIDANCE: Record<
     details: "كتب النوع والمدة والاستعمال، وواش محتاج التوصيل أو التركيب مع الكراء.",
     location: "مكان التسليم والاسترجاع أو مكان استعمال المعدة",
   },
+  moving: {
+    heading: "شنو بغيتي تنقل؟",
+    description: "حدد الأثاث، الطوابق، العناوين، وواش محتاج التركيب.",
+    title: "مثال: نقل أثاث شقة من حي إلى حي",
+    details: "كتب شنو غادي يتنقل، الطابق، واش كاين مصعد، وأي تفاصيل تساعد الحرّاف يحسب الخدمة.",
+    location: "مكان التحميل ومكان التفريغ",
+  },
 };
 
 /** زيادات سريعة بالميزانية — كما يرفع راكب inDrive سعره بضغطة. */
@@ -67,7 +102,7 @@ export default function RequestNew() {
   const cats = useCategories();
   const create = trpc.requests.create.useMutation();
   const utils = trpc.useUtils();
-  const { upload, isUploading } = useImageUpload();
+  const { upload, isUploading } = useMediaUpload();
   const [, navigate] = useLocation();
 
   const [categoryId, setCategoryId] = useState("");
@@ -78,15 +113,20 @@ export default function RequestNew() {
   const [district, setDistrict] = useState<string>("");
   const [urgency, setUrgency] = useState<string>("flexible");
   const [scheduled, setScheduled] = useState("");
-  const [images, setImages] = useState<{ key: string; url: string; name: string }[]>([]);
+  const [media, setMedia] = useState<(UploadedImage & { kind: "image" | "video" })[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const requestedService =
     typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("service") ?? "";
+  const isProfessionalCraft = Boolean(PROFESSIONAL_CRAFT_LABELS[requestedService]);
+  const serviceLabel = isProfessionalCraft ? PROFESSIONAL_CRAFT_LABELS[requestedService] : undefined;
 
   useEffect(() => {
     if (categoryId || !requestedService || !cats.data) return;
-    const requestedCategory = cats.data.find((category) => category.slug === requestedService);
+    const requestedSlug = PROFESSIONAL_CRAFT_CATEGORY_SLUGS[requestedService] ?? requestedService;
+    const requestedCategory = cats.data.find(
+      (category) => category.slug === requestedService || category.slug === requestedSlug,
+    );
     if (requestedCategory) setCategoryId(requestedCategory.id);
   }, [categoryId, cats.data, requestedService]);
 
@@ -114,7 +154,7 @@ export default function RequestNew() {
     if (!categoryId) e.categoryId = "اختر فئة الخدمة";
     if (title.trim().length < 6) e.title = "اكتب عنواناً واضحاً (6 أحرف على الأقل)";
     if (description.trim().length < 15) e.description = "اشرح المشكلة بتفصيل (15 حرفاً على الأقل)";
-    if (!budget || Number.isNaN(budgetNum) || budgetNum < 20)
+    if (!isProfessionalCraft && (!budget || Number.isNaN(budgetNum) || budgetNum < 20))
       e.budget = "الميزانية المقترحة يجب أن تكون 20 درهماً أو أكثر";
     if (!district) e.district = "اختر الحي";
     const today = new Date();
@@ -131,21 +171,17 @@ export default function RequestNew() {
     setErrors((p) => ({ ...p, budget: "" }));
   }
 
-  async function pickImage(file: File | undefined) {
+  async function pickMedia(file: File | undefined) {
     if (!file) return;
-    const invalid = validateImage(file);
-    if (invalid) {
-      toast.error(invalid);
-      return;
-    }
-    if (images.length >= 4) {
-      toast.error("الحد الأقصى 4 صور للطلب");
+    if (media.length >= 4) {
+      toast.error("الحد الأقصى 4 ملفات للطلب");
       return;
     }
     try {
       const up = await upload(file);
-      setImages((prev) => [...prev, up]);
-      toast.success("أُضيفت الصورة");
+      const kind = file.type.startsWith("video/") ? "video" : "image";
+      setMedia((prev) => [...prev, { ...up, kind }]);
+      toast.success(kind === "video" ? "أُضيف الفيديو" : "أُضيفت الصورة");
     } catch (e) {
       toast.error(errorMessage(e));
     }
@@ -162,12 +198,12 @@ export default function RequestNew() {
         categoryId,
         title: title.trim(),
         description: description.trim(),
-        budgetAmount: Math.round(budgetNum),
+        budgetAmount: isProfessionalCraft ? 0 : Math.round(budgetNum),
         city: city as (typeof MOROCCAN_CITIES)[number],
         district,
         urgency: urgency as (typeof URGENCIES)[number],
         scheduledFor: scheduled ? new Date(scheduled) : null,
-        imageUrls: images.map((i) => i.url),
+        imageUrls: media.map((item) => item.url),
       });
       await utils.invalidate();
       toast.success("نُشر طلبك — سيبدأ الحرّافون القريبون بإرسال العروض");
@@ -183,23 +219,25 @@ export default function RequestNew() {
       <header className="px-4 pt-5 pb-3">
         <h1 className="text-[26px] leading-tight font-black">اطلب خدمة</h1>
         <p className="mt-1.5 text-[13px] text-muted-foreground">
-          حدّد مشكلتك واقترح سعرك — الحرّافون سيتنافسون بعروضهم عليه.
+          {isProfessionalCraft
+            ? "شرح دقيق مع صور وفيديوهات يساعد الحرّاف على فهم المطلوب."
+            : "حدّد مشكلتك واقترح سعرك — الحرّافون سيتنافسون بعروضهم عليه."}
         </p>
       </header>
 
       <form onSubmit={submit} className="grid gap-3 px-4 pb-6">
         {/* 1 — الفئة */}
-        {requestedService && selectedCat ? (
+        {requestedService && (selectedCat || isProfessionalCraft) ? (
           <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
             <SectionHeading title="الخدمة المختارة" description="تم اختيار الفئة من قائمة الخدمات." />
             {(() => {
-              const Icon = categoryIcon(selectedCat.icon);
+              const Icon = selectedCat ? categoryIcon(selectedCat.icon) : Wrench;
               return (
                 <div className="flex items-center gap-3 rounded-2xl bg-brand/15 px-3.5 py-3">
                   <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink">
                     <Icon className="size-5" />
                   </span>
-                  <span className="flex-1 text-[14px] font-black">{selectedCat.nameAr}</span>
+                  <span className="flex-1 text-[14px] font-black">{serviceLabel ?? selectedCat?.nameAr}</span>
                   <Check className="size-5 text-teal" strokeWidth={3} />
                 </div>
               );
@@ -248,7 +286,8 @@ export default function RequestNew() {
           </section>
         )}
 
-        {/* 2 — واجهة الميزانية: قلب الشاشة */}
+        {/* 2 — واجهة الميزانية: للحرف المعيّنة يرسل الحرّاف عرضه مباشرة */}
+        {!isProfessionalCraft ? (
         <section className="rounded-3xl bg-foreground p-4 text-background" style={{ boxShadow: "var(--shadow-card)" }}>
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-[15px] font-black">ميزانيتك المقترحة</h2>
@@ -338,6 +377,7 @@ export default function RequestNew() {
             </p>
           )}
         </section>
+        ) : null}
 
         {/* 3 — الوصف */}
         <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -365,35 +405,46 @@ export default function RequestNew() {
             />
           </Field>
 
-          <Field label="صور توضيحية" hint="اختيارية — حتى 4 صور (PNG / JPEG / WebP بحجم 5 ميغابايت كحد أقصى)">
+          <Field label="صور وفيديوهات توضيحية" hint="اختيارية — حتى 4 ملفات (الصورة 5 ميغابايت، والفيديو 50 ميغابايت)">
             <div className="flex flex-wrap items-center gap-2.5">
-              {images.map((img) => (
-                <div key={img.key} className="relative size-20 overflow-hidden rounded-2xl border border-border">
-                  <img src={img.url} alt={img.name} className="size-full object-cover" />
+              {media.map((item) => (
+                <div key={item.key} className="relative size-20 overflow-hidden rounded-2xl border border-border">
+                  {item.kind === "video" ? (
+                    <video src={item.url} muted playsInline className="size-full object-cover" />
+                  ) : (
+                    <img src={item.url} alt={item.name} className="size-full object-cover" />
+                  )}
                   <button
                     type="button"
-                    onClick={() => setImages((prev) => prev.filter((x) => x.key !== img.key))}
+                    onClick={() => setMedia((prev) => prev.filter((x) => x.key !== item.key))}
                     className="absolute end-1 top-1 grid size-5 place-items-center rounded-full bg-destructive text-white"
-                    aria-label="إزالة الصورة"
+                    aria-label="إزالة الملف"
                   >
                     <X className="size-3" />
                   </button>
                 </div>
               ))}
-              {images.length < 4 ? (
+              {media.length < 4 ? (
                 <label
                   className={cn(
                     "grid size-20 cursor-pointer place-items-center rounded-2xl border border-dashed border-border bg-muted/50 text-muted-foreground transition-colors active:border-brand",
                     isUploading && "pointer-events-none opacity-60",
                   )}
                 >
-                  {isUploading ? <Spinner /> : <ImageIcon className="size-5" />}
+                  {isUploading ? (
+                    <Spinner />
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <ImageIcon className="size-5" />
+                      <Video className="size-4" />
+                    </span>
+                  )}
                   <input
                     type="file"
-                    accept="image/png,image/jpeg,image/webp"
+                    accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
                     className="hidden"
                     onChange={(e) => {
-                      void pickImage(e.target.files?.[0]);
+                      void pickMedia(e.target.files?.[0]);
                       e.target.value = "";
                     }}
                   />
@@ -470,20 +521,25 @@ export default function RequestNew() {
 
           <p className="flex items-start gap-1.5 rounded-2xl bg-muted/70 px-3 py-2.5 text-[11.5px] leading-relaxed text-muted-foreground">
             <MapPin className="mt-0.5 size-3.5 shrink-0" />
-            سنعرض طلبك على الحرّافين في {city}
-            {district ? ` — ${district}` : ""} حسب فئته وميزانيته.
+             سنعرض طلبك على الحرّافين في {city}
+             {district ? ` — ${district}` : ""} حسب فئته
+             {isProfessionalCraft ? " وموقعه." : " وميزانيته."}
           </p>
         </section>
 
         {/* شريط النشر الثابت */}
         <div className="sticky bottom-2 z-20 flex items-center gap-3 rounded-3xl bg-card p-3" style={{ boxShadow: "var(--shadow-sheet)" }}>
           <div className="min-w-0 flex-1">
-            <div className="text-price text-[19px] leading-none">
-              {madNumber(budgetNum || 0)}
-              <span className="ms-1 text-[11px] font-bold text-muted-foreground">درهم</span>
-            </div>
+            {isProfessionalCraft ? (
+              <div className="text-[13px] font-black">بدون ميزانية مسبقة</div>
+            ) : (
+              <div className="text-price text-[19px] leading-none">
+                {madNumber(budgetNum || 0)}
+                <span className="ms-1 text-[11px] font-bold text-muted-foreground">درهم</span>
+              </div>
+            )}
             <div className="mt-0.5 truncate text-[10.5px] text-muted-foreground">
-              {selectedCat ? selectedCat.nameAr : "اختر الفئة"}
+              {serviceLabel ?? selectedCat?.nameAr ?? "اختر الفئة"}
               {district ? ` · ${district}` : ""}
             </div>
           </div>

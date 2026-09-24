@@ -177,7 +177,7 @@ const requestsRouter = router({
         categoryId: z.uuid(),
         title: z.string().min(6).max(120),
         description: z.string().min(15).max(2000),
-        budgetAmount: z.number().int().min(20).max(200000),
+        budgetAmount: z.number().int().min(0).max(200000),
         city: z.enum(MOROCCAN_CITIES),
         district: z.string().min(1).max(60),
         urgency: z.enum(URGENCIES),
@@ -400,7 +400,7 @@ const filesRouter = router({
         return { key, uploadUrl, publicPath };
       } catch (e) {
         if (e instanceof StorageError && e.code === "failed") {
-          return fail("BAD_REQUEST", "نوع الملف غير مدعوم — استعمل صوراً PNG أو JPEG أو WebP");
+          return fail("BAD_REQUEST", "نوع الملف غير مدعوم — استعمل صوراً أو فيديوهات بصيغة مدعومة");
         }
         throw e;
       }
