@@ -493,7 +493,6 @@ export default function RequestNew() {
               <div dir="ltr" className="break-words text-start text-[12px] leading-tight font-black [overflow-wrap:anywhere]">
                 {gpsAddress ?? district}
               </div>
-              <div className="mt-0.5 text-[11px] text-muted-foreground">{city}</div>
             </div>
             <span className="shrink-0 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">
               {locationSource === "gps" ? "GPS" : "تلقائي"}
