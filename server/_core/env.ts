@@ -36,4 +36,11 @@ export const env = {
     presignUrl: process.env.APP_STORAGE_PRESIGN_URL ?? "",
     token: process.env.APP_STORAGE_TOKEN ?? "",
   },
+  // Supabase Storage is the deployable fallback when the platform presign
+  // service is not available (for example, on a standalone Vercel project).
+  supabase: {
+    url: process.env.SUPABASE_URL ?? "",
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+    bucket: process.env.SUPABASE_STORAGE_BUCKET ?? "hirafi-media",
+  },
 };

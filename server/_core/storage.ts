@@ -60,36 +60,109 @@ function canonicalKey(relKey: string): string {
  *  scoped token and never any object-store credential (DESIGN §5.6); the
  *  platform clamps every key to this app's prefix. */
 async function callStorage<T>(op: Op, path: string, contentType?: string): Promise<T> {
-  if (!env.storage.presignUrl || !env.storage.token) {
-    throw new StorageError(
-      "App storage not configured (APP_STORAGE_PRESIGN_URL / APP_STORAGE_TOKEN).",
-      "not_configured",
-    );
+  if (env.storage.presignUrl && env.storage.token) {
+    const res = await fetch(env.storage.presignUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${env.storage.token}` },
+      body: JSON.stringify({ op, path, contentType }),
+    });
+    if (res.status === 404) throw new StorageError(`no such object: ${path}`, "not_found");
+    if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
+    const body = (await res.json()) as T & { path?: string };
+
+    // Cross-boundary invariant: the platform echoes the key it ACTUALLY acted on,
+    // after its own clamping. `canonicalKey` above is written to produce exactly
+    // that string, so the two must agree — and if they ever stop agreeing, this is
+    // the only place that can notice. When they silently disagreed, an app could
+    // index `./x.pdf` while the platform touched `x.pdf`, which let one end user
+    // delete another's object through an ownership check that matched the wrong
+    // row. Neither repo's tests can catch that (each mocks the other), so assert
+    // it at runtime on every call and fail loudly rather than aliasing.
+    if (typeof body.path === "string" && body.path !== path) {
+      throw new StorageError(
+        `storage key normalization disagrees with the platform: sent ${path}, platform used ${body.path}`,
+        "forbidden",
+      );
+    }
+    return body;
   }
-  const res = await fetch(env.storage.presignUrl, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${env.storage.token}` },
-    body: JSON.stringify({ op, path, contentType }),
+  if (env.supabase?.url && env.supabase.serviceRoleKey) {
+    return callSupabaseStorage<T>(op, path, contentType);
+  }
+  throw new StorageError(
+    "App storage not configured (APP_STORAGE_PRESIGN_URL / APP_STORAGE_TOKEN or Supabase storage).",
+    "not_configured",
+  );
+}
+
+function encodedPath(path: string): string {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
+function supabaseHeaders(contentType?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    apikey: env.supabase.serviceRoleKey,
+    authorization: `Bearer ${env.supabase.serviceRoleKey}`,
+  };
+  if (contentType) headers["content-type"] = contentType;
+  return headers;
+}
+
+async function callSupabaseStorage<T>(op: Op, path: string, contentType?: string): Promise<T> {
+  const root = `${env.supabase.url.replace(/\/+$/, "")}/storage/v1`;
+  const bucket = encodeURIComponent(env.supabase.bucket);
+  const objectPath = encodedPath(path);
+  const headers = supabaseHeaders(contentType);
+  let res: Response;
+
+  if (op === "put") {
+    res = await fetch(`${root}/object/upload/sign/${bucket}/${objectPath}`, {
+      method: "POST",
+      headers,
+    });
+    if (res.status === 404) throw new StorageError(`no such object: ${path}`, "not_found");
+    if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
+    const body = (await res.json()) as { token?: string; path?: string };
+    if (!body.token) throw new StorageError("storage put returned no signed token", "failed");
+    return {
+      url: `${root}/object/upload/sign/${bucket}/${objectPath}?token=${encodeURIComponent(body.token)}`,
+      path: body.path ?? path,
+    } as T;
+  }
+
+  if (op === "head") {
+    res = await fetch(`${root}/object/${bucket}/${objectPath}`, { method: "HEAD", headers });
+    if (res.status === 404) throw new StorageError(`no such object: ${path}`, "not_found");
+    if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
+    return {
+      size: Number(res.headers.get("content-length") ?? 0),
+      contentType: res.headers.get("content-type"),
+      path,
+    } as T;
+  }
+
+  if (op === "get") {
+    res = await fetch(`${root}/object/sign/${bucket}/${objectPath}`, {
+      method: "POST",
+      headers: { ...headers, "content-type": "application/json" },
+      body: JSON.stringify({ expiresIn: 3600 }),
+    });
+    if (res.status === 404) throw new StorageError(`no such object: ${path}`, "not_found");
+    if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
+    const body = (await res.json()) as { signedURL?: string; signedUrl?: string };
+    const signedPath = body.signedURL ?? body.signedUrl;
+    if (!signedPath) throw new StorageError("storage get returned no signed URL", "failed");
+    return { url: signedPath.startsWith("http") ? signedPath : `${root}${signedPath}` } as T;
+  }
+
+  res = await fetch(`${root}/object/${bucket}`, {
+    method: "DELETE",
+    headers: { ...headers, "content-type": "application/json" },
+    body: JSON.stringify({ prefixes: [path] }),
   });
   if (res.status === 404) throw new StorageError(`no such object: ${path}`, "not_found");
   if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
-  const body = (await res.json()) as T & { path?: string };
-
-  // Cross-boundary invariant: the platform echoes the key it ACTUALLY acted on,
-  // after its own clamping. `canonicalKey` above is written to produce exactly
-  // that string, so the two must agree — and if they ever stop agreeing, this is
-  // the only place that can notice. When they silently disagreed, an app could
-  // index `./x.pdf` while the platform touched `x.pdf`, which let one end user
-  // delete another's object through an ownership check that matched the wrong
-  // row. Neither repo's tests can catch that (each mocks the other), so assert
-  // it at runtime on every call and fail loudly rather than aliasing.
-  if (typeof body.path === "string" && body.path !== path) {
-    throw new StorageError(
-      `storage key normalization disagrees with the platform: sent ${path}, platform used ${body.path}`,
-      "forbidden",
-    );
-  }
-  return body;
+  return { deleted: true, path } as T;
 }
 
 /** Look up one indexed file by its relative key. `null` means "no such row" —
