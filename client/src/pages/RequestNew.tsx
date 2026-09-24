@@ -92,10 +92,85 @@ function detectedCity(address: ReverseAddress): MoroccanCity | null {
 }
 
 /** إرشادات قصيرة حسب نوع الخدمة حتى لا تبدو كل الطلبات كأنها أعطال منزلية. */
-const SERVICE_GUIDANCE: Record<
-  string,
-  { heading: string; description: string; title: string; details: string; location: string }
-> = {
+type ServiceGuidance = {
+  heading: string;
+  description: string;
+  title: string;
+  details: string;
+  location: string;
+};
+
+const SERVICE_GUIDANCE: Record<string, ServiceGuidance> = {
+  painting: {
+    heading: "شنو بغيتي نصبغو؟",
+    description: "حدد عدد الغرف، المساحة، حالة الجدران واللون اللي بغيتي.",
+    title: "مثال: صباغة غرفة النوم بلون فاتح",
+    details: "كتب عدد الغرف أو المساحة، حالة الجدران، اللون، وواش المواد داخلة فالثمن.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  plaster: {
+    heading: "شنو خاصو يتصلح فالجبس؟",
+    description: "وضح المكان، القياسات، ونوع التشطيب المطلوب.",
+    title: "مثال: إصلاح سقف جبس متشقق فالصالون",
+    details: "كتب القياسات التقريبية، واش خاص هدم القديم، واللون أو التشطيب المطلوب.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  construction: {
+    heading: "شنو نوع أشغال البناء؟",
+    description: "حدد الأشغال، الكمية، والمواد الموجودة أو اللي خاصها تشرا.",
+    title: "مثال: بناء حائط صغير فسطح الدار",
+    details: "كتب القياسات، نوع المواد، الطابق، وواش الحرّاف غادي يجيب المعدات.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  tiling: {
+    heading: "فين خاص الزليج؟",
+    description: "حدد المكان، المساحة، ونوع الزليج أو الفسيفساء.",
+    title: "مثال: تركيب زليج فحمّام 6 أمتار",
+    details: "كتب المساحة، واش كاين زليج قديم، ونوع المواد اللي متوفرة.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  marble: {
+    heading: "شنو خدمة الرخام؟",
+    description: "حدد واش المطلوب تركيب، تلميع، إصلاح أو قياس جديد.",
+    title: "مثال: تلميع رخامة المطبخ",
+    details: "كتب القياسات، الحالة الحالية، والصور اللي توضّح الخدوش أو الكسر.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  electrician: {
+    heading: "شنو المشكل الكهربائي؟",
+    description: "وضح الجهاز أو المكان، الأعراض، وواش كاين خطر أو انقطاع.",
+    title: "مثال: إصلاح قابس كهربائي محروق",
+    details: "كتب شنو وقع، شحال من نقطة متأثرة، وواش جربتي شي حل من قبل.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  plumber: {
+    heading: "شنو مشكل البلومبي؟",
+    description: "حدد مكان التسريب أو الانسداد، واش الحالة مستعجلة، وصوّرها إن أمكن.",
+    title: "مثال: تسريب ماء تحت حوض المطبخ",
+    details: "كتب مصدر المشكل، شحال هادي بدا، واش الماء باقي كيسيل، والقطع المتوفرة.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  carpenter: {
+    heading: "شنو الخدمة ديال النجارة؟",
+    description: "حدد القطعة، القياسات، ونوع الخشب أو التشطيب.",
+    title: "مثال: تركيب ثلاثة رفوف فالصالون",
+    details: "كتب القياسات، عدد القطع، واش الخشب موجود، وصوّر المكان قبل الخدمة.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  aluminum: {
+    heading: "شنو خاصو يتصلح فالألمنيوم؟",
+    description: "وضح واش المطلوب إصلاح، تركيب أو قياس جديد.",
+    title: "مثال: إصلاح باب ألمنيوم ما كيتسدش",
+    details: "كتب القياسات التقريبية، نوع الباب أو الشباك، والمشكل اللي بان.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
+  tailoring: {
+    heading: "شنو التعديل أو الخياطة؟",
+    description: "حدد نوع اللباس، التعديل، والموعد اللي محتاجو فيه.",
+    title: "مثال: تعديل ثلاثة فساتين قبل مناسبة",
+    details: "كتب نوع القماش، التعديلات المطلوبة، وعدد القطع، وزيد صوراً إذا ناسب.",
+    location: "المدينة والحي كافيين لحساب المسافة",
+  },
   grocery: {
     heading: "شنو بغيتي نشريو؟",
     description: "حدد اللائحة، السوق أو المحل، وطريقة تأكيد المشتريات.",
@@ -207,21 +282,15 @@ export default function RequestNew() {
 
   const budgetNum = Number(budget);
   const selectedCat = (cats.data ?? []).find((c) => c.id === categoryId);
-  const guidance = selectedCat
-    ? (SERVICE_GUIDANCE[selectedCat.slug] ?? {
-        heading: "اشرح مشكلتك",
-        description: "صف الخدمة بوضوح باش توصلك عروض مناسبة.",
-        title: "مثال: تسريب ماء تحت حوض المطبخ",
-        details: "صف المطلوب، المواد المتوفرة، وما الأفضل تجنّبه.",
-        location: "المدينة والحي يكفيان لحساب المسافة",
-      })
-    : {
-        heading: "اشرح مشكلتك",
-        description: "اختر الفئة أولاً ثم اكتب التفاصيل.",
-        title: "مثال: تسريب ماء تحت حوض المطبخ",
-        details: "صف المطلوب، المواد المتوفرة، وما الأفضل تجنّبه.",
-        location: "المدينة والحي يكفيان لحساب المسافة",
-      };
+  const guidance =
+    (isProfessionalCraft ? SERVICE_GUIDANCE[requestedService] : undefined) ??
+    (selectedCat ? SERVICE_GUIDANCE[selectedCat.slug] : SERVICE_GUIDANCE[requestedService]) ?? {
+      heading: "اشرح مشكلتك",
+      description: requestedService ? "صف الخدمة بوضوح باش توصلك عروض مناسبة." : "اختر الفئة أولاً ثم اكتب التفاصيل.",
+      title: "مثال: تسريب ماء تحت حوض المطبخ",
+      details: "صف المطلوب، المواد المتوفرة، وما الأفضل تجنّبه.",
+      location: "المدينة والحي يكفيان لحساب المسافة",
+    };
 
   function validate(): boolean {
     const e: Record<string, string> = {};

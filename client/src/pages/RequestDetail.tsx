@@ -20,7 +20,6 @@ import {
   Pencil,
   Info,
   Wallet,
-  Calendar,
   Eye,
   AlertCircle,
   Users,
@@ -50,7 +49,6 @@ import {
   countAr,
   errorMessage,
   formatDateAr,
-  formatDateTimeAr,
   formatDuration,
   formatMAD,
   madNumber,
@@ -225,15 +223,6 @@ export default function RequestDetail() {
                 نُشر
               </dt>
               <dd className="mt-0.5 text-[12.5px] font-bold">{timeAgoAr(r.createdAt)}</dd>
-            </div>
-            <div className="col-span-2">
-              <dt className="flex items-center gap-1 text-[10.5px] font-bold text-muted-foreground">
-                <Calendar className="size-3" />
-                الوقت المقترح للتنفيذ
-              </dt>
-              <dd className="mt-0.5 text-[12.5px] font-bold">
-                {r.scheduledFor ? formatDateTimeAr(r.scheduledFor) : "مرن — لم يُحدَّد"}
-              </dd>
             </div>
           </dl>
         </div>

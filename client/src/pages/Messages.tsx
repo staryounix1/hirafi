@@ -1,7 +1,7 @@
 // ── المحادثات: قائمة الخيوط التي يحقّ لي الكتابة فيها ───────────────────────────────
 // لا يوجد جدول «محادثة» منفصل في هذا التطبيق: الخيط مرتبط بالطلب نفسه، وتُعرض
 // المحادثة كاملة داخل شاشة الطلب. هذه الصفحة تجمع الخيوط وتقود إليها.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   MessageSquare,
@@ -12,7 +12,9 @@ import {
   CircleDollarSign,
   UserCircle,
   ArrowLeft,
+  Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Badge, EmptyState, ErrorState, ListSkeleton, PageHeader } from "@/components/hirfi/primitives";
 import { trpc } from "@/_core/trpc";
 import { useAppRole } from "@/lib/hooks";
@@ -44,6 +46,7 @@ export default function Messages() {
   const mine = trpc.requests.mine.useQuery(undefined, { enabled: !roleLoading && !isProvider });
   const offers = trpc.offers.mine.useQuery(undefined, { enabled: !roleLoading && isProvider });
   const jobs = trpc.offers.myJobs.useQuery(undefined, { enabled: !roleLoading && isProvider });
+  const [query, setQuery] = useState("");
 
   const threads = useMemo<Thread[]>(() => {
     if (isProvider) {
@@ -113,6 +116,15 @@ export default function Messages() {
       });
   }, [isProvider, jobs.data, offers.data, mine.data]);
 
+  const filteredThreads = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase();
+    if (!normalized) return threads;
+    return threads.filter((thread) =>
+      [thread.title, thread.categoryName, thread.counterpart, thread.statusLabel, thread.metaNote]
+        .some((value) => value.toLocaleLowerCase().includes(normalized)),
+    );
+  }, [query, threads]);
+
   const loading = roleLoading || mine.isLoading || offers.isLoading || jobs.isLoading;
   const error = mine.error ?? offers.error ?? jobs.error;
 
@@ -152,39 +164,60 @@ export default function Messages() {
               </Badge>
             </div>
 
-            <div className="grid gap-2.5">
-              {threads.map((t) => {
-                const Icon = categoryIcon(t.categoryIcon);
-                return (
-                  <Link key={t.href} href={t.href} className="card-flat block p-3.5 active:bg-muted/50">
-                    <div className="flex items-start gap-3">
-                      <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-muted">
-                        <Icon className="size-5" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="truncate text-[15px] leading-tight font-black">{t.title}</h3>
-                          <span className="inline-flex shrink-0 items-center gap-1 text-[10.5px] text-muted-foreground">
-                            <Hourglass className="size-3" />
-                            {timeAgoAr(t.updatedAt)}
-                          </span>
-                        </div>
-                        <p className="mt-1 truncate text-[11.5px] text-muted-foreground">
-                          {t.categoryName} · {t.counterpart}
-                        </p>
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <Badge tone="teal">{t.statusLabel}</Badge>
-                          <Badge tone="muted" icon={CircleDollarSign}>
-                            {t.metaNote}
-                          </Badge>
-                        </div>
-                      </div>
-                      <ArrowLeft className="mt-3 size-4 shrink-0 text-muted-foreground" />
-                    </div>
-                  </Link>
-                );
-              })}
+            <div className="relative">
+              <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="قلب على محادثة أو طلب..."
+                aria-label="بحث في المحادثات"
+                className="h-11 rounded-2xl pe-10"
+              />
             </div>
+
+            {filteredThreads.length === 0 ? (
+              <EmptyState
+                icon={Search}
+                title="ما لقيتش هاد المحادثة"
+                description="جرّب كلمة أخرى أو مسح البحث باش تشوف جميع المحادثات."
+                actionLabel="مسح البحث"
+                onAction={() => setQuery("")}
+              />
+            ) : (
+              <div className="grid gap-2.5">
+                {filteredThreads.map((t) => {
+                  const Icon = categoryIcon(t.categoryIcon);
+                  return (
+                    <Link key={t.href} href={t.href} className="card-flat block p-3.5 active:bg-muted/50">
+                      <div className="flex items-start gap-3">
+                        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-muted">
+                          <Icon className="size-5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="truncate text-[15px] leading-tight font-black">{t.title}</h3>
+                            <span className="inline-flex shrink-0 items-center gap-1 text-[10.5px] text-muted-foreground">
+                              <Hourglass className="size-3" />
+                              {timeAgoAr(t.updatedAt)}
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate text-[11.5px] text-muted-foreground">
+                            {t.categoryName} · {t.counterpart}
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <Badge tone="teal">{t.statusLabel}</Badge>
+                            <Badge tone="muted" icon={CircleDollarSign}>
+                              {t.metaNote}
+                            </Badge>
+                          </div>
+                        </div>
+                        <ArrowLeft className="mt-3 size-4 shrink-0 text-muted-foreground" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="grid gap-2">
               {isProvider ? (

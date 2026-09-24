@@ -1,8 +1,9 @@
 // ── طلباتي (الزبون): قائمة كاملة مع تصفية بالحالة ────────────────────────────────
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Chip,
   EmptyState,
@@ -28,11 +29,20 @@ const TABS = [
 export default function Requests() {
   const q = trpc.requests.mine.useQuery();
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("all");
+  const [query, setQuery] = useState("");
 
   const rows = useMemo(() => {
     const all = q.data ?? [];
-    return tab === "all" ? all : all.filter((r) => r.status === tab);
-  }, [q.data, tab]);
+    const normalized = query.trim().toLocaleLowerCase();
+    return all
+      .filter((r) => tab === "all" || r.status === tab)
+      .filter((r) => {
+        if (!normalized) return true;
+        return [r.title, r.categoryName, r.city, r.district, r.description]
+          .filter(Boolean)
+          .some((value) => value.toLocaleLowerCase().includes(normalized));
+      });
+  }, [q.data, query, tab]);
 
   const counts = useMemo(() => {
     const all = q.data ?? [];
@@ -81,13 +91,33 @@ export default function Requests() {
         })}
       </div>
 
+      <div className="relative px-4 pt-3">
+        <Search className="pointer-events-none absolute end-7 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="قلب على طلب بالعنوان أو المدينة..."
+          aria-label="بحث في الطلبات"
+          className="h-11 rounded-2xl pe-10"
+        />
+      </div>
+
       <div className="grid gap-3 px-4 pt-3 pb-6">
         {q.isLoading ? (
           <ListSkeleton count={4} />
         ) : q.isError ? (
           <ErrorState message={errorMessage(q.error)} onRetry={() => void q.refetch()} />
         ) : rows.length === 0 ? (
-          (q.data ?? []).length === 0 ? (
+          query.trim() ? (
+            <EmptyState
+              icon={Search}
+              title="ما لقيتش هاد الطلب"
+              description="جرّب كلمة أخرى أو مسح البحث باش تشوف جميع الطلبات.
+              "
+              actionLabel="مسح البحث"
+              onAction={() => setQuery("")}
+            />
+          ) : (q.data ?? []).length === 0 ? (
             <EmptyState
               icon={ClipboardList}
               title="لم تنشر أي طلب بعد"
