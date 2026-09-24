@@ -499,7 +499,7 @@ export default function RequestNew() {
             </span>
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            غادي يوصل الطلب للحرّافين القريبين من {city} — ما كاين لا وقت مقترح ولا خانات إضافية للموقع.
+            غادي يوصل الطلب للحرّافين القريبين من موقعك — ما كاين لا وقت مقترح ولا خانات إضافية للموقع.
           </p>
         </section>
 
