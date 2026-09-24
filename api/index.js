@@ -316,6 +316,13 @@ var env = {
   storage: {
     presignUrl: process.env.APP_STORAGE_PRESIGN_URL ?? "",
     token: process.env.APP_STORAGE_TOKEN ?? ""
+  },
+  // Supabase Storage is the deployable fallback when the platform presign
+  // service is not available (for example, on a standalone Vercel project).
+  supabase: {
+    url: process.env.SUPABASE_URL ?? "",
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+    bucket: process.env.SUPABASE_STORAGE_BUCKET ?? "hirafi-media"
   }
 };
 
@@ -363,10 +370,11 @@ function sessionCookieName(slug) {
 }
 var APP_ROLES = ["customer", "provider"];
 var URGENCIES = ["flexible", "today", "urgent"];
-var PLATFORM_FEE_PERCENT = 10;
+var PLATFORM_FEE_PERCENT = 15;
 var MOROCCAN_CITIES = [
   "\u0627\u0644\u062F\u0627\u0631 \u0627\u0644\u0628\u064A\u0636\u0627\u0621",
   "\u0627\u0644\u0631\u0628\u0627\u0637",
+  "\u0633\u0644\u0627",
   "\u0645\u0631\u0627\u0643\u0634",
   "\u0637\u0646\u062C\u0629",
   "\u0641\u0627\u0633",
@@ -538,27 +546,93 @@ function canonicalKey(relKey) {
   return stripped;
 }
 async function callStorage(op, path2, contentType) {
-  if (!env.storage.presignUrl || !env.storage.token) {
-    throw new StorageError(
-      "App storage not configured (APP_STORAGE_PRESIGN_URL / APP_STORAGE_TOKEN).",
-      "not_configured"
-    );
+  if (env.storage.presignUrl && env.storage.token) {
+    const res = await fetch(env.storage.presignUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${env.storage.token}` },
+      body: JSON.stringify({ op, path: path2, contentType })
+    });
+    if (res.status === 404) throw new StorageError(`no such object: ${path2}`, "not_found");
+    if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
+    const body = await res.json();
+    if (typeof body.path === "string" && body.path !== path2) {
+      throw new StorageError(
+        `storage key normalization disagrees with the platform: sent ${path2}, platform used ${body.path}`,
+        "forbidden"
+      );
+    }
+    return body;
   }
-  const res = await fetch(env.storage.presignUrl, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${env.storage.token}` },
-    body: JSON.stringify({ op, path: path2, contentType })
+  if (env.supabase?.url && env.supabase.serviceRoleKey) {
+    return callSupabaseStorage(op, path2, contentType);
+  }
+  throw new StorageError(
+    "App storage not configured (APP_STORAGE_PRESIGN_URL / APP_STORAGE_TOKEN or Supabase storage).",
+    "not_configured"
+  );
+}
+function encodedPath(path2) {
+  return path2.split("/").map(encodeURIComponent).join("/");
+}
+function supabaseHeaders(contentType) {
+  const headers = {
+    apikey: env.supabase.serviceRoleKey,
+    authorization: `Bearer ${env.supabase.serviceRoleKey}`
+  };
+  if (contentType) headers["content-type"] = contentType;
+  return headers;
+}
+async function callSupabaseStorage(op, path2, contentType) {
+  const root = `${env.supabase.url.replace(/\/+$/, "")}/storage/v1`;
+  const bucket = encodeURIComponent(env.supabase.bucket);
+  const objectPath = encodedPath(path2);
+  const headers = supabaseHeaders(contentType);
+  let res;
+  if (op === "put") {
+    res = await fetch(`${root}/object/upload/sign/${bucket}/${objectPath}`, {
+      method: "POST",
+      headers
+    });
+    if (res.status === 404) throw new StorageError(`no such object: ${path2}`, "not_found");
+    if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
+    const body = await res.json();
+    if (!body.token) throw new StorageError("storage put returned no signed token", "failed");
+    return {
+      url: `${root}/object/upload/sign/${bucket}/${objectPath}?token=${encodeURIComponent(body.token)}`,
+      path: body.path ?? path2
+    };
+  }
+  if (op === "head") {
+    res = await fetch(`${root}/object/${bucket}/${objectPath}`, { method: "HEAD", headers });
+    if (res.status === 404) throw new StorageError(`no such object: ${path2}`, "not_found");
+    if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
+    return {
+      size: Number(res.headers.get("content-length") ?? 0),
+      contentType: res.headers.get("content-type"),
+      path: path2
+    };
+  }
+  if (op === "get") {
+    res = await fetch(`${root}/object/sign/${bucket}/${objectPath}`, {
+      method: "POST",
+      headers: { ...headers, "content-type": "application/json" },
+      body: JSON.stringify({ expiresIn: 3600 })
+    });
+    if (res.status === 404) throw new StorageError(`no such object: ${path2}`, "not_found");
+    if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
+    const body = await res.json();
+    const signedPath = body.signedURL ?? body.signedUrl;
+    if (!signedPath) throw new StorageError("storage get returned no signed URL", "failed");
+    return { url: signedPath.startsWith("http") ? signedPath : `${root}${signedPath}` };
+  }
+  res = await fetch(`${root}/object/${bucket}`, {
+    method: "DELETE",
+    headers: { ...headers, "content-type": "application/json" },
+    body: JSON.stringify({ prefixes: [path2] })
   });
   if (res.status === 404) throw new StorageError(`no such object: ${path2}`, "not_found");
   if (!res.ok) throw new StorageError(`storage ${op} failed: ${res.status}`, "failed");
-  const body = await res.json();
-  if (typeof body.path === "string" && body.path !== path2) {
-    throw new StorageError(
-      `storage key normalization disagrees with the platform: sent ${path2}, platform used ${body.path}`,
-      "forbidden"
-    );
-  }
-  return body;
+  return { deleted: true, path: path2 };
 }
 async function storageGet(relKey) {
   const [row] = await db.select().from(files).where(eq2(files.key, canonicalKey(relKey))).limit(1);
@@ -848,6 +922,9 @@ async function getRequestDetail(requestId, viewerId) {
   const canWrite = isOwner || (accepted ? accepted.providerUserId === viewerId : hasOffered);
   const myOffers = offerRows.filter((o) => o.providerUserId === viewerId);
   const myReview = await db.select({ id: reviews.id, rating: reviews.rating }).from(reviews).where(and2(eq3(reviews.requestId, requestId), eq3(reviews.authorId, viewerId))).limit(1);
+  const viewerIsProvider = !isOwner;
+  const viewerBalance = viewerIsProvider ? await walletBalance(viewerId) : 0;
+  const commissionDue = accepted && accepted.providerUserId === viewerId ? commissionFor(row.agreedAmount ?? accepted.price) : null;
   return {
     request: row,
     images,
@@ -858,6 +935,13 @@ async function getRequestDetail(requestId, viewerId) {
     hasOffered,
     canWriteMessages: canWrite,
     iReviewed: myReview.length > 0,
+    /** رصيد الحرّاف الحالي (0 للزبون) — لتحديد حاجز الشحن في الواجهة. */
+    viewerBalance,
+    /** عمولة الطلب المستحقّة على الحرّاف المقبول، أو null. */
+    commissionDue,
+    /** هل تمنع حالة الرصيد الحرّاف من إرسال عرض أو بدء التنفيذ؟ */
+    needsTopup: viewerIsProvider && viewerBalance < 0,
+    canOffer: viewerIsProvider && viewerBalance > 0,
     /** الطرف الآخر في الطلب (للتقييم/العرض). */
     counterpartId: isOwner ? accepted?.providerUserId ?? null : row.customerId
   };
@@ -877,37 +961,15 @@ async function updateRequestStatus(input) {
     if (request.status !== "open") throw new InvalidStateError("\u0644\u0627 \u064A\u0645\u0643\u0646 \u0625\u0644\u063A\u0627\u0621 \u0637\u0644\u0628 \u062A\u062C\u0627\u0648\u0632 \u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u0639\u0631\u0648\u0636");
   } else if (input.next === "in_progress") {
     if (request.status !== "accepted") throw new InvalidStateError("\u0627\u0644\u0637\u0644\u0628 \u0644\u064A\u0633 \u0641\u064A \u0645\u0631\u062D\u0644\u0629 \xAB\u0645\u0642\u0628\u0648\u0644\xBB");
+    if (!isOwner && acceptedOffer) await assertProviderCanProceed(acceptedOffer.providerUserId);
   } else if (input.next === "completed") {
     if (request.status !== "in_progress") throw new InvalidStateError("\u0627\u0644\u0637\u0644\u0628 \u0644\u064A\u0633 \u0642\u064A\u062F \u0627\u0644\u062A\u0646\u0641\u064A\u0630");
+    if (!isOwner && acceptedOffer) await assertProviderCanProceed(acceptedOffer.providerUserId);
   }
   const updated = await db.update(requests).set({ status: input.next, updatedAt: /* @__PURE__ */ new Date() }).where(and2(eq3(requests.id, input.requestId), eq3(requests.status, request.status))).returning();
   if (!updated.length) throw new ConflictError("\u062A\u063A\u064A\u0651\u0631\u062A \u062D\u0627\u0644\u0629 \u0627\u0644\u0637\u0644\u0628\u060C \u062D\u062F\u0651\u062B \u0627\u0644\u0635\u0641\u062D\u0629");
   if (input.next === "completed" && acceptedOffer) {
-    const amount = request.agreedAmount ?? acceptedOffer.price;
-    const fee = Math.round(amount * PLATFORM_FEE_PERCENT / 100);
-    const net = amount - fee;
     await atomic2((d) => [
-      d.insert(walletTransactions).values({
-        userId: request.customerId,
-        requestId: request.id,
-        type: "payment",
-        amount: -amount,
-        description: `\u062F\u0641\u0639 \u0645\u0642\u0627\u0628\u0644 \xAB${request.title}\xBB`
-      }),
-      d.insert(walletTransactions).values({
-        userId: acceptedOffer.providerUserId,
-        requestId: request.id,
-        type: "payout",
-        amount: net,
-        description: `\u0627\u0633\u062A\u062D\u0642\u0627\u0642 \u0645\u0642\u0627\u0628\u0644 \xAB${request.title}\xBB`
-      }),
-      d.insert(walletTransactions).values({
-        userId: acceptedOffer.providerUserId,
-        requestId: request.id,
-        type: "fee",
-        amount: -fee,
-        description: `\u0639\u0645\u0648\u0644\u0629 \u0627\u0644\u0645\u0646\u0635\u0651\u0629 ${PLATFORM_FEE_PERCENT}% \u0639\u0644\u0649 \xAB${request.title}\xBB`
-      }),
       d.update(providerProfiles).set({ completedJobs: sql`${providerProfiles.completedJobs} + 1`, updatedAt: /* @__PURE__ */ new Date() }).where(eq3(providerProfiles.userId, acceptedOffer.providerUserId)),
       d.insert(notifications).values({
         userId: request.customerId,
@@ -919,8 +981,8 @@ async function updateRequestStatus(input) {
       d.insert(notifications).values({
         userId: acceptedOffer.providerUserId,
         type: "completed",
-        title: "\u0623\u064F\u0646\u062C\u0632 \u0627\u0644\u0639\u0645\u0644 \u2014 \u0627\u0633\u062A\u062D\u0642\u0627\u0642\u0643 \u062C\u0627\u0647\u0632",
-        body: `\u0623\u064F\u0636\u064A\u0641 ${net} \u062F\u0631\u0647\u0645 \u0625\u0644\u0649 \u0645\u062D\u0641\u0638\u062A\u0643 \u0645\u0642\u0627\u0628\u0644 \xAB${request.title}\xBB.`,
+        title: "\u0623\u064F\u0646\u062C\u0632 \u0627\u0644\u0639\u0645\u0644",
+        body: `\u062A\u0645 \u0625\u0646\u062C\u0627\u0632 \xAB${request.title}\xBB. \u062D\u0635\u0651\u0644 \u0623\u062C\u0631\u0643 \u0645\u0646 \u0627\u0644\u0632\u0628\u0648\u0646 \u0645\u0628\u0627\u0634\u0631\u0629.`,
         requestId: request.id
       })
     ]);
@@ -978,6 +1040,9 @@ async function createOffer(input) {
   if (!req) throw new NotFoundError("\u0627\u0644\u0637\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F");
   if (req.customerId === input.providerUserId) throw new ForbiddenError("\u0644\u0627 \u064A\u0645\u0643\u0646\u0643 \u0627\u0644\u0639\u0631\u0636 \u0639\u0644\u0649 \u0637\u0644\u0628\u0643");
   if (req.status !== "open") throw new InvalidStateError("\u0627\u0644\u0637\u0644\u0628 \u0644\u0645 \u064A\u0639\u062F \u064A\u0633\u062A\u0642\u0628\u0644 \u0639\u0631\u0648\u0636\u0627\u064B");
+  if (!await providerCanOffer(input.providerUserId)) {
+    throw new InvalidStateError("\u0627\u0634\u062D\u0646 \u062D\u0633\u0627\u0628\u0643 \u0644\u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0639\u0631\u0636");
+  }
   const [existing] = await db.select().from(offers).where(and2(eq3(offers.requestId, input.requestId), eq3(offers.providerUserId, input.providerUserId))).limit(1);
   try {
     if (existing) {
@@ -1050,6 +1115,12 @@ async function acceptOffer(offerId, customerId) {
     updatedAt: /* @__PURE__ */ new Date()
   }).where(and2(eq3(requests.id, row.requestId), eq3(requests.status, "open"))).returning();
   if (!updatedReq.length) throw new ConflictError("\u0633\u0628\u0642\u0643 \u062A\u063A\u064A\u064A\u0631 \u0639\u0644\u0649 \u0627\u0644\u0637\u0644\u0628\u060C \u062D\u062F\u0651\u062B \u0627\u0644\u0635\u0641\u062D\u0629");
+  const commission = await chargeCommission(
+    row.providerUserId,
+    row.requestId,
+    row.requestTitle,
+    row.price
+  );
   await atomic2(
     (d) => asBatch([
       d.update(offers).set({ status: "rejected", updatedAt: /* @__PURE__ */ new Date() }).where(and2(eq3(offers.requestId, row.requestId), eq3(offers.status, "pending"))),
@@ -1067,6 +1138,23 @@ async function acceptOffer(offerId, customerId) {
         body: `\u0627\u062A\u0641\u0642\u062A \u0639\u0644\u0649 \xAB${row.requestTitle}\xBB \u0628\u0640 ${row.price} \u062F\u0631\u0647\u0645.`,
         requestId: row.requestId
       }),
+      ...commission.charged ? [
+        d.insert(notifications).values({
+          userId: row.providerUserId,
+          type: "fee",
+          title: "\u062E\u064F\u0635\u0645\u062A \u0639\u0645\u0648\u0644\u0629 \u0627\u0644\u0645\u0646\u0635\u0651\u0629",
+          body: `\u062E\u064F\u0635\u0645\u062A ${commission.fee} \u062F\u0631\u0647\u0645 \u0639\u0645\u0648\u0644\u0629\u064B \u0639\u0644\u0649 \xAB${row.requestTitle}\xBB. \u0631\u0635\u064A\u062F\u0643 \u0627\u0644\u0645\u062A\u0628\u0642\u0651\u064A ${commission.balanceAfter} \u062F\u0631\u0647\u0645.`,
+          requestId: row.requestId
+        })
+      ] : [
+        d.insert(notifications).values({
+          userId: row.providerUserId,
+          type: "fee",
+          title: "\u0627\u0634\u062D\u0646 \u0631\u0635\u064A\u062F\u0643 \u0644\u0625\u0643\u0645\u0627\u0644 \u0627\u0644\u0645\u0631\u0627\u062D\u0644 \u0645\u0639 \u0627\u0644\u0632\u0628\u0648\u0646",
+          body: `\u0639\u0645\u0648\u0644\u0629 \xAB${row.requestTitle}\xBB \u0647\u064A ${commission.fee} \u062F\u0631\u0647\u0645 \u0648\u0631\u0635\u064A\u062F\u0643 \u0644\u0627 \u064A\u0643\u0641\u064A (${commission.balanceAfter} \u062F\u0631\u0647\u0645). \u0627\u0634\u062D\u0646 \u062D\u0633\u0627\u0628\u0643 \u0644\u0628\u062F\u0621 \u0627\u0644\u062A\u0646\u0641\u064A\u0630.`,
+          requestId: row.requestId
+        })
+      ],
       ...otherPending.length ? [
         d.insert(notifications).values(
           otherPending.map((o) => ({
@@ -1080,7 +1168,13 @@ async function acceptOffer(offerId, customerId) {
       ] : []
     ])
   );
-  return { ok: true, requestId: row.requestId };
+  return {
+    ok: true,
+    requestId: row.requestId,
+    commissionFee: commission.fee,
+    balanceAfter: commission.balanceAfter,
+    needsTopup: !commission.charged
+  };
 }
 async function rejectOffer(offerId, customerId) {
   const [row] = await db.select({ id: offers.id, requestId: offers.requestId, providerUserId: offers.providerUserId, customerId: requests.customerId, title: requests.title }).from(offers).innerJoin(requests, eq3(requests.id, offers.requestId)).where(eq3(offers.id, offerId)).limit(1);
@@ -1161,6 +1255,7 @@ async function respondToCounter(input) {
     return { ok: true, accepted: false };
   }
   const agreedPrice = input.price ?? counter.price;
+  const commission = await chargeCommission(input.providerUserId, req.id, req.title, agreedPrice);
   await atomic2((d) => [
     d.update(offers).set({ status: "accepted", updatedAt: /* @__PURE__ */ new Date() }).where(eq3(offers.id, counter.id)),
     d.update(offers).set({ status: "accepted", updatedAt: /* @__PURE__ */ new Date() }).where(eq3(offers.id, original.id)),
@@ -1191,9 +1286,23 @@ async function respondToCounter(input) {
       title: "\u062A\u0645 \u0627\u0644\u0627\u062A\u0641\u0627\u0642",
       body: `\u062A\u0645 \u0625\u0633\u0646\u0627\u062F \xAB${req.title}\xBB \u0625\u0644\u064A\u0643 \u0628\u0640 ${agreedPrice} \u062F\u0631\u0647\u0645.`,
       requestId: req.id
+    }),
+    d.insert(notifications).values({
+      userId: input.providerUserId,
+      type: commission.charged ? "fee" : "topup",
+      title: commission.charged ? "\u062E\u064F\u0635\u0645\u062A \u0639\u0645\u0648\u0644\u0629 \u0627\u0644\u0645\u0646\u0635\u0651\u0629" : "\u0627\u0634\u062D\u0646 \u0631\u0635\u064A\u062F\u0643 \u0644\u0625\u0643\u0645\u0627\u0644 \u0627\u0644\u0645\u0631\u0627\u062D\u0644 \u0645\u0639 \u0627\u0644\u0632\u0628\u0648\u0646",
+      body: commission.charged ? `\u062E\u064F\u0635\u0645\u062A ${commission.fee} \u062F\u0631\u0647\u0645 \u0639\u0645\u0648\u0644\u0629\u064B \u0639\u0644\u0649 \xAB${req.title}\xBB. \u0631\u0635\u064A\u062F\u0643 \u0627\u0644\u0645\u062A\u0628\u0642\u0651\u064A ${commission.balanceAfter} \u062F\u0631\u0647\u0645.` : `\u0639\u0645\u0648\u0644\u0629 \xAB${req.title}\xBB \u0647\u064A ${commission.fee} \u062F\u0631\u0647\u0645 \u0648\u0631\u0635\u064A\u062F\u0643 \u0644\u0627 \u064A\u0643\u0641\u064A (${commission.balanceAfter} \u062F\u0631\u0647\u0645). \u0627\u0634\u062D\u0646 \u062D\u0633\u0627\u0628\u0643 \u0644\u0628\u062F\u0621 \u0627\u0644\u062A\u0646\u0641\u064A\u0630.`,
+      requestId: req.id
     })
   ]);
-  return { ok: true, accepted: true, agreedAmount: agreedPrice };
+  return {
+    ok: true,
+    accepted: true,
+    agreedAmount: agreedPrice,
+    commissionFee: commission.fee,
+    balanceAfter: commission.balanceAfter,
+    needsTopup: !commission.charged
+  };
 }
 async function listMessages(requestId, viewerId) {
   const detail = await getRequestDetail(requestId, viewerId);
@@ -1292,23 +1401,54 @@ async function listWallet(userId) {
   const spend = rows.filter((r) => r.amount < 0).reduce((s, r) => s + r.amount, 0);
   return { rows, balance, earnings, spend };
 }
-async function requestPayout(userId, amount) {
-  const { balance } = await listWallet(userId);
+async function walletBalance(userId) {
+  const [row] = await db.select({ total: sql`coalesce(sum(${walletTransactions.amount}), 0)::int` }).from(walletTransactions).where(eq3(walletTransactions.userId, userId));
+  return Number(row?.total ?? 0);
+}
+function commissionFor(agreedAmount) {
+  return Math.round(agreedAmount * PLATFORM_FEE_PERCENT / 100);
+}
+async function chargeCommission(providerUserId, requestId, requestTitle, agreedAmount) {
+  const fee = commissionFor(agreedAmount);
+  const before = await walletBalance(providerUserId);
+  const balanceAfter = before - fee;
+  const charged = balanceAfter >= 0;
+  await db.insert(walletTransactions).values({
+    userId: providerUserId,
+    requestId,
+    type: "fee",
+    amount: -fee,
+    description: charged ? `\u0639\u0645\u0648\u0644\u0629 \u0627\u0644\u0645\u0646\u0635\u0651\u0629 ${PLATFORM_FEE_PERCENT}% \u0639\u0644\u0649 \xAB${requestTitle}\xBB` : `\u0639\u0645\u0648\u0644\u0629 \u0627\u0644\u0645\u0646\u0635\u0651\u0629 ${PLATFORM_FEE_PERCENT}% \u0639\u0644\u0649 \xAB${requestTitle}\xBB \u2014 \u0627\u0644\u0631\u0635\u064A\u062F \u0646\u0627\u0642\u0635\u060C \u0627\u0634\u062D\u0646 \u062D\u0633\u0627\u0628\u0643`
+  });
+  return { fee, balanceAfter, charged };
+}
+async function assertProviderCanProceed(providerUserId) {
+  const balance = await walletBalance(providerUserId);
+  if (balance < 0) {
+    throw new InvalidStateError("\u0627\u0634\u062D\u0646 \u0631\u0635\u064A\u062F\u0643 \u0644\u0625\u0643\u0645\u0627\u0644 \u0627\u0644\u0645\u0631\u0627\u062D\u0644 \u0645\u0639 \u0627\u0644\u0632\u0628\u0648\u0646");
+  }
+}
+async function providerCanOffer(providerUserId) {
+  return await walletBalance(providerUserId) > 0;
+}
+async function topupWallet(userId, amount) {
   if (amount <= 0) throw new InvalidStateError("\u0627\u0644\u0645\u0628\u0644\u063A \u064A\u062C\u0628 \u0623\u0646 \u064A\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631");
-  if (amount > balance) throw new InvalidStateError("\u0627\u0644\u0645\u0628\u0644\u063A \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0631\u0635\u064A\u062F\u0643 \u0627\u0644\u0645\u062A\u0627\u062D");
   const [row] = await db.insert(walletTransactions).values({
     userId,
-    type: "payout",
-    amount: -amount,
-    description: "\u0637\u0644\u0628 \u0633\u062D\u0628 \u2014 \u0642\u064A\u062F \u0627\u0644\u0645\u0639\u0627\u0644\u062C\u0629"
+    type: "topup",
+    amount,
+    description: "\u0634\u062D\u0646 \u0627\u0644\u0645\u062D\u0641\u0638\u0629"
   }).returning();
-  await db.insert(notifications).values({
-    userId,
-    type: "payout",
-    title: "\u0637\u0644\u0628 \u0633\u062D\u0628 \u0645\u0633\u062C\u0651\u0644",
-    body: `\u0633\u064F\u062C\u0651\u0644 \u0637\u0644\u0628 \u0633\u062D\u0628 \u0628\u0642\u064A\u0645\u0629 ${amount} \u062F\u0631\u0647\u0645.`
-  });
-  return row;
+  const balance = await walletBalance(userId);
+  if (balance >= 0) {
+    await db.insert(notifications).values({
+      userId,
+      type: "topup",
+      title: "\u062A\u0645 \u0634\u062D\u0646 \u062D\u0633\u0627\u0628\u0643",
+      body: `\u0623\u064F\u0636\u064A\u0641 ${amount} \u062F\u0631\u0647\u0645 \u0625\u0644\u0649 \u0631\u0635\u064A\u062F\u0643. \u064A\u0645\u0643\u0646\u0643 \u0627\u0644\u0622\u0646 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0639\u0631\u0648\u0636.`
+    });
+  }
+  return { ...row, balance };
 }
 async function listNotifications(userId, limit = 60) {
   const rows = await db.select().from(notifications).where(eq3(notifications.userId, userId)).orderBy(desc2(notifications.createdAt)).limit(limit);
@@ -1506,7 +1646,7 @@ var requestsRouter = router({
       categoryId: z.uuid(),
       title: z.string().min(6).max(120),
       description: z.string().min(15).max(2e3),
-      budgetAmount: z.number().int().min(20).max(2e5),
+      budgetAmount: z.number().int().min(0).max(2e5),
       city: z.enum(MOROCCAN_CITIES),
       district: z.string().min(1).max(60),
       urgency: z.enum(URGENCIES),
@@ -1631,7 +1771,8 @@ var reviewsRouter = router({
 });
 var walletRouter = router({
   me: protectedProcedure.query(({ ctx }) => listWallet(ctx.user.id)),
-  requestPayout: protectedProcedure.input(z.object({ amount: z.number().int().min(50).max(1e5) })).mutation(({ ctx, input }) => guarded(() => requestPayout(ctx.user.id, input.amount))),
+  /** شحن رصيد الحرّاف — يغطّي به عمولة المنصّة ويسمح له بإرسال العروض. */
+  topup: protectedProcedure.input(z.object({ amount: z.number().int().min(10).max(1e5) })).mutation(({ ctx, input }) => guarded(() => topupWallet(ctx.user.id, input.amount))),
   feePercent: publicProcedure.query(() => PLATFORM_FEE_PERCENT)
 });
 var notificationsRouter = router({
@@ -1662,8 +1803,13 @@ var filesRouter = router({
       });
       return { key, uploadUrl, publicPath };
     } catch (e) {
-      if (e instanceof StorageError && e.code === "failed") {
-        return fail("BAD_REQUEST", "\u0646\u0648\u0639 \u0627\u0644\u0645\u0644\u0641 \u063A\u064A\u0631 \u0645\u062F\u0639\u0648\u0645 \u2014 \u0627\u0633\u062A\u0639\u0645\u0644 \u0635\u0648\u0631\u0627\u064B PNG \u0623\u0648 JPEG \u0623\u0648 WebP");
+      if (e instanceof StorageError) {
+        if (e.code === "failed") {
+          return fail("BAD_REQUEST", "\u062A\u0639\u0630\u0651\u0631 \u062A\u062E\u0632\u064A\u0646 \u0627\u0644\u0645\u0644\u0641 \u2014 \u0623\u0639\u062F \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629 \u0628\u0639\u062F \u0644\u062D\u0638\u0627\u062A");
+        }
+        if (e.code === "not_configured") {
+          return fail("BAD_REQUEST", "\u0631\u0641\u0639 \u0627\u0644\u0645\u0644\u0641\u0627\u062A \u063A\u064A\u0631 \u0645\u0641\u0639\u0651\u0644 \u062D\u0627\u0644\u064A\u0627\u064B");
+        }
       }
       throw e;
     }
