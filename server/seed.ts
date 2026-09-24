@@ -1033,8 +1033,8 @@ async function main() {
       {
         userId: providerId,
         type: "completed",
-        title: "أُنجز العمل — استحقاقك جاهز",
-        body: `أُضيف ${amount - Math.round((amount * PLATFORM_FEE_PERCENT) / 100)} درهم إلى محفظتك مقابل «${title}».`,
+        title: "أُنجز العمل",
+        body: `تم إنجاز «${title}». حصّل أجرك من الزبون مباشرة.`,
         requestId: reqRow.id,
         isRead: true,
         createdAt: daysAgo(Math.max(0, days - 1)),
@@ -1043,43 +1043,27 @@ async function main() {
   }
   console.log(`  ✓ ${HISTORY.length} طلباً تاريخياً منتهياً`);
 
-  // ── المحفظة: معاملات لكل طلب منتهٍ ──
+  // ── المحفظة: عمولة المنصّة على الحرّاف فقط ──
+  // النموذج: الزبون يدفع الحرّاف مباشرة (خارج المنصّة)، فلا قيود دفع/استحقاق هنا.
+  // ما يُسجَّل هو شحن الحرّاف لرصيده وخصم عمولة المنصّة لحظة القبول.
   const walletRows: (typeof walletTransactions.$inferInsert)[] = [];
   for (const p of completedPairs) {
     const fee = Math.round((p.amount * PLATFORM_FEE_PERCENT) / 100);
-    walletRows.push(
-      {
-        userId: p.customerId,
-        requestId: p.requestId,
-        type: "payment",
-        amount: -p.amount,
-        description: `دفع مقابل «${p.title}»`,
-        createdAt: daysAgo(10),
-      },
-      {
-        userId: p.providerId,
-        requestId: p.requestId,
-        type: "payout",
-        amount: p.amount - fee,
-        description: `استحقاق مقابل «${p.title}»`,
-        createdAt: daysAgo(10),
-      },
-      {
-        userId: p.providerId,
-        requestId: p.requestId,
-        type: "fee",
-        amount: -fee,
-        description: `عمولة المنصّة ${PLATFORM_FEE_PERCENT}% على «${p.title}»`,
-        createdAt: daysAgo(10),
-      },
-    );
+    walletRows.push({
+      userId: p.providerId,
+      requestId: p.requestId,
+      type: "fee",
+      amount: -fee,
+      description: `عمولة المنصّة ${PLATFORM_FEE_PERCENT}% على «${p.title}»`,
+      createdAt: daysAgo(10),
+    });
   }
-  // إيداعات افتراضية تمنح الأرصدة معنى (المحفظة سجلّ داخلي لا بوابة دفع).
+  // شحن افتراضي يمنح أرصدة الحرّافين معنى (المحفظة سجلّ داخلي لا بوابة دفع).
   walletRows.push(
-    { userId: userIdByEmail.get("sara@hirfi.ma")!, type: "topup", amount: 5000, description: "إيداع في المحفظة", createdAt: daysAgo(60) },
-    { userId: userIdByEmail.get("amine@hirfi.ma")!, type: "topup", amount: 4000, description: "إيداع في المحفظة", createdAt: daysAgo(55) },
-    { userId: userIdByEmail.get("khadija@hirfi.ma")!, type: "topup", amount: 6000, description: "إيداع في المحفظة", createdAt: daysAgo(50) },
-    { userId: userIdByEmail.get("karim@hirfi.ma")!, type: "topup", amount: 0, description: "تفعيل المحفظة", createdAt: daysAgo(90) },
+    { userId: userIdByEmail.get("karim@hirfi.ma")!, type: "topup", amount: 500, description: "شحن المحفظة", createdAt: daysAgo(90) },
+    { userId: userIdByEmail.get("amine@hirfi.ma")!, type: "topup", amount: 400, description: "شحن المحفظة", createdAt: daysAgo(55) },
+    { userId: userIdByEmail.get("khadija@hirfi.ma")!, type: "topup", amount: 600, description: "شحن المحفظة", createdAt: daysAgo(50) },
+    { userId: userIdByEmail.get("youssef@hirfi.ma")!, type: "topup", amount: 300, description: "شحن المحفظة", createdAt: daysAgo(45) },
   );
   await db.insert(walletTransactions).values(walletRows);
   console.log(`  ✓ ${walletRows.length} معاملة محفظة`);
