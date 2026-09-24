@@ -53,6 +53,44 @@ const PROFESSIONAL_CRAFT_CATEGORY_SLUGS: Record<string, string> = {
   tailoring: "tailoring",
 };
 
+type MoroccanCity = (typeof MOROCCAN_CITIES)[number];
+type ReverseAddress = Partial<Record<"city" | "town" | "municipality" | "county", string>>;
+
+const CITY_ALIASES: Record<string, MoroccanCity> = {
+  "الدار البيضاء": "الدار البيضاء",
+  casablanca: "الدار البيضاء",
+  "الرباط": "الرباط",
+  rabat: "الرباط",
+  "سلا": "سلا",
+  sale: "سلا",
+  salé: "سلا",
+  "مراكش": "مراكش",
+  marrakesh: "مراكش",
+  marrakech: "مراكش",
+  "طنجة": "طنجة",
+  tanger: "طنجة",
+  tangier: "طنجة",
+  "فاس": "فاس",
+  fes: "فاس",
+  fez: "فاس",
+  "أكادير": "أكادير",
+  agadir: "أكادير",
+  "مكناس": "مكناس",
+  meknes: "مكناس",
+  "وجدة": "وجدة",
+  oujda: "وجدة",
+};
+
+function detectedCity(address: ReverseAddress): MoroccanCity | null {
+  for (const value of [address.city, address.town, address.municipality, address.county]) {
+    if (!value) continue;
+    const key = value.trim().toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const city = CITY_ALIASES[key] ?? CITY_ALIASES[value.trim()];
+    if (city) return city;
+  }
+  return null;
+}
+
 /** إرشادات قصيرة حسب نوع الخدمة حتى لا تبدو كل الطلبات كأنها أعطال منزلية. */
 const SERVICE_GUIDANCE: Record<
   string,
@@ -137,8 +175,10 @@ export default function RequestNew() {
                 `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1`,
               );
               if (!response.ok) return;
-              const data = (await response.json()) as { display_name?: string };
+              const data = (await response.json()) as { display_name?: string; address?: ReverseAddress };
               if (!cancelled && data.display_name) setGpsAddress(data.display_name);
+              const cityFromGps = data.address ? detectedCity(data.address) : null;
+              if (!cancelled && cityFromGps) setCity(cityFromGps);
             } catch {
               // The saved city and district remain the fallback when reverse geocoding is unavailable.
             }
