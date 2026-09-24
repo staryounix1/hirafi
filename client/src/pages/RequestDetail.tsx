@@ -333,10 +333,39 @@ export default function RequestDetail() {
         ) : null}
       </section>
 
+      {/* تنبيه الرصيد للحرّاف — يظهر قبل أي إجراء ولا يختفي إلا بالشحن */}
+      {!d.isOwner && (d.needsTopup || (r.status === "open" && !d.canOffer && !d.hasOffered)) ? (
+        <div className="px-4 pt-3">
+          <div className="card-flat flex items-start gap-3 border border-destructive/25 bg-destructive/8 p-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-destructive/12 text-destructive">
+              <AlertCircle className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <b className="text-[14px]">
+                {d.needsTopup ? "رصيدك لا يغطّي العمولة" : "اشحن حسابك لإرسال العرض"}
+              </b>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                {d.needsTopup
+                  ? `عمولة المنصّة على هذا الطلب ${formatMAD(d.commissionDue ?? 0)}، ورصيدك لا يكفي. اشحن حسابك لإكمال المراحل مع الزبون.`
+                  : "قبل أن تتمكّن من تقديم عرض، لازم يكون في محفظتك رصيد يغطّي عمولة المنصّة."}
+              </p>
+              <Button asChild size="sm" className="mt-3 gap-1.5 rounded-full">
+                <Link href="/wallet">
+                  <Wallet className="size-3.5" />
+                  اشحن حسابك
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* نموذج تقديم عرض — للحرّاف على طلب مفتوح لم يعرض عليه بعد */}
       {!d.isOwner && r.status === "open" && !d.hasOffered ? (
         <div className="px-4 pt-3">
-          <OfferForm requestId={r.id} budget={r.budgetAmount} onDone={() => void q.refetch()} />
+          {d.canOffer ? (
+            <OfferForm requestId={r.id} budget={r.budgetAmount} onDone={() => void q.refetch()} />
+          ) : null}
         </div>
       ) : null}
 
@@ -425,21 +454,21 @@ export default function RequestDetail() {
                   <dd className="font-black">{formatMAD(r.agreedAmount)}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-muted-foreground">عمولة المنصّة (10%)</dt>
-                  <dd className="font-black">{formatMAD(Math.round(r.agreedAmount * 0.1))}</dd>
+                  <dt className="text-muted-foreground">عمولة المنصّة (15%) — تُخصم من محفظتك</dt>
+                  <dd className="font-black">{formatMAD(d.commissionDue ?? Math.round(r.agreedAmount * 0.15))}</dd>
                 </div>
                 <div className="mt-1 flex items-center justify-between gap-3 border-t border-teal/20 pt-2">
-                  <dt className="font-black">صافي استحقاق الحرّاف</dt>
+                  <dt className="font-black">تصلك من الزبون مباشرة</dt>
                   <dd className="text-price text-[17px] leading-none text-teal">
-                    {madNumber(r.agreedAmount - Math.round(r.agreedAmount * 0.1))}
+                    {madNumber(r.agreedAmount)}
                   </dd>
                 </div>
               </dl>
             )}
             <p className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">
               {d.isOwner
-                ? "هذا هو المبلغ النهائي المتفق عليه مع الحرّاف."
-                : "تُقيَّد العمليّات في المحفظة الداخلية عند إتمام الطلب — لا بوابة دفع حقيقية في هذا النطاق."}
+                ? "تدفع للحرّاف مباشرة بعد إتمام الخدمة، نقداً أو تحويلاً بينكما."
+                : "الزبون يدفع لك مباشرة عند إتمام الخدمة. عمولة المنصّة خُصمت سلفاً من محفظتك لحظة القبول."}
             </p>
           </div>
         </section>
@@ -1000,7 +1029,7 @@ function OwnerActions({
       next: "completed",
       label: "أنهِ الطلب",
       tone: "success",
-      hint: "عند الإتمام تُقيَّد الدفعة وعمولة المنصّة 10% في المحفظة، ويصبح التقييم متاحاً للطرفين.",
+      hint: "عند الإتمام يصبح التقييم متاحاً، وتحصّل أجرك من الزبون مباشرة.",
     });
   }
 
