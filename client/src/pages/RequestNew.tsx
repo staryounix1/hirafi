@@ -17,22 +17,15 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Chip, ErrorState, Field, SectionHeading, Spinner } from "@/components/hirfi/primitives";
+import { ErrorState, Field, SectionHeading, Spinner } from "@/components/hirfi/primitives";
 import { trpc } from "@/_core/trpc";
-import { useCategories } from "@/lib/hooks";
+import { useCategories, useMyProfile } from "@/lib/hooks";
 import { useMediaUpload, type UploadedImage } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { categoryIcon, errorMessage, madNumber } from "@/lib/format";
-import { MOROCCAN_CITIES, DISTRICTS_BY_CITY, URGENCIES } from "@shared/constants";
-
-const URGENCY_LABEL: Record<string, string> = {
-  flexible: "مرن في الوقت",
-  today: "اليوم",
-  urgent: "عاجل جداً",
-};
+import { MOROCCAN_CITIES } from "@shared/constants";
 
 const PROFESSIONAL_CRAFT_LABELS: Record<string, string> = {
   painting: "صباغة",
@@ -100,6 +93,7 @@ const QUICK_STEPS = [50, 100, 200];
 
 export default function RequestNew() {
   const cats = useCategories();
+  const profile = useMyProfile();
   const create = trpc.requests.create.useMutation();
   const utils = trpc.useUtils();
   const { upload, isUploading } = useMediaUpload();
@@ -110,9 +104,9 @@ export default function RequestNew() {
   const [description, setDescription] = useState("");
   const [budget, setBudget] = useState("300");
   const [city, setCity] = useState<string>(MOROCCAN_CITIES[0]);
-  const [district, setDistrict] = useState<string>("");
-  const [urgency, setUrgency] = useState<string>("flexible");
-  const [scheduled, setScheduled] = useState("");
+  const [district, setDistrict] = useState<string>("الموقع الحالي");
+  const [gpsAddress, setGpsAddress] = useState<string | null>(null);
+  const [locationSource, setLocationSource] = useState<"profile" | "gps">("profile");
   const [media, setMedia] = useState<(UploadedImage & { kind: "image" | "video" })[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -120,6 +114,46 @@ export default function RequestNew() {
     typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("service") ?? "";
   const isProfessionalCraft = Boolean(PROFESSIONAL_CRAFT_LABELS[requestedService]);
   const serviceLabel = isProfessionalCraft ? PROFESSIONAL_CRAFT_LABELS[requestedService] : undefined;
+
+  useEffect(() => {
+    const p = profile.data?.profile;
+    if (!p) return;
+    setCity(p.city || MOROCCAN_CITIES[0]);
+    setDistrict(p.district || "الموقع الحالي");
+  }, [profile.data]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (typeof navigator === "undefined" || !navigator.geolocation || !navigator.permissions) return;
+
+    void navigator.permissions
+      .query({ name: "geolocation" })
+      .then((permission) => {
+        if (permission.state !== "granted") return;
+        navigator.geolocation.getCurrentPosition(
+          async ({ coords }) => {
+            try {
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1`,
+              );
+              if (!response.ok) return;
+              const data = (await response.json()) as { display_name?: string };
+              if (!cancelled && data.display_name) setGpsAddress(data.display_name);
+            } catch {
+              // The saved city and district remain the fallback when reverse geocoding is unavailable.
+            }
+            if (!cancelled) setLocationSource("gps");
+          },
+          () => undefined,
+          { enableHighAccuracy: true, maximumAge: 60_000, timeout: 8_000 },
+        );
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (categoryId || !requestedService || !cats.data) return;
@@ -130,7 +164,6 @@ export default function RequestNew() {
     if (requestedCategory) setCategoryId(requestedCategory.id);
   }, [categoryId, cats.data, requestedService]);
 
-  const districts = DISTRICTS_BY_CITY[city] ?? [];
   const budgetNum = Number(budget);
   const selectedCat = (cats.data ?? []).find((c) => c.id === categoryId);
   const guidance = selectedCat
@@ -156,11 +189,6 @@ export default function RequestNew() {
     if (description.trim().length < 15) e.description = "اشرح المشكلة بتفصيل (15 حرفاً على الأقل)";
     if (!isProfessionalCraft && (!budget || Number.isNaN(budgetNum) || budgetNum < 20))
       e.budget = "الميزانية المقترحة يجب أن تكون 20 درهماً أو أكثر";
-    if (!district) e.district = "اختر الحي";
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (scheduled && new Date(scheduled) < today)
-      e.scheduled = "الوقت المقترح لا يمكن أن يكون في الماضي";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -199,10 +227,10 @@ export default function RequestNew() {
         title: title.trim(),
         description: description.trim(),
         budgetAmount: isProfessionalCraft ? 0 : Math.round(budgetNum),
-        city: city as (typeof MOROCCAN_CITIES)[number],
-        district,
-        urgency: urgency as (typeof URGENCIES)[number],
-        scheduledFor: scheduled ? new Date(scheduled) : null,
+         city: city as (typeof MOROCCAN_CITIES)[number],
+         district: district || "الموقع الحالي",
+         urgency: "flexible",
+         scheduledFor: null,
         imageUrls: media.map((item) => item.url),
       });
       await utils.invalidate();
@@ -454,76 +482,23 @@ export default function RequestNew() {
           </Field>
         </section>
 
-        {/* 4 — الموقع والوقت */}
+        {/* 4 — الموقع التلقائي */}
         <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-          <SectionHeading
-            title="أين ومتى؟"
-            description={guidance.location}
-          />
-
-          <div className="grid gap-1.5">
-            <span className="text-[13px] font-bold">المدينة</span>
-            <div className="flex flex-wrap gap-2">
-              {MOROCCAN_CITIES.slice(0, 6).map((c) => (
-                <Chip
-                  key={c}
-                  active={city === c}
-                  onClick={() => {
-                    setCity(c);
-                    setDistrict("");
-                  }}
-                >
-                  {c}
-                </Chip>
-              ))}
+          <SectionHeading title="الموقع" description="تم تحديد مكانك تلقائياً من بيانات الحساب أو GPS المتاح." />
+          <div className="flex items-center gap-3 rounded-2xl bg-muted/70 px-3.5 py-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink">
+              <MapPin className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-black">{gpsAddress ?? district}</div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">{city}</div>
             </div>
-            <Select
-              value={city}
-              onChange={(e) => {
-                setCity(e.target.value);
-                setDistrict("");
-              }}
-              className="mt-1"
-            >
-              {MOROCCAN_CITIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
+            <span className="shrink-0 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">
+              {locationSource === "gps" ? "GPS" : "تلقائي"}
+            </span>
           </div>
-
-          <Field label="الحي" required error={errors.district} hint="نفس الحي = «قريب» عند الحرّاف">
-            <Select value={district} onChange={(e) => setDistrict(e.target.value)}>
-              <option value="">— اختر الحي —</option>
-              {districts.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </Select>
-          </Field>
-
-          <div className="grid gap-1.5">
-            <span className="text-[13px] font-bold">الاستعجال</span>
-            <div className="flex flex-wrap gap-2">
-              {URGENCIES.map((u) => (
-                <Chip key={u} active={urgency === u} onClick={() => setUrgency(u)}>
-                  {URGENCY_LABEL[u]}
-                </Chip>
-              ))}
-            </div>
-          </div>
-
-          <Field label="الوقت المقترح للتنفيذ" hint="اختياري — اتركه فارغاً إن كنت مرناً" error={errors.scheduled}>
-            <Input type="datetime-local" value={scheduled} onChange={(e) => setScheduled(e.target.value)} />
-          </Field>
-
-          <p className="flex items-start gap-1.5 rounded-2xl bg-muted/70 px-3 py-2.5 text-[11.5px] leading-relaxed text-muted-foreground">
-            <MapPin className="mt-0.5 size-3.5 shrink-0" />
-             سنعرض طلبك على الحرّافين في {city}
-             {district ? ` — ${district}` : ""} حسب فئته
-             {isProfessionalCraft ? " وموقعه." : " وميزانيته."}
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            غادي يوصل الطلب للحرّافين القريبين من {city} — ما كاين لا وقت مقترح ولا خانات إضافية للموقع.
           </p>
         </section>
 
