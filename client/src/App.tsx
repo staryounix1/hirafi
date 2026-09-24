@@ -2,7 +2,7 @@
 // اسم الملف يأتي من الاتفاق المعلن في المواصفة، والمسار الجذري يشرح الفكرة لمن
 // يفتح الرابط أول مرة. الحاجز `Protected` يغلّف كل مسار يحتاج جلسة.
 import { Route, Switch } from "wouter";
-import { Protected } from "@/components/hirfi/shell";
+import { Protected, ProviderOnly } from "@/components/hirfi/shell";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -73,7 +73,9 @@ export default function App() {
       </Route>
       <Route path="/wallet">
         <Protected>
-          <Wallet />
+          <ProviderOnly>
+            <Wallet />
+          </ProviderOnly>
         </Protected>
       </Route>
       <Route path="/notifications">

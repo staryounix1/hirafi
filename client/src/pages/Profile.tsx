@@ -210,7 +210,7 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className={cn("mt-3 grid gap-2", isProvider ? "grid-cols-2" : "grid-cols-1")}>
             <div className="rounded-2xl bg-muted/70 px-3 py-2.5">
               <div className="flex items-center gap-1 text-[10.5px] font-bold text-muted-foreground">
                 <Star className="size-3 fill-warn text-warn" />
@@ -224,19 +224,21 @@ export default function Profile() {
               </div>
               <div className="mt-0.5 text-[10px] text-muted-foreground">{countAr(p.ratingCount, ["تقييم", "تقييمان", "تقييمات"], "تقييماً")}</div>
             </div>
-            <div className="rounded-2xl bg-muted/70 px-3 py-2.5">
-              <div className="flex items-center gap-1 text-[10.5px] font-bold text-muted-foreground">
-                <Wallet className="size-3 text-teal" />
-                رصيد المحفظة
+            {isProvider ? (
+              <div className="rounded-2xl bg-muted/70 px-3 py-2.5">
+                <div className="flex items-center gap-1 text-[10.5px] font-bold text-muted-foreground">
+                  <Wallet className="size-3 text-teal" />
+                  رصيد المحفظة
+                </div>
+                <div className="text-price mt-1 flex items-baseline gap-1 text-[19px] leading-none">
+                  {madNumber(q.data.balance)}
+                  <span className="text-[10px] font-bold text-muted-foreground">درهم</span>
+                </div>
+                <Link href="/wallet" className="mt-0.5 block text-[10px] font-bold text-brand-dark underline">
+                  افتح المحفظة
+                </Link>
               </div>
-              <div className="text-price mt-1 flex items-baseline gap-1 text-[19px] leading-none">
-                {madNumber(q.data.balance)}
-                <span className="text-[10px] font-bold text-muted-foreground">درهم</span>
-              </div>
-              <Link href="/wallet" className="mt-0.5 block text-[10px] font-bold text-brand-dark underline">
-                افتح المحفظة
-              </Link>
-            </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -493,15 +495,17 @@ export default function Profile() {
 
       {/* روابط سريعة + المراجعات */}
       <div className="grid gap-3 px-4 pt-3">
-        <Link href="/wallet" className="card-flat flex items-center gap-3 p-4 active:bg-muted/50">
-          <span className="grid size-9 place-items-center rounded-2xl bg-teal-soft text-teal">
-            <Wallet className="size-4.5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-[13px] font-black">المحفظة</div>
-            <div className="text-[11px] text-muted-foreground">رصيدك: {formatMAD(q.data.balance)}</div>
-          </div>
-        </Link>
+        {isProvider ? (
+          <Link href="/wallet" className="card-flat flex items-center gap-3 p-4 active:bg-muted/50">
+            <span className="grid size-9 place-items-center rounded-2xl bg-teal-soft text-teal">
+              <Wallet className="size-4.5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-black">المحفظة</div>
+              <div className="text-[11px] text-muted-foreground">رصيدك: {formatMAD(q.data.balance)}</div>
+            </div>
+          </Link>
+        ) : null}
         <Link href="/notifications" className="card-flat flex items-center gap-3 p-4 active:bg-muted/50">
           <span className="grid size-9 place-items-center rounded-2xl bg-warn-soft text-warn">
             <Bell className="size-4.5" />

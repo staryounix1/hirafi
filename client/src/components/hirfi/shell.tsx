@@ -23,7 +23,7 @@ import { Spinner } from "@/components/hirfi/primitives";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
-/** شرائح التنقّل السفلي — الزبون: رئيسية/طلباتي/طلب/محفظة/حسابي، والحرّاف: رئيسية/تصفّح/عروضي/محفظة/حسابي. */
+/** شرائح التنقّل السفلي — المحفظة خاصة بحساب الحرّاف. */
 function navFor(isProvider: boolean): NavItem[] {
   return isProvider
     ? [
@@ -37,7 +37,6 @@ function navFor(isProvider: boolean): NavItem[] {
         { href: "/dashboard", label: "الرئيسية", icon: HomeIcon },
         { href: "/requests", label: "طلباتي", icon: ClipboardList },
         { href: "/requests/new", label: "اطلب", icon: Plus },
-        { href: "/wallet", label: "المحفظة", icon: Wallet },
         { href: "/profile", label: "حسابي", icon: UserCircle },
       ];
 }
@@ -160,4 +159,21 @@ export function Protected({ children }: { children: ReactNode }) {
     typeof window === "undefined" ? path : `${path}${window.location.search}`;
   if (!user) return <Redirect to={`/login?next=${encodeURIComponent(destination)}`} />;
   return <Shell>{children}</Shell>;
+}
+
+/** مسار خاص بالحرّاف؛ الزبون لا يملك محفظة داخل التطبيق. */
+export function ProviderOnly({ children }: { children: ReactNode }) {
+  const { role, isLoading } = useAppRole();
+  if (isLoading) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Spinner />
+          جارٍ التحميل…
+        </div>
+      </div>
+    );
+  }
+  if (role !== "provider") return <Redirect to="/dashboard" />;
+  return <>{children}</>;
 }
