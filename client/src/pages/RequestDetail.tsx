@@ -405,24 +405,33 @@ export default function RequestDetail() {
               <Wallet className="size-4.5" />
               الاتفاق المالي
             </h2>
-            <dl className="mt-3 grid gap-2 text-[12.5px]">
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">السعر المتفق عليه</dt>
-                <dd className="font-black">{formatMAD(r.agreedAmount)}</dd>
+            {d.isOwner ? (
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="text-[12.5px] text-muted-foreground">المبلغ النهائي المتفق عليه</span>
+                <span className="text-price text-[20px] leading-none text-teal">{formatMAD(r.agreedAmount)}</span>
               </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">عمولة المنصّة (10%)</dt>
-                <dd className="font-black">{formatMAD(Math.round(r.agreedAmount * 0.1))}</dd>
-              </div>
-              <div className="mt-1 flex items-center justify-between gap-3 border-t border-teal/20 pt-2">
-                <dt className="font-black">صافي استحقاق الحرّاف</dt>
-                <dd className="text-price text-[17px] leading-none text-teal">
-                  {madNumber(r.agreedAmount - Math.round(r.agreedAmount * 0.1))}
-                </dd>
-              </div>
-            </dl>
+            ) : (
+              <dl className="mt-3 grid gap-2 text-[12.5px]">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">السعر المتفق عليه</dt>
+                  <dd className="font-black">{formatMAD(r.agreedAmount)}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">عمولة المنصّة (10%)</dt>
+                  <dd className="font-black">{formatMAD(Math.round(r.agreedAmount * 0.1))}</dd>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-3 border-t border-teal/20 pt-2">
+                  <dt className="font-black">صافي استحقاق الحرّاف</dt>
+                  <dd className="text-price text-[17px] leading-none text-teal">
+                    {madNumber(r.agreedAmount - Math.round(r.agreedAmount * 0.1))}
+                  </dd>
+                </div>
+              </dl>
+            )}
             <p className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">
-              تُقيَّد العمليّات في المحفظة الداخلية عند إتمام الطلب — لا بوابة دفع حقيقية في هذا النطاق.
+              {d.isOwner
+                ? "هذا هو المبلغ النهائي المتفق عليه مع الحرّاف."
+                : "تُقيَّد العمليّات في المحفظة الداخلية عند إتمام الطلب — لا بوابة دفع حقيقية في هذا النطاق."}
             </p>
           </div>
         </section>
