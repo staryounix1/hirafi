@@ -71,6 +71,7 @@ export function RequestCard({
   const urg = urgencyMeta(request.urgency);
   const offers = request.offerCount ?? 0;
   const amount = request.agreedAmount ?? request.budgetAmount;
+  const hasAmount = amount > 0;
   const band =
     showDistance && viewerCity
       ? distanceBand(
@@ -102,11 +103,13 @@ export function RequestCard({
             </div>
           </div>
           <div className="shrink-0 text-end">
-            <div className="text-price text-[26px] leading-none text-foreground">
-              {madNumber(amount)}
-            </div>
+            {hasAmount ? (
+              <div className="text-price text-[26px] leading-none text-foreground">{madNumber(amount)}</div>
+            ) : (
+              <div className="text-[15px] leading-tight font-black text-teal">بدون ميزانية</div>
+            )}
             <div className="mt-1 text-[10.5px] font-bold text-muted-foreground">
-              {request.agreedAmount ? "درهم — السعر المتفق عليه" : "درهم — سعرك المقترح"}
+              {request.agreedAmount ? "درهم — السعر المتفق عليه" : hasAmount ? "درهم — سعرك المقترح" : "الحرّاف يرسل عرضه"}
             </div>
           </div>
         </div>

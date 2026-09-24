@@ -203,7 +203,7 @@ export default function Offers() {
                         <div className="text-end text-[11px] leading-snug text-muted-foreground">
                           <div className="inline-flex items-center gap-1">
                             <CircleDollarSign className="size-3" />
-                            ميزانية الزبون {formatMAD(o.budgetAmount)}
+                            {o.budgetAmount > 0 ? `ميزانية الزبون ${formatMAD(o.budgetAmount)}` : "الزبون بلا ميزانية مسبقة"}
                           </div>
                           <div>{formatDuration(o.durationMinutes)}</div>
                           <div>{o.customerName}</div>

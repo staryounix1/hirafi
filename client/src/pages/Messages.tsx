@@ -104,7 +104,9 @@ export default function Messages() {
           statusLabel: sm.label,
           metaNote: r.agreedAmount
             ? `اتفقتما على ${formatMAD(r.agreedAmount)}`
-            : `ميزانيتك المقترحة ${formatMAD(r.budgetAmount)}`,
+            : r.budgetAmount > 0
+              ? `ميزانيتك المقترحة ${formatMAD(r.budgetAmount)}`
+              : "بدون ميزانية مسبقة — انتظر عروض الحرّافين",
           updatedAt: r.updatedAt,
           href: `/requests/${r.id}`,
         };
