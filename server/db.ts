@@ -434,6 +434,15 @@ export async function getRequestDetail(requestId: string, viewerId: string) {
     .where(and(eq(reviews.requestId, requestId), eq(reviews.authorId, viewerId)))
     .limit(1);
 
+  // للحرّاف المعني بالطلب: هل يغطّي رصيده العمولة؟ يقرّر الواجهة إظهار تنبيه
+  // «اشحن» ومنع الإجراءات، بدل أن يرتدّ الخادم بالخطأ فقط.
+  const viewerIsProvider = !isOwner;
+  const viewerBalance = viewerIsProvider ? await walletBalance(viewerId) : 0;
+  const commissionDue =
+    accepted && accepted.providerUserId === viewerId
+      ? commissionFor(row.agreedAmount ?? accepted.price)
+      : null;
+
   return {
     request: row,
     images,
@@ -444,6 +453,13 @@ export async function getRequestDetail(requestId: string, viewerId: string) {
     hasOffered,
     canWriteMessages: canWrite,
     iReviewed: myReview.length > 0,
+    /** رصيد الحرّاف الحالي (0 للزبون) — لتحديد حاجز الشحن في الواجهة. */
+    viewerBalance,
+    /** عمولة الطلب المستحقّة على الحرّاف المقبول، أو null. */
+    commissionDue,
+    /** هل تمنع حالة الرصيد الحرّاف من إرسال عرض أو بدء التنفيذ؟ */
+    needsTopup: viewerIsProvider && viewerBalance < 0,
+    canOffer: viewerIsProvider && viewerBalance > 0,
     /** الطرف الآخر في الطلب (للتقييم/العرض). */
     counterpartId: isOwner ? (accepted?.providerUserId ?? null) : row.customerId,
   };
@@ -475,8 +491,11 @@ export async function updateRequestStatus(input: {
     if (request.status !== "open") throw new InvalidStateError("لا يمكن إلغاء طلب تجاوز مرحلة العروض");
   } else if (input.next === "in_progress") {
     if (request.status !== "accepted") throw new InvalidStateError("الطلب ليس في مرحلة «مقبول»");
+    // لا يبدأ التنفيذ وحرّاف الطلب مدين بعمولة لم يغطّها رصيده بعد.
+    if (!isOwner && acceptedOffer) await assertProviderCanProceed(acceptedOffer.providerUserId);
   } else if (input.next === "completed") {
     if (request.status !== "in_progress") throw new InvalidStateError("الطلب ليس قيد التنفيذ");
+    if (!isOwner && acceptedOffer) await assertProviderCanProceed(acceptedOffer.providerUserId);
   }
 
   // حاجز SQL على الحالة المقروءة — صفر صفوف = سبقنا أحد.
@@ -487,33 +506,10 @@ export async function updateRequestStatus(input: {
     .returning();
   if (!updated.length) throw new ConflictError("تغيّرت حالة الطلب، حدّث الصفحة");
 
-  // عند الإتمام: عمولة المنصّة + دفع للحرّاف + عدّاد أعماله + إشعارات.
+  // عند الإتمام: عدّاد أعمال الحرّاف + إشعارات. لا حركة مالية هنا: العمولة
+  // خُصمت سلفاً لحظة القبول، ودفع الزبون للحرّاف يتم بينهما مباشرة بعد الخدمة.
   if (input.next === "completed" && acceptedOffer) {
-    const amount = request.agreedAmount ?? acceptedOffer.price;
-    const fee = Math.round((amount * PLATFORM_FEE_PERCENT) / 100);
-    const net = amount - fee;
     await atomic((d) => [
-      d.insert(walletTransactions).values({
-        userId: request.customerId,
-        requestId: request.id,
-        type: "payment",
-        amount: -amount,
-        description: `دفع مقابل «${request.title}»`,
-      }),
-      d.insert(walletTransactions).values({
-        userId: acceptedOffer.providerUserId,
-        requestId: request.id,
-        type: "payout",
-        amount: net,
-        description: `استحقاق مقابل «${request.title}»`,
-      }),
-      d.insert(walletTransactions).values({
-        userId: acceptedOffer.providerUserId,
-        requestId: request.id,
-        type: "fee",
-        amount: -fee,
-        description: `عمولة المنصّة ${PLATFORM_FEE_PERCENT}% على «${request.title}»`,
-      }),
       d
         .update(providerProfiles)
         .set({ completedJobs: sql`${providerProfiles.completedJobs} + 1`, updatedAt: new Date() })
@@ -528,8 +524,8 @@ export async function updateRequestStatus(input: {
       d.insert(notifications).values({
         userId: acceptedOffer.providerUserId,
         type: "completed",
-        title: "أُنجز العمل — استحقاقك جاهز",
-        body: `أُضيف ${net} درهم إلى محفظتك مقابل «${request.title}».`,
+        title: "أُنجز العمل",
+        body: `تم إنجاز «${request.title}». حصّل أجرك من الزبون مباشرة.`,
         requestId: request.id,
       }),
     ] as unknown as [ReturnType<typeof d.insert>, ...ReturnType<typeof d.insert>[]]);
@@ -623,6 +619,11 @@ export async function createOffer(input: {
   if (!req) throw new NotFoundError("الطلب غير موجود");
   if (req.customerId === input.providerUserId) throw new ForbiddenError("لا يمكنك العرض على طلبك");
   if (req.status !== "open") throw new InvalidStateError("الطلب لم يعد يستقبل عروضاً");
+  // لا عرض بلا رصيد: العمولة تُخصم من محفظة الحرّاف عند القبول، فيجب أن يكون
+  // قادراً على تغطيتها قبل أن يُسمح له بالتنافس. الرسالة تُعرض كتنبيه «اشحن».
+  if (!(await providerCanOffer(input.providerUserId))) {
+    throw new InvalidStateError("اشحن حسابك لإرسال العرض");
+  }
 
   const [existing] = await db
     .select()
@@ -736,6 +737,14 @@ export async function acceptOffer(offerId: string, customerId: string) {
     .returning();
   if (!updatedReq.length) throw new ConflictError("سبقك تغيير على الطلب، حدّث الصفحة");
 
+  // العمولة تُخصم من محفظة الحرّاف لحظة القبول نفسها (داخل معاملة القبول).
+  const commission = await chargeCommission(
+    row.providerUserId,
+    row.requestId,
+    row.requestTitle,
+    row.price,
+  );
+
   await atomic((d) =>
     asBatch([
       d
@@ -756,6 +765,25 @@ export async function acceptOffer(offerId: string, customerId: string) {
         body: `اتفقت على «${row.requestTitle}» بـ ${row.price} درهم.`,
         requestId: row.requestId,
       }),
+      ...(commission.charged
+        ? [
+            d.insert(notifications).values({
+              userId: row.providerUserId,
+              type: "fee",
+              title: "خُصمت عمولة المنصّة",
+              body: `خُصمت ${commission.fee} درهم عمولةً على «${row.requestTitle}». رصيدك المتبقّي ${commission.balanceAfter} درهم.`,
+              requestId: row.requestId,
+            }),
+          ]
+        : [
+            d.insert(notifications).values({
+              userId: row.providerUserId,
+              type: "fee",
+              title: "اشحن رصيدك لإكمال المراحل مع الزبون",
+              body: `عمولة «${row.requestTitle}» هي ${commission.fee} درهم ورصيدك لا يكفي (${commission.balanceAfter} درهم). اشحن حسابك لبدء التنفيذ.`,
+              requestId: row.requestId,
+            }),
+          ]),
       ...(otherPending.length
         ? [
             d.insert(notifications).values(
@@ -772,7 +800,13 @@ export async function acceptOffer(offerId: string, customerId: string) {
     ]),
   );
 
-  return { ok: true, requestId: row.requestId };
+  return {
+    ok: true,
+    requestId: row.requestId,
+    commissionFee: commission.fee,
+    balanceAfter: commission.balanceAfter,
+    needsTopup: !commission.charged,
+  };
 }
 
 export async function rejectOffer(offerId: string, customerId: string) {
@@ -902,6 +936,8 @@ export async function respondToCounter(input: {
   }
 
   const agreedPrice = input.price ?? counter.price;
+  // العمولة تُخصم من محفظة الحرّاف لحظة قبول العرض المضاد — نفس منطق acceptOffer.
+  const commission = await chargeCommission(input.providerUserId, req.id, req.title, agreedPrice);
   // `acceptedOfferId` يجب أن يشير دائماً إلى صفّ يملكه الحرّاف، لا إلى صفّ العرض المضاد
   // (فالعرض المضاد مُنشأ باسم الزبون providerUserId = customerId). ولو أشرنا إليه لذهب
   // الاستحقاق وعدّاد الأعمال المنجزة إلى الزبون بدل الحرّاف في updateRequestStatus.
@@ -942,8 +978,24 @@ export async function respondToCounter(input: {
       body: `تم إسناد «${req.title}» إليك بـ ${agreedPrice} درهم.`,
       requestId: req.id,
     }),
+    d.insert(notifications).values({
+      userId: input.providerUserId,
+      type: commission.charged ? "fee" : "topup",
+      title: commission.charged ? "خُصمت عمولة المنصّة" : "اشحن رصيدك لإكمال المراحل مع الزبون",
+      body: commission.charged
+        ? `خُصمت ${commission.fee} درهم عمولةً على «${req.title}». رصيدك المتبقّي ${commission.balanceAfter} درهم.`
+        : `عمولة «${req.title}» هي ${commission.fee} درهم ورصيدك لا يكفي (${commission.balanceAfter} درهم). اشحن حسابك لبدء التنفيذ.`,
+      requestId: req.id,
+    }),
   ] as unknown[]);
-  return { ok: true, accepted: true, agreedAmount: agreedPrice };
+  return {
+    ok: true,
+    accepted: true,
+    agreedAmount: agreedPrice,
+    commissionFee: commission.fee,
+    balanceAfter: commission.balanceAfter,
+    needsTopup: !commission.charged,
+  };
 }
 
 // ── المحادثة ──────────────────────────────────────────────────────────────────
@@ -1090,27 +1142,101 @@ export async function listWallet(userId: string) {
   return { rows, balance, earnings, spend };
 }
 
-/** طلب سحب داخلي — يُسجَّل كمعاملة ولا يحرّك مالاً حقيقياً. */
-export async function requestPayout(userId: string, amount: number) {
-  const { balance } = await listWallet(userId);
+/**
+ * رصيد المستخدم الحالي (مجموع كل معاملات محفظته).
+ *
+ * الرصيد هنا هو ما شحنه الحرّاف مسبقاً، وتُخصم منه عمولة المنصة. الزبون لا يملك
+ * رصيداً يُصرَف — دفعُه للحرّاف يتم خارح المنصة مباشرة بعد إتمام الخدمة.
+ */
+export async function walletBalance(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ total: sql<number>`coalesce(sum(${walletTransactions.amount}), 0)::int` })
+    .from(walletTransactions)
+    .where(eq(walletTransactions.userId, userId));
+  return Number(row?.total ?? 0);
+}
+
+/** عمولة المنصة المستحقّة على مبلغ اتفاق (بالدرهم، بلا كسور). */
+export function commissionFor(agreedAmount: number): number {
+  return Math.round((agreedAmount * PLATFORM_FEE_PERCENT) / 100);
+}
+
+/**
+ * يخصم عمولة المنصة من محفظة الحرّاف عند قبول عرضه.
+ *
+ * يُستدعى داخل معاملة القبول نفسها (atomic) حتى لا يبقى اتفاق بلا عمولة.
+ * لا يرمي خطأً عند نقص الرصيد: يسجّل السالب على المحفظة (فيصبح الحرّاف مديناً)
+ * ويُعيد `{ charged, fee, balanceAfter }`. حالة «مدين» تُمنع لاحقاً من بدء أي
+ * إجراء على الطلب عبر `assertProviderCanProceed`، فلا يظهر تنبيه الشحن فقط بل
+ * يتوقّف التنفيذ فعلاً حتى يغطّي الرصيد العمولة.
+ */
+export async function chargeCommission(
+  providerUserId: string,
+  requestId: string,
+  requestTitle: string,
+  agreedAmount: number,
+): Promise<{ fee: number; balanceAfter: number; charged: boolean }> {
+  const fee = commissionFor(agreedAmount);
+  const before = await walletBalance(providerUserId);
+  const balanceAfter = before - fee;
+  const charged = balanceAfter >= 0;
+  await db.insert(walletTransactions).values({
+    userId: providerUserId,
+    requestId,
+    type: "fee",
+    amount: -fee,
+    description: charged
+      ? `عمولة المنصّة ${PLATFORM_FEE_PERCENT}% على «${requestTitle}»`
+      : `عمولة المنصّة ${PLATFORM_FEE_PERCENT}% على «${requestTitle}» — الرصيد ناقص، اشحن حسابك`,
+  });
+  return { fee, balanceAfter, charged };
+}
+
+/**
+ * يتحقق من أن الحرّاف يمكنه المتابعة على الطلب: رصيده غير سالب.
+ * يُرمى `InvalidStateError` برسالة عربية مباشرة عندما يكون مديناً — وهي الرسالة
+ * التي تُعرض فوراً في الواجهة كتنبيه «اشحن» مع أيقونة.
+ */
+export async function assertProviderCanProceed(providerUserId: string): Promise<void> {
+  const balance = await walletBalance(providerUserId);
+  if (balance < 0) {
+    throw new InvalidStateError("اشحن رصيدك لإكمال المراحل مع الزبون");
+  }
+}
+
+/** هل يملك الحرّاف رصيداً يسمح بتقديم عرض؟ (شرط إرسال العرض). */
+export async function providerCanOffer(providerUserId: string): Promise<boolean> {
+  return (await walletBalance(providerUserId)) > 0;
+}
+
+/**
+ * شحن محفظة الحرّاف — نقطة إيداع رصيد تغطّي به عمولة المنصّة.
+ *
+ * المنصّة لا تحرّك مالاً حقيقياً هنا: هذا تسجيل داخلي يُستعمل لمحاكاة الشحن في
+ * هذه النسخة. المعاملات الحقيقية (بطاقة/تحويل) تُضاف لاحقاً عند تفعيل بوابة دفع
+ * خاصة بالعمولة؛ بقية الدورة تعتمد على هذا الرصيد كحاجز.
+ */
+export async function topupWallet(userId: string, amount: number) {
   if (amount <= 0) throw new InvalidStateError("المبلغ يجب أن يكون أكبر من صفر");
-  if (amount > balance) throw new InvalidStateError("المبلغ المطلوب أكبر من رصيدك المتاح");
   const [row] = await db
     .insert(walletTransactions)
     .values({
       userId,
-      type: "payout",
-      amount: -amount,
-      description: "طلب سحب — قيد المعالجة",
+      type: "topup",
+      amount,
+      description: "شحن المحفظة",
     })
     .returning();
-  await db.insert(notifications).values({
-    userId,
-    type: "payout",
-    title: "طلب سحب مسجّل",
-    body: `سُجّل طلب سحب بقيمة ${amount} درهم.`,
-  });
-  return row;
+  const balance = await walletBalance(userId);
+  if (balance >= 0) {
+    await db.insert(notifications).values({
+      userId,
+      type: "topup",
+      title: "تم شحن حسابك",
+      body: `أُضيف ${amount} درهم إلى رصيدك. يمكنك الآن إرسال العروض.`,
+    });
+  }
+  return { ...row, balance };
 }
 
 // ── الإشعارات ────────────────────────────────────────────────────────────────
