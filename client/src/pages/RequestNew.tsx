@@ -490,7 +490,9 @@ export default function RequestNew() {
               <MapPin className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-black">{gpsAddress ?? district}</div>
+              <div dir="ltr" className="break-words text-start text-[12px] leading-tight font-black [overflow-wrap:anywhere]">
+                {gpsAddress ?? district}
+              </div>
               <div className="mt-0.5 text-[11px] text-muted-foreground">{city}</div>
             </div>
             <span className="shrink-0 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">
