@@ -1,1 +1,18 @@
-aW1wb3J0IHsgZGVzY3JpYmUsIGV4cGVjdCwgaXQgfSBmcm9tICJ2aXRlc3QiOwppbXBvcnQgeyBQTEFURk9STV9GRUVfUEVSQ0VOVCB9IGZyb20gIi4vY29uc3RhbnRzIjsKCi8vINmG2YXZiNiw2Kwg2KfZhNi52YXZiNmE2Kk6INmK2K/Zgdi52YfYpyDYp9mE2K3YsdmR2KfZgSDZhdmGINmF2K3Zgdi42KrZhyDZhNit2LjYqSDZgtio2YjZhCDYudix2LbZh9iMINio2YbYs9io2KkgMTUlINmF2YYg2KfZhNmF2KjZhNi6Ci8vINin2YTZhdiq2YHZgiDYudmE2YrZhy4g2KfYrtiq2KjYp9ixINin2YTZhtiz2KjYqSDZiNin2YTYrdiz2KfYqCDZitir2KjZkdiqINin2YTZgtix2KfYsSDZgdmE2Kcg2YrZj9i62YrZjtmR2LEg2LPZh9mI2KfZiyDZgdmKINin2YTZg9mI2K8g2YTYp9it2YLYp9mLLgpkZXNjcmliZSgi2LnZhdmI2YTYqSDYp9mE2YXZhti12ZHYqSIsICgpID0+IHsKICBpdCgi2KfZhNmG2LPYqNipINin2YTZhdi52KrZhdiv2KkgMTUlICjZiNmE2YrYsyAxMCUpIiwgKCkgPT4gewogICAgZXhwZWN0KFBMQVRGT1JNX0ZFRV9QRVJDRU5UKS50b0JlKDE1KTsKICB9KTsKCiAgaXQoItiq2Y/Yrdiz2Y7YqCDYudmE2Ykg2KfZhNmF2KjZhNi6INin2YTZg9in2YXZhCDZiNiq2Y/Zgtix2Y7ZkdioINmE2KPZgtix2Kgg2K/YsdmH2YUiLCAoKSA9PiB7CiAgICBjb25zdCBjb21taXNzaW9uID0gKGFtb3VudDogbnVtYmVyKSA9PiBNYXRoLnJvdW5kKChhbW91bnQgKiBQTEFURk9STV9GRUVfUEVSQ0VOVCkgLyAxMDApOwogICAgZXhwZWN0KGNvbW1pc3Npb24oNTAwKSkudG9CZSg3NSk7IC8vIDUwMCDDlyAxNSUKICAgIGV4cGVjdChjb21taXNzaW9uKDEwMDApKS50b0JlKDE1MCk7CiAgICBleHBlY3QoY29tbWlzc2lvbigzODApKS50b0JlKDU3KTsKICAgIGV4cGVjdChjb21taXNzaW9uKDMzMykpLnRvQmUoNTApOyAvLyA0OS45NSDihpIgNTAKICB9KTsKfSk7Cg==
+import { describe, expect, it } from "vitest";
+import { PLATFORM_FEE_PERCENT } from "./constants";
+
+// نموذج العمولة: يدفعها الحرّاف من محفظته لحظة قبول عرضه، بنسبة 15% من المبلغ
+// المتفق عليه. اختبار النسبة والحساب يثبّت القرار فلا يُغيَّر سهواً في الكود لاحقاً.
+describe("عمولة المنصّة", () => {
+  it("النسبة المعتمدة 15% (وليس 10%)", () => {
+    expect(PLATFORM_FEE_PERCENT).toBe(15);
+  });
+
+  it("تُحسَب على المبلغ الكامل وتُقرَّب لأقرب درهم", () => {
+    const commission = (amount: number) => Math.round((amount * PLATFORM_FEE_PERCENT) / 100);
+    expect(commission(500)).toBe(75); // 500 × 15%
+    expect(commission(1000)).toBe(150);
+    expect(commission(380)).toBe(57);
+    expect(commission(333)).toBe(50); // 49.95 → 50
+  });
+});

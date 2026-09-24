@@ -1,1 +1,98 @@
-Ly8gU2hhcmVkIGNsaWVudC9zZXJ2ZXIgY29uc3RhbnRzICsgZG9tYWluIHZvY2FidWxhcmllcyBmb3IgwqvYrdmQ2LHZktmB2YrCuy4KCi8vIFNlc3Npb24gY29va2llIG5hbWUgaXMgcGVyLWFwcCAoZGVyaXZlZCBmcm9tIEFQUF9TTFVHKSBzbyB0d28gYXBwcyBzZXJ2ZWQgb24KLy8gdGhlIHNhbWUgaG9zdCBjYW5ub3QgY2xvYmJlciBlYWNoIG90aGVyJ3Mgc2Vzc2lvbiBjb29raWUgKERFU0lHTiAjMTMpLgpleHBvcnQgZnVuY3Rpb24gc2Vzc2lvbkNvb2tpZU5hbWUoc2x1Zzogc3RyaW5nKTogc3RyaW5nIHsKICByZXR1cm4gYGFwcF9zZXNzaW9uXyR7c2x1Z31gOwp9CgpleHBvcnQgY29uc3QgVVNFUl9ST0xFUyA9IFsidXNlciIsICJhZG1pbiJdIGFzIGNvbnN0OwovLyBQbGF0Zm9ybS1sZXZlbCByb2xlIGtlcHQgc2VwYXJhdGUgZnJvbSB0aGUgQlVTSU5FU1Mgcm9sZSAoYGN1c3RvbWVyYCB8IGBwcm92aWRlcmApLAovLyB3aGljaCBsaXZlcyBvbiBwcm92aWRlcl9wcm9maWxlcy5yb2xlIHNvIHN3aXRjaGluZyBpdCBuZXZlciB0b3VjaGVzIGF1dGguCmV4cG9ydCB0eXBlIFVzZXJSb2xlID0gKHR5cGVvZiBVU0VSX1JPTEVTKVtudW1iZXJdOwoKZXhwb3J0IGNvbnN0IEFQUF9ST0xFUyA9IFsiY3VzdG9tZXIiLCAicHJvdmlkZXIiXSBhcyBjb25zdDsKLyoqIEJVU0lORVNTIHJvbGU6INi32KfZhNioINin2YTYrtiv2YXYqSAo2LLYqNmI2YYpINij2Ygg2YXZgtiv2ZHZhdmH2KcgKNit2LHZkdin2YEpLiAqLwpleHBvcnQgdHlwZSBBcHBSb2xlID0gKHR5cGVvZiBBUFBfUk9MRVMpW251bWJlcl07CgpleHBvcnQgY29uc3QgUkVRVUVTVF9TVEFUVVNFUyA9IFsKICAib3BlbiIsCiAgImFjY2VwdGVkIiwKICAiaW5fcHJvZ3Jlc3MiLAogICJjb21wbGV0ZWQiLAogICJjYW5jZWxsZWQiLApdIGFzIGNvbnN0OwpleHBvcnQgdHlwZSBSZXF1ZXN0U3RhdHVzID0gKHR5cGVvZiBSRVFVRVNUX1NUQVRVU0VTKVtudW1iZXJdOwoKLyoqINi02LHZiti3INin2YTYrdmK2KfYqSDYp9mE2YXYsdim2Yo6INmF2YbYtNmI2LEg4oaSINi52LHZiNi2IOKGkiDZhdmC2KjZiNmEIOKGkiDZgtmK2K8g2KfZhNiq2YbZgdmK2LAg4oaSINmF2YbYqtmH2YouICovCmV4cG9ydCBjb25zdCBSRVFVRVNUX0xJRkVDWUNMRSA9IFsKICB7IGtleTogIm9wZW4iLCBsYWJlbEFyOiAi2YXZhti02YjYsSIgfSwKICB7IGtleTogIm9mZmVycyIsIGxhYmVsQXI6ICLYudix2YjYtiIgfSwKICB7IGtleTogImFjY2VwdGVkIiwgbGFiZWxBcjogItmF2YLYqNmI2YQiIH0sCiAgeyBrZXk6ICJpbl9wcm9ncmVzcyIsIGxhYmVsQXI6ICLZgtmK2K8g2KfZhNiq2YbZgdmK2LAiIH0sCiAgeyBrZXk6ICJjb21wbGV0ZWQiLCBsYWJlbEFyOiAi2YXZhtiq2YfZiiIgfSwKXSBhcyBjb25zdDsKCmV4cG9ydCBjb25zdCBPRkZFUl9TVEFUVVNFUyA9IFsKICAicGVuZGluZyIsCiAgImFjY2VwdGVkIiwKICAicmVqZWN0ZWQiLAogICJ3aXRoZHJhd24iLAogICJjb3VudGVyZWQiLApdIGFzIGNvbnN0OwpleHBvcnQgdHlwZSBPZmZlclN0YXR1cyA9ICh0eXBlb2YgT0ZGRVJfU1RBVFVTRVMpW251bWJlcl07CgpleHBvcnQgY29uc3QgVVJHRU5DSUVTID0gWyJmbGV4aWJsZSIsICJ0b2RheSIsICJ1cmdlbnQiXSBhcyBjb25zdDsKZXhwb3J0IHR5cGUgVXJnZW5jeSA9ICh0eXBlb2YgVVJHRU5DSUVTKVtudW1iZXJdOwoKZXhwb3J0IGNvbnN0IFdBTExFVF9UWVBFUyA9IFsicGF5bWVudCIsICJwYXlvdXQiLCAiZmVlIiwgInJlZnVuZCIsICJ0b3B1cCJdIGFzIGNvbnN0OwpleHBvcnQgdHlwZSBXYWxsZXRUeXBlID0gKHR5cGVvZiBXQUxMRVRfVFlQRVMpW251bWJlcl07CgovKioKICog2LnZhdmI2YTYqSDYp9mE2YXZhti12KkgYNit2ZDYsdmS2YHZimAgKNmG2LPYqNipINmF2KbZiNmK2KkpIOKAlCDZitiv2YHYudmH2KcgKirYp9mE2K3YsdmR2KfZgSoqINmF2YYg2YXYrdmB2LjYqtmHINmE2K3YuNipINmC2KjZiNmECiAqINin2YTYstio2YjZhiDZhNi52LHYttmHLiDYp9mE2LLYqNmI2YYg2YTYpyDZitiv2YHYuSDYtNmK2KbYp9mLINi52KjYsSDYp9mE2YXZhti12Kk6INmK2K/Zgdi5INin2YTYrdix2ZHYp9mBINmF2KjYp9i02LHYqSDYqNi52K8g2KXYqtmF2KfZhQogKiDYp9mE2K7Yr9mF2KnYjCDZiNin2YTZhdmG2LXYqSDYqtmD2KrZgdmKINio2KrYrdi12YrZhCDYudmF2YjZhNiq2YfYpyDZhdmGINix2LXZitivINin2YTYrdix2ZHYp9mBLgogKi8KZXhwb3J0IGNvbnN0IFBMQVRGT1JNX0ZFRV9QRVJDRU5UID0gMTU7CgovKiog2YXYr9mGINmF2LrYsdio2YrYqSArINij2K3Zitin2KEg2YXYqNiz2ZHYt9ipICjZhNinINiu2LHYp9im2Lcg4oCUINin2YTZgtix2KfYsSDYp9mE2KfZgdiq2LHYp9i22Yog2YHZiiDYp9mE2YXZiNin2LXZgdipKS4gKi8KZXhwb3J0IGNvbnN0IE1PUk9DQ0FOX0NJVElFUyA9IFsKICAi2KfZhNiv2KfYsSDYp9mE2KjZiti22KfYoSIsCiAgItin2YTYsdio2KfYtyIsCiAgItiz2YTYpyIsCiAgItmF2LHYp9mD2LQiLAogICLYt9mG2KzYqSIsCiAgItmB2KfYsyIsCiAgItij2YPYp9iv2YrYsSIsCiAgItmF2YPZhtin2LMiLAogICLZiNis2K/YqSIsCl0gYXMgY29uc3Q7CmV4cG9ydCB0eXBlIE1vcm9jY2FuQ2l0eSA9ICh0eXBlb2YgTU9ST0NDQU5fQ0lUSUVTKVtudW1iZXJdOwoKZXhwb3J0IGNvbnN0IERJU1RSSUNUU19CWV9DSVRZOiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmdbXT4gPSB7CiAgItin2YTYr9in2LEg2KfZhNio2YrYttin2KEiOiBbItin2YTZhdi52KfYsdmK2YEiLCAi2LnZitmGINin2YTYtNmCIiwgItiz2YrYr9mKINmF2LnYsdmI2YEiLCAi2KfZhNit2Yog2KfZhNit2LPZhtmKIiwgItio2YjYsdmD2YjZhiIsICLYr9in2LEg2KjZiNi52LLYqSJdLAogINin2YTYsdio2KfYtzogWyLYo9mD2K/Yp9mEIiwgItit2LPYp9mGIiwgItin2YTYsdmK2KfYtiIsICLYp9mE2LPZiNmK2LPZiiIsICLYp9mE2YrZiNiz2YHZitipIiwgItin2YTYqtmC2K/ZhSJdLAogINiz2YTYpzogWyLYqtin2KjYsdmK2YPYqiIsICLYrdmKINin2YTYs9mE2KfZhSIsICLYs9mE2Kcg2KfZhNis2K/Zitiv2KkiLCAi2KjYt9in2YbYqSIsICLYp9mE2YXYr9mK2YbYqSDYp9mE2YLYr9mK2YXYqSIsICLYp9mE2LnZitin2YrYr9ipIl0sCiAg2YXYsdin2YPYtDogWyLYp9mE2YXYr9mK2YbYqSDYp9mE2YLYr9mK2YXYqSIsICLYrNmE2YrYsiIsICLYp9mE2YbYrtmK2YQiLCAi2KfZhNmF2LPZitix2KkiLCAi2KfZhNit2Yog2KfZhNit2LPZhtmKIiwgItiz2YrYr9mKINmK2YjYs9mBIl0sCiAg2LfZhtis2Kk6IFsi2KfZhNmF2LrYsdioINin2YTYudix2KjZiiIsICLYqNmG2YPZitix2KfZhiIsICLYp9mE2LTYsdmBIiwgItin2YTZhdix2LTYp9mGIiwgItio2YbZiiDZhdmD2KfYr9ipIiwgItin2YTYstmK2KfYqtmGIl0sCiAg2YHYp9izOiBbItin2YTZhdiv2YrZhtipINin2YTZgtiv2YrZhdipIiwgItiz2KfZitizIiwgItin2YTZhtix2KzYsyIsICLYp9mE2YXYsdmK2YbZitmK2YYiLCAi2KPZg9iv2KfZhCIsICLYstmI2KfYutipIl0sCiAgItij2YPYp9iv2YrYsSI6IFsi2K3ZiiDYp9mE2YfYr9mJIiwgItiq2KfZhNio2LHYrNiqIiwgItin2YTYr9in2K7ZhNipIiwgItit2Yog2KfZhNmF2K3Zhdiv2YoiLCAi2YHZiNmG2KrZiiIsICLYo9mG2LLYpyJdLAogINmF2YPZhtin2LM6IFsi2K3Zhdix2YrYqSIsICLYp9mE2YXYr9mK2YbYqSDYp9mE2YLYr9mK2YXYqSIsICLZhdix2KzYp9mGIiwgItin2YTYqNiz2KfYqtmK2YYiLCAi2KfZhNiy2YrYqtmI2YYiLCAi2KrZiNmE2KfZhCJdLAogINmI2KzYr9ipOiBbItit2Yog2KfZhNmC2K/YsyIsICLYp9mE2KPZhtiv2YTYsyIsICLYp9mE2YbZh9i22KkiLCAi2KfZhNiy2YrYqtmI2YYiLCAi2K3ZiiDYp9mE2LPZhNin2YUiLCAi2KjZhtmKINiv2LHYp9ixIl0sCn07CgovKiog2KfZhNmF2LPYp9mB2Kkg2KrZj9it2LPZjtioINiq2YLYr9mK2LHZitin2Ysg2YXZhiDYp9mE2K3Zii/Yp9mE2YXYr9mK2YbYqSDZiNiq2Y/Yudix2Y7YtiDZg9mAIMKr2YLYsdmK2KggLyDZhdiq2YjYs9i3IC8g2KjYudmK2K/Cuy4gKi8KZXhwb3J0IGNvbnN0IERJU1RBTkNFX0JBTkRTID0gWwogIHsga2V5OiAibmVhciIsIGxhYmVsQXI6ICLZgtix2YrYqCIsIGhpbnRBcjogItmG2YHYsyDYp9mE2K3ZiiIgfSwKICB7IGtleTogIm1lZGl1bSIsIGxhYmVsQXI6ICLZhdiq2YjYs9i3IiwgaGludEFyOiAi2YbZgdizINin2YTZhdiv2YrZhtip2Iwg2K3ZiiDZhdiu2KrZhNmBIiB9LAogIHsga2V5OiAiZmFyIiwgbGFiZWxBcjogItio2LnZitivIiwgaGludEFyOiAi2YXYr9mK2YbYqSDYo9iu2LHZiSIgfSwKXSBhcyBjb25zdDsKZXhwb3J0IHR5cGUgRGlzdGFuY2VCYW5kID0gKHR5cGVvZiBESVNUQU5DRV9CQU5EUylbbnVtYmVyXVsia2V5Il07CgovKiog2YbYt9in2YLYp9iqINin2YTZhdmK2LLYp9mG2YrYqSDZhNmE2YHZhNiq2LHYqSAo2KjYp9mE2K/YsdmH2YUpLiAqLwpleHBvcnQgY29uc3QgQlVER0VUX0JBTkRTID0gWwogIHsga2V5OiAiYjEiLCBsYWJlbEFyOiAi2KPZgtmEINmF2YYgMjAwINiv2LHZh9mFIiwgbWluOiAwLCBtYXg6IDE5OSB9LAogIHsga2V5OiAiYjIiLCBsYWJlbEFyOiAiMjAwIOKAkyA1MDAg2K/YsdmH2YUiLCBtaW46IDIwMCwgbWF4OiA1MDAgfSwKICB7IGtleTogImIzIiwgbGFiZWxBcjogIjUwMCDigJMgMTUwMCDYr9ix2YfZhSIsIG1pbjogNTAxLCBtYXg6IDE1MDAgfSwKICB7IGtleTogImI0IiwgbGFiZWxBcjogItij2YPYq9ixINmF2YYgMTUwMCDYr9ix2YfZhSIsIG1pbjogMTUwMSwgbWF4OiBOdW1iZXIuTUFYX1NBRkVfSU5URUdFUiB9LApdIGFzIGNvbnN0Owo=
+// Shared client/server constants + domain vocabularies for «حِرْفي».
+
+// Session cookie name is per-app (derived from APP_SLUG) so two apps served on
+// the same host cannot clobber each other's session cookie (DESIGN #13).
+export function sessionCookieName(slug: string): string {
+  return `app_session_${slug}`;
+}
+
+export const USER_ROLES = ["user", "admin"] as const;
+// Platform-level role kept separate from the BUSINESS role (`customer` | `provider`),
+// which lives on provider_profiles.role so switching it never touches auth.
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const APP_ROLES = ["customer", "provider"] as const;
+/** BUSINESS role: طالب الخدمة (زبون) أو مقدّمها (حرّاف). */
+export type AppRole = (typeof APP_ROLES)[number];
+
+export const REQUEST_STATUSES = [
+  "open",
+  "accepted",
+  "in_progress",
+  "completed",
+  "cancelled",
+] as const;
+export type RequestStatus = (typeof REQUEST_STATUSES)[number];
+
+/** شريط الحياة المرئي: منشور → عروض → مقبول → قيد التنفيذ → منتهي. */
+export const REQUEST_LIFECYCLE = [
+  { key: "open", labelAr: "منشور" },
+  { key: "offers", labelAr: "عروض" },
+  { key: "accepted", labelAr: "مقبول" },
+  { key: "in_progress", labelAr: "قيد التنفيذ" },
+  { key: "completed", labelAr: "منتهي" },
+] as const;
+
+export const OFFER_STATUSES = [
+  "pending",
+  "accepted",
+  "rejected",
+  "withdrawn",
+  "countered",
+] as const;
+export type OfferStatus = (typeof OFFER_STATUSES)[number];
+
+export const URGENCIES = ["flexible", "today", "urgent"] as const;
+export type Urgency = (typeof URGENCIES)[number];
+
+export const WALLET_TYPES = ["payment", "payout", "fee", "refund", "topup"] as const;
+export type WalletType = (typeof WALLET_TYPES)[number];
+
+/**
+ * عمولة المنصة `حِرْفي` (نسبة مئوية) — يدفعها **الحرّاف** من محفظته لحظة قبول
+ * الزبون لعرضه. الزبون لا يدفع شيئاً عبر المنصة: يدفع الحرّاف مباشرة بعد إتمام
+ * الخدمة، والمنصة تكتفي بتحصيل عمولتها من رصيد الحرّاف.
+ */
+export const PLATFORM_FEE_PERCENT = 15;
+
+/** مدن مغربية + أحياء مبسّطة (لا خرائط — القرار الافتراضي في المواصفة). */
+export const MOROCCAN_CITIES = [
+  "الدار البيضاء",
+  "الرباط",
+  "سلا",
+  "مراكش",
+  "طنجة",
+  "فاس",
+  "أكادير",
+  "مكناس",
+  "وجدة",
+] as const;
+export type MoroccanCity = (typeof MOROCCAN_CITIES)[number];
+
+export const DISTRICTS_BY_CITY: Record<string, string[]> = {
+  "الدار البيضاء": ["المعاريف", "عين الشق", "سيدي معروف", "الحي الحسني", "بوركون", "دار بوعزة"],
+  الرباط: ["أكدال", "حسان", "الرياض", "السويسي", "اليوسفية", "التقدم"],
+  سلا: ["تابريكت", "حي السلام", "سلا الجديدة", "بطانة", "المدينة القديمة", "العيايدة"],
+  مراكش: ["المدينة القديمة", "جليز", "النخيل", "المسيرة", "الحي الحسني", "سيدي يوسف"],
+  طنجة: ["المغرب العربي", "بنكيران", "الشرف", "المرشان", "بني مكادة", "الزياتن"],
+  فاس: ["المدينة القديمة", "سايس", "النرجس", "المرينيين", "أكدال", "زواغة"],
+  "أكادير": ["حي الهدى", "تالبرجت", "الداخلة", "حي المحمدي", "فونتي", "أنزا"],
+  مكناس: ["حمرية", "المدينة القديمة", "مرجان", "البساتين", "الزيتون", "تولال"],
+  وجدة: ["حي القدس", "الأندلس", "النهضة", "الزيتون", "حي السلام", "بني درار"],
+};
+
+/** المسافة تُحسَب تقديرياً من الحي/المدينة وتُعرَض كـ «قريب / متوسط / بعيد». */
+export const DISTANCE_BANDS = [
+  { key: "near", labelAr: "قريب", hintAr: "نفس الحي" },
+  { key: "medium", labelAr: "متوسط", hintAr: "نفس المدينة، حي مختلف" },
+  { key: "far", labelAr: "بعيد", hintAr: "مدينة أخرى" },
+] as const;
+export type DistanceBand = (typeof DISTANCE_BANDS)[number]["key"];
+
+/** نطاقات الميزانية للفلترة (بالدرهم). */
+export const BUDGET_BANDS = [
+  { key: "b1", labelAr: "أقل من 200 درهم", min: 0, max: 199 },
+  { key: "b2", labelAr: "200 – 500 درهم", min: 200, max: 500 },
+  { key: "b3", labelAr: "500 – 1500 درهم", min: 501, max: 1500 },
+  { key: "b4", labelAr: "أكثر من 1500 درهم", min: 1501, max: Number.MAX_SAFE_INTEGER },
+] as const;

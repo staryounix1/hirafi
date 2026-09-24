@@ -1,1 +1,276 @@
-Ly8g4pSA4pSAINiq2YbYs9mK2YLYp9iqINmI2YXZgdix2K/Yp9iqINin2YTZhdis2KfZhCDZgdmKINin2YTZiNin2KzZh9ipIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAppbXBvcnQgdHlwZSB7IEx1Y2lkZUljb24gfSBmcm9tICJsdWNpZGUtcmVhY3QiOwppbXBvcnQgewogIFdyZW5jaCwKICBaYXAsCiAgSGFtbWVyLAogIFBhaW50Um9sbGVyLAogIFNub3dmbGFrZSwKICBTcGFya2xlcywKICBUcnVjaywKICBTbWFydHBob25lLAogIFNjaXNzb3JzLAogIENhbWVyYSwKICBHcmFkdWF0aW9uQ2FwLAogIFNldHRpbmdzLAogIFNob3BwaW5nQmFza2V0LAogIExpc3RDaGVja3MsCiAgS2V5Um91bmQsCiAgQ2lyY2xlRG9sbGFyU2lnbiwKICBDaGVja0NpcmNsZTIsCiAgSG91cmdsYXNzLAogIEJhbiwKICBBbGVydENpcmNsZSwKICBTZW5kLAogIFhDaXJjbGUsCn0gZnJvbSAibHVjaWRlLXJlYWN0IjsKCi8qKiDYrtix2YrYt9ipINij2YrZgtmI2YbYp9iqINin2YTZgdim2KfYqiDigJQg2KfZhNmF2YHYqtin2K0g2YfZiCDZhdinINmK2Y/Yrtiy2Y7ZkdmGINmB2Yogc2VydmljZV9jYXRlZ29yaWVzLmljb24uICovCmNvbnN0IENBVEVHT1JZX0lDT05TOiBSZWNvcmQ8c3RyaW5nLCBMdWNpZGVJY29uPiA9IHsKICBXcmVuY2gsCiAgWmFwLAogIEhhbW1lciwKICBQYWludFJvbGxlciwKICBTbm93Zmxha2UsCiAgU3BhcmtsZXMsCiAgVHJ1Y2ssCiAgU21hcnRwaG9uZSwKICBTY2lzc29ycywKICBDYW1lcmEsCiAgR3JhZHVhdGlvbkNhcCwKICBTZXR0aW5ncywKICBTaG9wcGluZ0Jhc2tldCwKICBMaXN0Q2hlY2tzLAogIEtleVJvdW5kLAp9OwoKZXhwb3J0IGZ1bmN0aW9uIGNhdGVnb3J5SWNvbihuYW1lOiBzdHJpbmcgfCBudWxsIHwgdW5kZWZpbmVkKTogTHVjaWRlSWNvbiB7CiAgcmV0dXJuIChuYW1lICYmIENBVEVHT1JZX0lDT05TW25hbWVdKSB8fCBTZXR0aW5nczsKfQoKLyoqINix2YLZhSDYqNmB2YjYp9i12YQg2KLZhNin2YEgKyDZg9mE2YXYqSDYp9mE2LnZhdmE2Kkg4oCUIGAxIDI1MCDYr9ix2YfZhWAuICovCmV4cG9ydCBmdW5jdGlvbiBmb3JtYXRNQUQoYW1vdW50OiBudW1iZXIgfCBudWxsIHwgdW5kZWZpbmVkKTogc3RyaW5nIHsKICBpZiAoYW1vdW50ID09PSBudWxsIHx8IGFtb3VudCA9PT0gdW5kZWZpbmVkKSByZXR1cm4gIuKAlCI7CiAgcmV0dXJuIGAke25ldyBJbnRsLk51bWJlckZvcm1hdCgiZnItTUEiLCB7IG1heGltdW1GcmFjdGlvbkRpZ2l0czogMCB9KS5mb3JtYXQoYW1vdW50KX0g2K/YsdmH2YVgOwp9CgovKioKICog2YXYr9ipINio2KfZhNiv2YLYp9im2YIg4oaQINmG2LUg2YXZgtix2YjYoSDYqNin2YTYudix2KjZitipINin2YTZgdi12YrYrdipLgogKiDZitix2KfYudmKINi12YrYuiDYp9mE2LnYr9ivOiAxINmF2YHYsdiv2IwgMiDZhdir2YbZkdmJ2IwgM+KAkzEwINis2YXYudiMIDExKyDYqtmF2YrZitiyINmF2YHYsdivLgogKi8KZXhwb3J0IGZ1bmN0aW9uIGZvcm1hdER1cmF0aW9uKG1pbnV0ZXM6IG51bWJlcik6IHN0cmluZyB7CiAgaWYgKG1pbnV0ZXMgPCA2MCkgewogICAgcmV0dXJuIGNvdW50QXIobWludXRlcywgWyLYr9mC2YrZgtipIiwgItiv2YLZitmC2KrYp9mGIiwgItiv2YLYp9im2YIiXSwgItiv2YLZitmC2KkiLCAi2YjYp9it2K/YqSIpOwogIH0KICBjb25zdCBoID0gTWF0aC5mbG9vcihtaW51dGVzIC8gNjApOwogIGNvbnN0IG0gPSBtaW51dGVzICUgNjA7CiAgaWYgKGggPj0gMjQpIHsKICAgIGNvbnN0IGQgPSBNYXRoLmZsb29yKGggLyAyNCk7CiAgICBjb25zdCByaCA9IGggJSAyNDsKICAgIGNvbnN0IGRheXMgPSBjb3VudEFyKGQsIFsi2YrZiNmFIiwgItmK2YjZhdin2YYiLCAi2KPZitin2YUiXSwgItmK2YjZhdin2YsiKTsKICAgIHJldHVybiByaCA/IGAke2RheXN9INmIJHtjb3VudEFyKHJoLCBbItiz2KfYudipIiwgItiz2KfYudiq2KfZhiIsICLYs9in2LnYp9iqIl0sICLYs9in2LnYqSIsICLZiNin2K3Yr9ipIil9YCA6IGRheXM7CiAgfQogIGNvbnN0IGhvdXJzID0gY291bnRBcihoLCBbItiz2KfYudipIiwgItiz2KfYudiq2KfZhiIsICLYs9in2LnYp9iqIl0sICLYs9in2LnYqSIsICLZiNin2K3Yr9ipIik7CiAgcmV0dXJuIG0gPyBgJHtob3Vyc30g2Ygke2NvdW50QXIobSwgWyLYr9mC2YrZgtipIiwgItiv2YLZitmC2KrYp9mGIiwgItiv2YLYp9im2YIiXSwgItiv2YLZitmC2KkiLCAi2YjYp9it2K/YqSIpfWAgOiBob3VyczsKfQoKLyoqIMKr2YXZhtiwIDMg2LPYp9i52KfYqsK7INio2LXZiti6INin2YTYrNmF2Lkg2KfZhNi52LHYqNmK2Kkg2KfZhNi12K3Zitit2KkgKDIg4oaQINiz2KfYudiq2YrZhtiMIDExKyDihpAg2LPYp9i52KkpLiAqLwpleHBvcnQgZnVuY3Rpb24gdGltZUFnb0FyKGlucHV0OiBEYXRlIHwgc3RyaW5nIHwgbnVtYmVyKTogc3RyaW5nIHsKICBjb25zdCB0aGVuID0gbmV3IERhdGUoaW5wdXQpLmdldFRpbWUoKTsKICBjb25zdCBkaWZmID0gTWF0aC5tYXgoMCwgRGF0ZS5ub3coKSAtIHRoZW4pOwogIGNvbnN0IG1pbiA9IE1hdGguZmxvb3IoZGlmZiAvIDYwMDAwKTsKICBpZiAobWluIDwgMSkgcmV0dXJuICLYp9mE2KLZhiI7CiAgaWYgKG1pbiA8IDYwKSByZXR1cm4gYNmF2YbYsCAke2NvdW50QXIobWluLCBbItiv2YLZitmC2KkiLCAi2K/ZgtmK2YLYqtmK2YYiLCAi2K/Zgtin2KbZgiJdLCAi2K/ZgtmK2YLYqSIsICLZiNin2K3Yr9ipIil9YDsKICBjb25zdCBoID0gTWF0aC5mbG9vcihtaW4gLyA2MCk7CiAgaWYgKGggPCAyNCkgcmV0dXJuIGDZhdmG2LAgJHtjb3VudEFyKGgsIFsi2LPYp9i52KkiLCAi2LPYp9i52KrZitmGIiwgItiz2KfYudin2KoiXSwgItiz2KfYudipIiwgItmI2KfYrdiv2KkiKX1gOwogIGNvbnN0IGQgPSBNYXRoLmZsb29yKGggLyAyNCk7CiAgaWYgKGQgPCAzMCkgcmV0dXJuIGDZhdmG2LAgJHtjb3VudEFyKGQsIFsi2YrZiNmFIiwgItmK2YjZhdmK2YYiLCAi2KPZitin2YUiXSwgItmK2YjZhdin2YsiKX1gOwogIGNvbnN0IG1vID0gTWF0aC5mbG9vcihkIC8gMzApOwogIHJldHVybiBg2YXZhtiwICR7Y291bnRBcihtbywgWyLYtNmH2LEiLCAi2LTZh9ix2YrZhiIsICLYo9i02YfYsSJdLCAi2LTZh9ix2KfZiyIpfWA7Cn0KCi8qKiDYqtin2LHZitiuINmF2K7Yqti12LEg2KjYp9mE2LnYsdio2YrYqSDigJQgYDIyINi02KrZhtio2LEgMjAyNmAuICovCmV4cG9ydCBmdW5jdGlvbiBmb3JtYXREYXRlQXIoaW5wdXQ6IERhdGUgfCBzdHJpbmcgfCBudW1iZXIgfCBudWxsIHwgdW5kZWZpbmVkKTogc3RyaW5nIHsKICBpZiAoIWlucHV0KSByZXR1cm4gIti62YrYsSDZhdit2K/ZkdivIjsKICByZXR1cm4gbmV3IEludGwuRGF0ZVRpbWVGb3JtYXQoImFyLU1BIiwgewogICAgZGF5OiAibnVtZXJpYyIsCiAgICBtb250aDogImxvbmciLAogICAgeWVhcjogIm51bWVyaWMiLAogICAgdGltZVpvbmU6ICJBZnJpY2EvQ2FzYWJsYW5jYSIsCiAgfSkuZm9ybWF0KG5ldyBEYXRlKGlucHV0KSk7Cn0KCmV4cG9ydCBmdW5jdGlvbiBmb3JtYXREYXRlVGltZUFyKGlucHV0OiBEYXRlIHwgc3RyaW5nIHwgbnVtYmVyIHwgbnVsbCB8IHVuZGVmaW5lZCk6IHN0cmluZyB7CiAgaWYgKCFpbnB1dCkgcmV0dXJuICLYutmK2LEg2YXYrdiv2ZHYryI7CiAgcmV0dXJuIG5ldyBJbnRsLkRhdGVUaW1lRm9ybWF0KCJhci1NQSIsIHsKICAgIGRheTogIm51bWVyaWMiLAogICAgbW9udGg6ICJzaG9ydCIsCiAgICBob3VyOiAiMi1kaWdpdCIsCiAgICBtaW51dGU6ICIyLWRpZ2l0IiwKICAgIHRpbWVab25lOiAiQWZyaWNhL0Nhc2FibGFuY2EiLAogIH0pLmZvcm1hdChuZXcgRGF0ZShpbnB1dCkpOwp9CgovKiog2YbYs9io2Kkg2LnYsdio2YrYqSDZhNmE2LnYr9ivICjZodmg2aog4oaSIDEwJSkg4oCUINiq2Y/Ys9iq2LnZhdmEINmE2YTYudix2LYg2YHZgti3LiAqLwpleHBvcnQgZnVuY3Rpb24gcGVyY2VudE9mKHBhcnQ6IG51bWJlciwgd2hvbGU6IG51bWJlcik6IG51bWJlciB7CiAgaWYgKCF3aG9sZSkgcmV0dXJuIDA7CiAgcmV0dXJuIE1hdGgucm91bmQoKHBhcnQgLyB3aG9sZSkgKiAxMDApOwp9CgovKiog2YXYqtmI2LPZkdi3INin2YTYqtmC2YrZitmFINmF2YYg2YXYrNmF2YjYuS/Yudiv2K8gKNio2K/ZhCDYudmF2YjYryDZhdit2LPZiNioINi52YTZiSDYp9mE2K7Yp9iv2YUpLiAqLwpleHBvcnQgZnVuY3Rpb24gcmF0aW5nQXZnKHN1bTogbnVtYmVyLCBjb3VudDogbnVtYmVyKTogbnVtYmVyIHwgbnVsbCB7CiAgaWYgKCFjb3VudCkgcmV0dXJuIG51bGw7CiAgcmV0dXJuIE1hdGgucm91bmQoKHN1bSAvIGNvdW50KSAqIDEwKSAvIDEwOwp9CgpleHBvcnQgdHlwZSBUb25lID0gImJyYW5kIiB8ICJ0ZWFsIiB8ICJzdWNjZXNzIiB8ICJ3YXJuIiB8ICJkYW5nZXIiIHwgIm11dGVkIiB8ICJpbmZvIjsKCi8qKiDYtNix2KfYptitIGluRHJpdmUg2YXYs9i32ZHYrdipINio2YTYpyDYrdiv2YjYryDZhdix2KbZitipOiDYrtmE2YHZitipINmB2KfYqtit2KkgKyDZhti12ZEg2K/Yp9mD2YYg2YHZgti3LiAqLwpleHBvcnQgY29uc3QgVE9ORV9DTEFTUzogUmVjb3JkPFRvbmUsIHN0cmluZz4gPSB7CiAgYnJhbmQ6ICJiZy1icmFuZCB0ZXh0LWJyYW5kLWluayBib3JkZXItdHJhbnNwYXJlbnQiLAogIHRlYWw6ICJiZy10ZWFsLXNvZnQgdGV4dC10ZWFsIGJvcmRlci10cmFuc3BhcmVudCIsCiAgc3VjY2VzczogImJnLXN1Y2Nlc3Mtc29mdCB0ZXh0LXN1Y2Nlc3MgYm9yZGVyLXRyYW5zcGFyZW50IiwKICB3YXJuOiAiYmctd2Fybi1zb2Z0IHRleHQtd2FybiBib3JkZXItdHJhbnNwYXJlbnQiLAogIGRhbmdlcjogImJnLWRlc3RydWN0aXZlLzEyIHRleHQtZGVzdHJ1Y3RpdmUgYm9yZGVyLXRyYW5zcGFyZW50IiwKICBtdXRlZDogImJnLW11dGVkIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCBib3JkZXItdHJhbnNwYXJlbnQiLAogIGluZm86ICJiZy1pbmZvLXNvZnQgdGV4dC1pbmZvIGJvcmRlci10cmFuc3BhcmVudCIsCn07CgovKiog2KfZhNix2YLZhSDZiNit2K/ZhyDYqNmE2Kcg2YPZhNmF2Kkg2KfZhNi52YXZhNipIOKAlCDZhNmE2KPYs9i52KfYsSDYp9mE2LbYrtmF2Kkg2YHZiiDYqNi32KfZgtin2Kog2KfZhNi52LHZiNi2INmI2KfZhNi32YTYqNin2KouICovCmV4cG9ydCBmdW5jdGlvbiBtYWROdW1iZXIoYW1vdW50OiBudW1iZXIgfCBudWxsIHwgdW5kZWZpbmVkKTogc3RyaW5nIHsKICBpZiAoYW1vdW50ID09PSBudWxsIHx8IGFtb3VudCA9PT0gdW5kZWZpbmVkKSByZXR1cm4gIuKAlCI7CiAgcmV0dXJuIG5ldyBJbnRsLk51bWJlckZvcm1hdCgiZnItTUEiLCB7IG1heGltdW1GcmFjdGlvbkRpZ2l0czogMCB9KS5mb3JtYXQoYW1vdW50KTsKfQoKLyoqINmB2LHZgiDYp9mE2LPYudixINio2YrZhiDYp9mE2LnYsdi2INmI2KfZhNiz2LnYsSDYp9mE2YXYttin2K8g4oCUINmK2Y/Yudix2LYg2YHZiiDYtNin2LTYqSDYp9mE2KrZgdin2YjYti4gKi8KZXhwb3J0IGZ1bmN0aW9uIHByaWNlRGVsdGEoZnJvbTogbnVtYmVyLCB0bzogbnVtYmVyKTogeyBhYnM6IG51bWJlcjsgcGN0OiBudW1iZXI7IHVwOiBib29sZWFuIH0gewogIGNvbnN0IGFicyA9IE1hdGgucm91bmQoTWF0aC5hYnModG8gLSBmcm9tKSk7CiAgY29uc3QgcGN0ID0gZnJvbSA/IE1hdGgucm91bmQoKGFicyAvIGZyb20pICogMTAwKSA6IDA7CiAgcmV0dXJuIHsgYWJzLCBwY3QsIHVwOiB0byA+IGZyb20gfTsKfQoKLyoqINit2KfZhNipINin2YTYt9mE2Kgg4oaQINiq2LPZhdmK2Kkg2YjYsdmF2LIg2YjZhNmI2YYg2YjYtNix2YrYrSDYo9mK2YLZiNmG2KkuICovCmV4cG9ydCBpbnRlcmZhY2UgU3RhdHVzTWV0YSB7CiAgbGFiZWw6IHN0cmluZzsKICB0b25lOiBUb25lOwogIGljb246IEx1Y2lkZUljb247Cn0KCmV4cG9ydCBjb25zdCBSRVFVRVNUX1NUQVRVU19NRVRBOiBSZWNvcmQ8c3RyaW5nLCBTdGF0dXNNZXRhPiA9IHsKICBvcGVuOiB7IGxhYmVsOiAi2YXZhti02YjYsSDigJQg2YrZhtiq2LjYsSDYudix2YjYttin2YsiLCB0b25lOiAiYnJhbmQiLCBpY29uOiBTZW5kIH0sCiAgYWNjZXB0ZWQ6IHsgbGFiZWw6ICLZhdmC2KjZiNmEIOKAlCDYqtmFINin2YTYp9iq2YHYp9mCIiwgdG9uZTogInRlYWwiLCBpY29uOiBDaGVja0NpcmNsZTIgfSwKICBpbl9wcm9ncmVzczogeyBsYWJlbDogItmC2YrYryDYp9mE2KrZhtmB2YrYsCIsIHRvbmU6ICJ3YXJuIiwgaWNvbjogSG91cmdsYXNzIH0sCiAgY29tcGxldGVkOiB7IGxhYmVsOiAi2YXZhtiq2YfZiiIsIHRvbmU6ICJzdWNjZXNzIiwgaWNvbjogQ2hlY2tDaXJjbGUyIH0sCiAgY2FuY2VsbGVkOiB7IGxhYmVsOiAi2YXZhNi62YkiLCB0b25lOiAibXV0ZWQiLCBpY29uOiBCYW4gfSwKfTsKCmV4cG9ydCBmdW5jdGlvbiByZXF1ZXN0U3RhdHVzTWV0YShzdGF0dXM6IHN0cmluZyk6IFN0YXR1c01ldGEgewogIHJldHVybiBSRVFVRVNUX1NUQVRVU19NRVRBW3N0YXR1c10gPz8geyBsYWJlbDogc3RhdHVzLCB0b25lOiAibXV0ZWQiLCBpY29uOiBBbGVydENpcmNsZSB9Owp9CgovKiog2LTYsdmK2Lcg2KfZhNit2YrYp9ipINin2YTZhdi52LHZiNi2INmB2Yog2KfZhNi02KfYtNipINin2YTZhdmI2K3Zkdiv2Kk6INmF2YbYtNmI2LEg4oaSINi52LHZiNi2IOKGkiDZhdmC2KjZiNmEIOKGkiDZgtmK2K8g2KfZhNiq2YbZgdmK2LAg4oaSINmF2YbYqtmH2YouICovCmV4cG9ydCBjb25zdCBMSUZFQ1lDTEVfU1RFUFMgPSBbCiAgeyBrZXk6ICJvcGVuIiwgbGFiZWw6ICLZhdmG2LTZiNixIiwgaWNvbjogU2VuZCB9LAogIHsga2V5OiAib2ZmZXJzIiwgbGFiZWw6ICLYudix2YjYtiIsIGljb246IENpcmNsZURvbGxhclNpZ24gfSwKICB7IGtleTogImFjY2VwdGVkIiwgbGFiZWw6ICLZhdmC2KjZiNmEIiwgaWNvbjogQ2hlY2tDaXJjbGUyIH0sCiAgeyBrZXk6ICJpbl9wcm9ncmVzcyIsIGxhYmVsOiAi2YLZitivINin2YTYqtmG2YHZitiwIiwgaWNvbjogSG91cmdsYXNzIH0sCiAgeyBrZXk6ICJjb21wbGV0ZWQiLCBsYWJlbDogItmF2YbYqtmH2YoiLCBpY29uOiBDaGVja0NpcmNsZTIgfSwKXSBhcyBjb25zdDsKCi8qKiDYo9mKINiu2LfZiNipINmB2Yog2KfZhNi02LHZiti3INi12KfYsdiqINit2KfYttix2Kkg2KjYrdiz2Kgg2K3Yp9mE2Kkg2KfZhNi32YTYqCDZiNi52K/YryDYp9mE2LnYsdmI2LYuICovCmV4cG9ydCBmdW5jdGlvbiBsaWZlY3ljbGVJbmRleChzdGF0dXM6IHN0cmluZywgaGFzT2ZmZXJzOiBib29sZWFuKTogbnVtYmVyIHsKICBzd2l0Y2ggKHN0YXR1cykgewogICAgY2FzZSAib3BlbiI6CiAgICAgIHJldHVybiBoYXNPZmZlcnMgPyAxIDogMDsKICAgIGNhc2UgImFjY2VwdGVkIjoKICAgICAgcmV0dXJuIDI7CiAgICBjYXNlICJpbl9wcm9ncmVzcyI6CiAgICAgIHJldHVybiAzOwogICAgY2FzZSAiY29tcGxldGVkIjoKICAgICAgcmV0dXJuIDQ7CiAgICBkZWZhdWx0OgogICAgICByZXR1cm4gMDsKICB9Cn0KCmV4cG9ydCBjb25zdCBPRkZFUl9TVEFUVVNfTUVUQTogUmVjb3JkPHN0cmluZywgU3RhdHVzTWV0YT4gPSB7CiAgcGVuZGluZzogeyBsYWJlbDogItio2KfZhtiq2LjYp9ixINix2K/ZkSDYp9mE2LLYqNmI2YYiLCB0b25lOiAiYnJhbmQiLCBpY29uOiBIb3VyZ2xhc3MgfSwKICBjb3VudGVyZWQ6IHsgbGFiZWw6ICLYudix2LYg2YXYttin2K8g4oCUINiq2YHYp9mI2LYiLCB0b25lOiAid2FybiIsIGljb246IENpcmNsZURvbGxhclNpZ24gfSwKICBhY2NlcHRlZDogeyBsYWJlbDogItmF2YLYqNmI2YQiLCB0b25lOiAic3VjY2VzcyIsIGljb246IENoZWNrQ2lyY2xlMiB9LAogIHJlamVjdGVkOiB7IGxhYmVsOiAi2YTZhSDZitmP2YLYqNmEIiwgdG9uZTogIm11dGVkIiwgaWNvbjogWENpcmNsZSB9LAogIHdpdGhkcmF3bjogeyBsYWJlbDogItmF2LPYrdmI2KgiLCB0b25lOiAibXV0ZWQiLCBpY29uOiBCYW4gfSwKfTsKCmV4cG9ydCBmdW5jdGlvbiBvZmZlclN0YXR1c01ldGEoc3RhdHVzOiBzdHJpbmcpOiBTdGF0dXNNZXRhIHsKICByZXR1cm4gT0ZGRVJfU1RBVFVTX01FVEFbc3RhdHVzXSA/PyB7IGxhYmVsOiBzdGF0dXMsIHRvbmU6ICJtdXRlZCIsIGljb246IEFsZXJ0Q2lyY2xlIH07Cn0KCmV4cG9ydCBjb25zdCBVUkdFTkNZX01FVEE6IFJlY29yZDxzdHJpbmcsIHsgbGFiZWw6IHN0cmluZzsgdG9uZTogVG9uZSB9PiA9IHsKICBmbGV4aWJsZTogeyBsYWJlbDogItmF2LHZhiDZgdmKINin2YTZiNmC2KoiLCB0b25lOiAibXV0ZWQiIH0sCiAgdG9kYXk6IHsgbGFiZWw6ICLYp9mE2YrZiNmFIiwgdG9uZTogIndhcm4iIH0sCiAgdXJnZW50OiB7IGxhYmVsOiAi2LnYp9is2YQg2KzYr9in2YsiLCB0b25lOiAiZGFuZ2VyIiB9LAp9OwoKZXhwb3J0IGZ1bmN0aW9uIHVyZ2VuY3lNZXRhKHU6IHN0cmluZykgewogIHJldHVybiBVUkdFTkNZX01FVEFbdV0gPz8geyBsYWJlbDogdSwgdG9uZTogIm11dGVkIiBhcyBUb25lIH07Cn0KCmV4cG9ydCBjb25zdCBXQUxMRVRfVFlQRV9NRVRBOiBSZWNvcmQ8c3RyaW5nLCB7IGxhYmVsOiBzdHJpbmc7IHRvbmU6IFRvbmU7IHNpZ246ICIrIiB8ICItIiB9PiA9IHsKICBwYXltZW50OiB7IGxhYmVsOiAi2K/Zgdi5IiwgdG9uZTogImRhbmdlciIsIHNpZ246ICItIiB9LAogIHBheW91dDogeyBsYWJlbDogItin2LPYqtit2YLYp9mCIiwgdG9uZTogInN1Y2Nlc3MiLCBzaWduOiAiKyIgfSwKICBmZWU6IHsgbGFiZWw6ICLYudmF2YjZhNipINin2YTZhdmG2LXZkdipIiwgdG9uZTogIndhcm4iLCBzaWduOiAiLSIgfSwKICByZWZ1bmQ6IHsgbGFiZWw6ICLYp9iz2KrYsdis2KfYuSIsIHRvbmU6ICJpbmZvIiwgc2lnbjogIisiIH0sCiAgdG9wdXA6IHsgbGFiZWw6ICLYtNit2YYg2KfZhNix2LXZitivIiwgdG9uZTogInRlYWwiLCBzaWduOiAiKyIgfSwKfTsKCmV4cG9ydCBmdW5jdGlvbiB3YWxsZXRUeXBlTWV0YSh0OiBzdHJpbmcpIHsKICByZXR1cm4gV0FMTEVUX1RZUEVfTUVUQVt0XSA/PyB7IGxhYmVsOiB0LCB0b25lOiAibXV0ZWQiIGFzIFRvbmUsIHNpZ246ICIrIiBhcyBjb25zdCB9Owp9CgpleHBvcnQgY29uc3QgRElTVEFOQ0VfTEFCRUxTOiBSZWNvcmQ8c3RyaW5nLCB7IGxhYmVsOiBzdHJpbmc7IGhpbnQ6IHN0cmluZzsgdG9uZTogVG9uZSB9PiA9IHsKICBuZWFyOiB7IGxhYmVsOiAi2YLYsdmK2KgiLCBoaW50OiAi2YbZgdizINin2YTYrdmKIiwgdG9uZTogInN1Y2Nlc3MiIH0sCiAgbWVkaXVtOiB7IGxhYmVsOiAi2YXYqtmI2LPYtyIsIGhpbnQ6ICLZhtmB2LMg2KfZhNmF2K/ZitmG2KkiLCB0b25lOiAid2FybiIgfSwKICBmYXI6IHsgbGFiZWw6ICLYqNi52YrYryIsIGhpbnQ6ICLZhdiv2YrZhtipINij2K7YsdmJIiwgdG9uZTogIm11dGVkIiB9LAp9OwoKLyoqINmK2K3Ys9ioINio2YbYryDYp9mE2YXYs9in2YHYqSDYqNmK2YYg2YXZiNmC2LnZitmGICjYqtmC2K/Zitix2Yog4oCUINmE2Kcg2K7Ysdin2KbYtykuICovCmV4cG9ydCBmdW5jdGlvbiBkaXN0YW5jZUJhbmQoCiAgYTogeyBjaXR5OiBzdHJpbmc7IGRpc3RyaWN0Pzogc3RyaW5nIHwgbnVsbCB9LAogIGI6IHsgY2l0eTogc3RyaW5nOyBkaXN0cmljdD86IHN0cmluZyB8IG51bGwgfSwKKTogIm5lYXIiIHwgIm1lZGl1bSIgfCAiZmFyIiB7CiAgaWYgKGEuY2l0eSAhPT0gYi5jaXR5KSByZXR1cm4gImZhciI7CiAgaWYgKGEuZGlzdHJpY3QgJiYgYi5kaXN0cmljdCAmJiBhLmRpc3RyaWN0ID09PSBiLmRpc3RyaWN0KSByZXR1cm4gIm5lYXIiOwogIHJldHVybiAibWVkaXVtIjsKfQoKLyoqINmC2LXZkSDZhti1INi32YjZitmEINmF2Lkg2KXYttin2YHYqSDZhtmC2KfYty4gKi8KZXhwb3J0IGZ1bmN0aW9uIHRydW5jYXRlKHM6IHN0cmluZywgbjogbnVtYmVyKTogc3RyaW5nIHsKICByZXR1cm4gcy5sZW5ndGggPD0gbiA/IHMgOiBgJHtzLnNsaWNlKDAsIG4pLnRyaW1FbmQoKX3igKZgOwp9CgovKiog2LHYs9in2YTYqSDYrti32KMg2LnYsdio2YrYqSDZhdmGINij2Yog2K7Yt9ijIHRSUEMg4oCUINio2YTYpyDYqtmB2KfYtdmK2YQg2KrZgtmG2YrYqS4gKi8KZXhwb3J0IGZ1bmN0aW9uIGVycm9yTWVzc2FnZShlOiB1bmtub3duKTogc3RyaW5nIHsKICBpZiAodHlwZW9mIGUgPT09ICJvYmplY3QiICYmIGUgJiYgIm1lc3NhZ2UiIGluIGUpIHsKICAgIGNvbnN0IG0gPSBTdHJpbmcoKGUgYXMgeyBtZXNzYWdlPzogdW5rbm93biB9KS5tZXNzYWdlID8/ICIiKTsKICAgIGlmIChtICYmICFtLmluY2x1ZGVzKCJUUlBDQ2xpZW50RXJyb3IiKSAmJiBtLmxlbmd0aCA8IDI0MCkgcmV0dXJuIG07CiAgfQogIHJldHVybiAi2K3Yr9irINiu2LfYoyDYutmK2LEg2YXYqtmI2YLZkdi5LiDYrdin2YjZhCDZhdix2Kkg2KPYrtix2YkuIjsKfQoKLyoqCiAqINi52K/ZkSDYp9iz2YUg2KjYp9mE2LnYsdio2YrYqSDYp9mE2LXYrdmK2K3YqTogMCDihpIgwqvZhNinINmF2YHYsdivwrvYjCAxIOKGkiDZhdmB2LHYr9iMIDIg4oaSINmF2KvZhtmR2YnYjCAz4oCTMTAg4oaSINis2YXYudiMIDExKyDihpIg2KrZhdmK2YrYsiDZhdmB2LHYry4KICog2YXYq9in2YQ6IGNvdW50QXIoOSwgWyLYrdix2YPYqSIsICLYrdix2YPYqtin2YYiLCAi2K3YsdmD2KfYqiJdLCAi2K3YsdmD2KkiKSDihpIgwqs5INit2LHZg9in2KrCuwogKi8KZXhwb3J0IGZ1bmN0aW9uIGNvdW50QXIoCiAgbjogbnVtYmVyLAogIGZvcm1zOiBbc3RyaW5nLCBzdHJpbmcsIHN0cmluZ10sCiAgbWFueTogc3RyaW5nLAogIC8qKiDYtdmK2LrYqSDYp9mE2YXZgdix2K8g2KfZhNmF2Y/Yudiv2YjYryDYqNmHOiDCq9mI2KfYrdivwrsg2YTZhNmF2LDZg9ix2IwgwqvZiNin2K3Yr9ipwrsg2YTZhNmF2KTZhtirICjYr9mC2YrZgtip2Iwg2LPYp9i52KnYjCDYrdix2YPYqSkuICovCiAgb25lID0gItmI2KfYrdivIiwKKTogc3RyaW5nIHsKICBpZiAobiA9PT0gMCkgcmV0dXJuIGDZhNinICR7Zm9ybXNbMF19YDsKICBpZiAobiA9PT0gMSkgcmV0dXJuIGAke2Zvcm1zWzBdfSAke29uZX1gOwogIGlmIChuID09PSAyKSByZXR1cm4gZm9ybXNbMV07CiAgaWYgKG4gPD0gMTApIHJldHVybiBgJHtufSAke2Zvcm1zWzJdfWA7CiAgcmV0dXJuIGAke259ICR7bWFueX1gOwp9Cg==
+// ── تنسيقات ومفردات المجال في الواجهة ────────────────────────────────────────
+import type { LucideIcon } from "lucide-react";
+import {
+  Wrench,
+  Zap,
+  Hammer,
+  PaintRoller,
+  Snowflake,
+  Sparkles,
+  Truck,
+  Smartphone,
+  Scissors,
+  Camera,
+  GraduationCap,
+  Settings,
+  ShoppingBasket,
+  ListChecks,
+  KeyRound,
+  CircleDollarSign,
+  CheckCircle2,
+  Hourglass,
+  Ban,
+  AlertCircle,
+  Send,
+  XCircle,
+} from "lucide-react";
+
+/** خريطة أيقونات الفئات — المفتاح هو ما يُخزَّن في service_categories.icon. */
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Wrench,
+  Zap,
+  Hammer,
+  PaintRoller,
+  Snowflake,
+  Sparkles,
+  Truck,
+  Smartphone,
+  Scissors,
+  Camera,
+  GraduationCap,
+  Settings,
+  ShoppingBasket,
+  ListChecks,
+  KeyRound,
+};
+
+export function categoryIcon(name: string | null | undefined): LucideIcon {
+  return (name && CATEGORY_ICONS[name]) || Settings;
+}
+
+/** رقم بفواصل آلاف + كلمة العملة — `1 250 درهم`. */
+export function formatMAD(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return "—";
+  return `${new Intl.NumberFormat("fr-MA", { maximumFractionDigits: 0 }).format(amount)} درهم`;
+}
+
+/**
+ * مدة بالدقائق ← نص مقروء بالعربية الفصيحة.
+ * يراعي صيغ العدد: 1 مفرد، 2 مثنّى، 3–10 جمع، 11+ تمييز مفرد.
+ */
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return countAr(minutes, ["دقيقة", "دقيقتان", "دقائق"], "دقيقة", "واحدة");
+  }
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h >= 24) {
+    const d = Math.floor(h / 24);
+    const rh = h % 24;
+    const days = countAr(d, ["يوم", "يومان", "أيام"], "يوماً");
+    return rh ? `${days} و${countAr(rh, ["ساعة", "ساعتان", "ساعات"], "ساعة", "واحدة")}` : days;
+  }
+  const hours = countAr(h, ["ساعة", "ساعتان", "ساعات"], "ساعة", "واحدة");
+  return m ? `${hours} و${countAr(m, ["دقيقة", "دقيقتان", "دقائق"], "دقيقة", "واحدة")}` : hours;
+}
+
+/** «منذ 3 ساعات» بصيغ الجمع العربية الصحيحة (2 ← ساعتين، 11+ ← ساعة). */
+export function timeAgoAr(input: Date | string | number): string {
+  const then = new Date(input).getTime();
+  const diff = Math.max(0, Date.now() - then);
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "الآن";
+  if (min < 60) return `منذ ${countAr(min, ["دقيقة", "دقيقتين", "دقائق"], "دقيقة", "واحدة")}`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `منذ ${countAr(h, ["ساعة", "ساعتين", "ساعات"], "ساعة", "واحدة")}`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `منذ ${countAr(d, ["يوم", "يومين", "أيام"], "يوماً")}`;
+  const mo = Math.floor(d / 30);
+  return `منذ ${countAr(mo, ["شهر", "شهرين", "أشهر"], "شهراً")}`;
+}
+
+/** تاريخ مختصر بالعربية — `22 شتنبر 2026`. */
+export function formatDateAr(input: Date | string | number | null | undefined): string {
+  if (!input) return "غير محدّد";
+  return new Intl.DateTimeFormat("ar-MA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Africa/Casablanca",
+  }).format(new Date(input));
+}
+
+export function formatDateTimeAr(input: Date | string | number | null | undefined): string {
+  if (!input) return "غير محدّد";
+  return new Intl.DateTimeFormat("ar-MA", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Africa/Casablanca",
+  }).format(new Date(input));
+}
+
+/** نسبة عربية للعدد (١٠٪ → 10%) — تُستعمل للعرض فقط. */
+export function percentOf(part: number, whole: number): number {
+  if (!whole) return 0;
+  return Math.round((part / whole) * 100);
+}
+
+/** متوسّط التقييم من مجموع/عدد (بدل عمود محسوب على الخادم). */
+export function ratingAvg(sum: number, count: number): number | null {
+  if (!count) return null;
+  return Math.round((sum / count) * 10) / 10;
+}
+
+export type Tone = "brand" | "teal" | "success" | "warn" | "danger" | "muted" | "info";
+
+/** شرائح inDrive مسطّحة بلا حدود مرئية: خلفية فاتحة + نصّ داكن فقط. */
+export const TONE_CLASS: Record<Tone, string> = {
+  brand: "bg-brand text-brand-ink border-transparent",
+  teal: "bg-teal-soft text-teal border-transparent",
+  success: "bg-success-soft text-success border-transparent",
+  warn: "bg-warn-soft text-warn border-transparent",
+  danger: "bg-destructive/12 text-destructive border-transparent",
+  muted: "bg-muted text-muted-foreground border-transparent",
+  info: "bg-info-soft text-info border-transparent",
+};
+
+/** الرقم وحده بلا كلمة العملة — للأسعار الضخمة في بطاقات العروض والطلبات. */
+export function madNumber(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return "—";
+  return new Intl.NumberFormat("fr-MA", { maximumFractionDigits: 0 }).format(amount);
+}
+
+/** فرق السعر بين العرض والسعر المضاد — يُعرض في شاشة التفاوض. */
+export function priceDelta(from: number, to: number): { abs: number; pct: number; up: boolean } {
+  const abs = Math.round(Math.abs(to - from));
+  const pct = from ? Math.round((abs / from) * 100) : 0;
+  return { abs, pct, up: to > from };
+}
+
+/** حالة الطلب ← تسمية ورمز ولون وشريح أيقونة. */
+export interface StatusMeta {
+  label: string;
+  tone: Tone;
+  icon: LucideIcon;
+}
+
+export const REQUEST_STATUS_META: Record<string, StatusMeta> = {
+  open: { label: "منشور — ينتظر عروضاً", tone: "brand", icon: Send },
+  accepted: { label: "مقبول — تم الاتفاق", tone: "teal", icon: CheckCircle2 },
+  in_progress: { label: "قيد التنفيذ", tone: "warn", icon: Hourglass },
+  completed: { label: "منتهي", tone: "success", icon: CheckCircle2 },
+  cancelled: { label: "ملغى", tone: "muted", icon: Ban },
+};
+
+export function requestStatusMeta(status: string): StatusMeta {
+  return REQUEST_STATUS_META[status] ?? { label: status, tone: "muted", icon: AlertCircle };
+}
+
+/** شريط الحياة المعروض في الشاشة الموحّدة: منشور → عروض → مقبول → قيد التنفيذ → منتهي. */
+export const LIFECYCLE_STEPS = [
+  { key: "open", label: "منشور", icon: Send },
+  { key: "offers", label: "عروض", icon: CircleDollarSign },
+  { key: "accepted", label: "مقبول", icon: CheckCircle2 },
+  { key: "in_progress", label: "قيد التنفيذ", icon: Hourglass },
+  { key: "completed", label: "منتهي", icon: CheckCircle2 },
+] as const;
+
+/** أي خطوة في الشريط صارت حاضرة بحسب حالة الطلب وعدد العروض. */
+export function lifecycleIndex(status: string, hasOffers: boolean): number {
+  switch (status) {
+    case "open":
+      return hasOffers ? 1 : 0;
+    case "accepted":
+      return 2;
+    case "in_progress":
+      return 3;
+    case "completed":
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+export const OFFER_STATUS_META: Record<string, StatusMeta> = {
+  pending: { label: "بانتظار ردّ الزبون", tone: "brand", icon: Hourglass },
+  countered: { label: "عرض مضاد — تفاوض", tone: "warn", icon: CircleDollarSign },
+  accepted: { label: "مقبول", tone: "success", icon: CheckCircle2 },
+  rejected: { label: "لم يُقبل", tone: "muted", icon: XCircle },
+  withdrawn: { label: "مسحوب", tone: "muted", icon: Ban },
+};
+
+export function offerStatusMeta(status: string): StatusMeta {
+  return OFFER_STATUS_META[status] ?? { label: status, tone: "muted", icon: AlertCircle };
+}
+
+export const URGENCY_META: Record<string, { label: string; tone: Tone }> = {
+  flexible: { label: "مرن في الوقت", tone: "muted" },
+  today: { label: "اليوم", tone: "warn" },
+  urgent: { label: "عاجل جداً", tone: "danger" },
+};
+
+export function urgencyMeta(u: string) {
+  return URGENCY_META[u] ?? { label: u, tone: "muted" as Tone };
+}
+
+export const WALLET_TYPE_META: Record<string, { label: string; tone: Tone; sign: "+" | "-" }> = {
+  payment: { label: "دفع", tone: "danger", sign: "-" },
+  payout: { label: "استحقاق", tone: "success", sign: "+" },
+  fee: { label: "عمولة المنصّة", tone: "warn", sign: "-" },
+  refund: { label: "استرجاع", tone: "info", sign: "+" },
+  topup: { label: "شحن الرصيد", tone: "teal", sign: "+" },
+};
+
+export function walletTypeMeta(t: string) {
+  return WALLET_TYPE_META[t] ?? { label: t, tone: "muted" as Tone, sign: "+" as const };
+}
+
+export const DISTANCE_LABELS: Record<string, { label: string; hint: string; tone: Tone }> = {
+  near: { label: "قريب", hint: "نفس الحي", tone: "success" },
+  medium: { label: "متوسط", hint: "نفس المدينة", tone: "warn" },
+  far: { label: "بعيد", hint: "مدينة أخرى", tone: "muted" },
+};
+
+/** يحسب بند المسافة بين موقعين (تقديري — لا خرائط). */
+export function distanceBand(
+  a: { city: string; district?: string | null },
+  b: { city: string; district?: string | null },
+): "near" | "medium" | "far" {
+  if (a.city !== b.city) return "far";
+  if (a.district && b.district && a.district === b.district) return "near";
+  return "medium";
+}
+
+/** قصّ نص طويل مع إضافة نقاط. */
+export function truncate(s: string, n: number): string {
+  return s.length <= n ? s : `${s.slice(0, n).trimEnd()}…`;
+}
+
+/** رسالة خطأ عربية من أي خطأ tRPC — بلا تفاصيل تقنية. */
+export function errorMessage(e: unknown): string {
+  if (typeof e === "object" && e && "message" in e) {
+    const m = String((e as { message?: unknown }).message ?? "");
+    if (m && !m.includes("TRPCClientError") && m.length < 240) return m;
+  }
+  return "حدث خطأ غير متوقّع. حاول مرة أخرى.";
+}
+
+/**
+ * عدّ اسم بالعربية الصحيحة: 0 → «لا مفرد»، 1 → مفرد، 2 → مثنّى، 3–10 → جمع، 11+ → تمييز مفرد.
+ * مثال: countAr(9, ["حركة", "حركتان", "حركات"], "حركة") → «9 حركات»
+ */
+export function countAr(
+  n: number,
+  forms: [string, string, string],
+  many: string,
+  /** صيغة المفرد المُعدود به: «واحد» للمذكر، «واحدة» للمؤنث (دقيقة، ساعة، حركة). */
+  one = "واحد",
+): string {
+  if (n === 0) return `لا ${forms[0]}`;
+  if (n === 1) return `${forms[0]} ${one}`;
+  if (n === 2) return forms[1];
+  if (n <= 10) return `${n} ${forms[2]}`;
+  return `${n} ${many}`;
+}

@@ -1,1 +1,362 @@
-Ly8g4pSA4pSAINmE2YjYrdipINin2YTYqtit2YPZhTog2K7YsdmK2LfYqSDZiNin2K7YqtmK2KfYsdin2Kog2KfZhNiu2K/ZhdipIOKAlCDYp9mE2YTZiNit2Kkg2KrYqtio2K/ZkdmEINio2K3Ys9ioINin2YTYr9mI2LEg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACi8vINin2YTYtNmD2YQg2YXZgti12YjYryDZhNmK2LfYp9io2YIg2LTYp9i02KkgaW5Ecml2ZSDYp9mE2LHYptmK2LPZitipOiDYp9mE2LfZhNio2KfYqiDYp9mE2YLYsdmK2KjYqSDYudmE2Ykg2KfZhNiu2LHZiti32KnYjAovLyDYq9mFINin2K7YqtmK2KfYsdin2Kog2YjYp9i22K3YqSDZhNmE2K7Yr9mF2Kkg2KfZhNiq2KfZhNmK2KkuCmltcG9ydCB7IExpbmsgfSBmcm9tICJ3b3V0ZXIiOwppbXBvcnQgewogIENpcmNsZURvbGxhclNpZ24sCiAgU2VhcmNoLAogIEJyaWVmY2FzZSwKICBTZW5kLAogIFN0YXIsCiAgSG91cmdsYXNzLAogIEFycm93TGVmdCwKICBXYWxsZXQsCn0gZnJvbSAibHVjaWRlLXJlYWN0IjsKaW1wb3J0IHsgQnV0dG9uIH0gZnJvbSAiQC9jb21wb25lbnRzL3VpL2J1dHRvbiI7CmltcG9ydCB7IERyYWdIYW5kbGUsIE1hcENhbnZhcywgdHlwZSBNYXBQaW5TcGVjIH0gZnJvbSAiQC9jb21wb25lbnRzL2hpcmZpL21hcCI7CmltcG9ydCB7IFNlcnZpY2VQaWNrZXJTaGVldCB9IGZyb20gIkAvY29tcG9uZW50cy9oaXJmaS9zZXJ2aWNlLXBpY2tlciI7CmltcG9ydCB7CiAgQmFkZ2UsCiAgRW1wdHlTdGF0ZSwKICBFcnJvclN0YXRlLAogIExpdmVEb3QsCiAgTGlzdFNrZWxldG9uLAogIFNwaW5uZXIsCiAgVmVyaWZpZWRCYWRnZSwKfSBmcm9tICJAL2NvbXBvbmVudHMvaGlyZmkvcHJpbWl0aXZlcyI7CmltcG9ydCB7IFJlcXVlc3RDYXJkLCB0eXBlIFJlcXVlc3RDYXJkRGF0YSB9IGZyb20gIkAvY29tcG9uZW50cy9oaXJmaS9jYXJkcyI7CmltcG9ydCB7IHRycGMgfSBmcm9tICJAL19jb3JlL3RycGMiOwppbXBvcnQgeyB1c2VBcHBSb2xlIH0gZnJvbSAiQC9saWIvaG9va3MiOwppbXBvcnQgeyBjb3VudEFyLCBlcnJvck1lc3NhZ2UsIG1hZE51bWJlciwgcmVxdWVzdFN0YXR1c01ldGEgfSBmcm9tICJAL2xpYi9mb3JtYXQiOwoKLyoqINmF2YjYp9i22Lkg2KvYp9io2KrYqSDZhNmE2K/YqNin2KjZitizIOKAlCDYq9in2KjYqtipINmD2Yog2YTYpyDYqtix2KrYrNmBINin2YTYrtix2YrYt9ipINmB2Yog2YPZhCDYqti12YrZitixLiAqLwpjb25zdCBQSU5fU1BPVFMgPSBbCiAgeyB4OiAzMCwgeTogNzAgfSwKICB7IHg6IDUzLCB5OiA1MiB9LAogIHsgeDogNzQsIHk6IDM1IH0sCiAgeyB4OiA0MSwgeTogMjUgfSwKICB7IHg6IDY2LCB5OiA2MyB9LApdOwpjb25zdCBNRV9QSU46IE1hcFBpblNwZWMgPSB7IGlkOiAibWUiLCB4OiAyMiwgeTogODIsIGtpbmQ6ICJtZSIgfTsKCmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIERhc2hib2FyZCgpIHsKICBjb25zdCB7IHJvbGUsIGlzTG9hZGluZzogcm9sZUxvYWRpbmcgfSA9IHVzZUFwcFJvbGUoKTsKCiAgaWYgKHJvbGVMb2FkaW5nKSB7CiAgICByZXR1cm4gKAogICAgICA8ZGl2IGNsYXNzTmFtZT0iZ3JpZCBtaW4taC1bNTB2aF0gcGxhY2UtaXRlbXMtY2VudGVyIj4KICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICAgIDxTcGlubmVyIC8+CiAgICAgICAgICDYrNin2LHZjSDYqtit2LbZitixINmE2YjYrdiq2YPigKYKICAgICAgICA8L2Rpdj4KICAgICAgPC9kaXY+CiAgICApOwogIH0KCiAgcmV0dXJuIHJvbGUgPT09ICJwcm92aWRlciIgPyA8UHJvdmlkZXJEYXNoYm9hcmQgLz4gOiA8Q3VzdG9tZXJEYXNoYm9hcmQgLz47Cn0KCi8vIOKUgOKUgCDZhNmI2K3YqSDYp9mE2LLYqNmI2YYg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmZ1bmN0aW9uIEN1c3RvbWVyRGFzaGJvYXJkKCkgewogIGNvbnN0IHEgPSB0cnBjLmRhc2hib2FyZC5jdXN0b21lci51c2VRdWVyeSgpOwoKICBpZiAocS5pc0xvYWRpbmcpIHsKICAgIHJldHVybiAoCiAgICAgIDxkaXYgY2xhc3NOYW1lPSJncmlkIj4KICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iaGlyZmktc2tlbGV0b24gaC1bMzRzdmhdIiAvPgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJncmlkIGdhcC0zIHB4LTQgcHktNSI+CiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iaGlyZmktc2tlbGV0b24gaC0yNCByb3VuZGVkLTN4bCIgLz4KICAgICAgICAgIDxMaXN0U2tlbGV0b24gY291bnQ9ezJ9IC8+CiAgICAgICAgPC9kaXY+CiAgICAgIDwvZGl2PgogICAgKTsKICB9CgogIGlmIChxLmlzRXJyb3IpIHsKICAgIHJldHVybiAoCiAgICAgIDxkaXYgY2xhc3NOYW1lPSJwLTQiPgogICAgICAgIDxFcnJvclN0YXRlIG1lc3NhZ2U9e2Vycm9yTWVzc2FnZShxLmVycm9yKX0gb25SZXRyeT17KCkgPT4gdm9pZCBxLnJlZmV0Y2goKX0gLz4KICAgICAgPC9kaXY+CiAgICApOwogIH0KCiAgY29uc3QgYyA9IHEuZGF0YT8uY291bnRzOwogIGNvbnN0IHJlY2VudCA9IChxLmRhdGE/LnJlY2VudCA/PyBbXSkgYXMgUmVxdWVzdENhcmREYXRhW107CiAgY29uc3QgaGFzQWN0aXZlUmVxdWVzdCA9IHJlY2VudC5zb21lKChyKSA9PiByLnN0YXR1cyAhPT0gImNvbXBsZXRlZCIgJiYgci5zdGF0dXMgIT09ICJjYW5jZWxsZWQiKTsKCiAgY29uc3QgcGluczogTWFwUGluU3BlY1tdID0gWwogICAgTUVfUElOLAogICAgLi4ucmVjZW50CiAgICAgIC5maWx0ZXIoKHIpID0+IHIuc3RhdHVzID09PSAib3BlbiIpCiAgICAgIC5zbGljZSgwLCBQSU5fU1BPVFMubGVuZ3RoKQogICAgICAubWFwKChyLCBpKSA9PiAoewogICAgICAgIGlkOiByLmlkLAogICAgICAgIHg6IFBJTl9TUE9UU1tpXS54LAogICAgICAgIHk6IFBJTl9TUE9UU1tpXS55LAogICAgICAgIGtpbmQ6ICJyZXF1ZXN0IiBhcyBjb25zdCwKICAgICAgICBsYWJlbDogci50aXRsZS50cmltKCkuY2hhckF0KDApLAogICAgICB9KSksCiAgXTsKCiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJncmlkIj4KICAgICAgey8qINin2YTYrtix2YrYt9ipICsg2YbYp9mB2LDYqSDYp9mE2K7Yr9mF2KfYqiDYp9mE2YLYp9io2YTYqSDZhNmE2LPYrdioICovfQogICAgICA8c2VjdGlvbiBjbGFzc05hbWU9InJlbGF0aXZlIGgtW2NhbGMoMTAwc3ZoLTcuMjVyZW0pXSBvdmVyZmxvdy1oaWRkZW4iPgogICAgICAgIDxNYXBDYW52YXMgcGlucz17cGluc30gc2hvd1JvdXRlPXtoYXNBY3RpdmVSZXF1ZXN0fSBoZWlnaHQ9IjEwMCUiIC8+CgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJhYnNvbHV0ZSBpbnNldC14LTQgdG9wLTMgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGdhcC0yIj4KICAgICAgICAgIDxMaXZlRG90CiAgICAgICAgICAgIGxhYmVsPXtjPy5vcGVuID8gYCR7Y291bnRBcihjLm9wZW4sIFsi2LfZhNioIiwgIti32YTYqNin2YYiLCAi2LfZhNio2KfYqiJdLCAi2LfZhNio2KfZiyIpfSDZhdmB2KrZiNitYCA6ICLZhNinINi32YTYqNin2Kog2YXZgdiq2YjYrdipIn0KICAgICAgICAgIC8+CiAgICAgICAgICB7Yz8ucGVuZGluZ09mZmVycyA/ICgKICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSByb3VuZGVkLWZ1bGwgYmctYmFja2dyb3VuZC85NSBweC0zIHB5LTEuNSB0ZXh0LVsxMnB4XSBmb250LWJsYWNrIHNoYWRvdy1tZCBiYWNrZHJvcC1ibHVyIj4KICAgICAgICAgICAgICA8SG91cmdsYXNzIGNsYXNzTmFtZT0ic2l6ZS0zLjUgdGV4dC1icmFuZC1kYXJrIiAvPgogICAgICAgICAgICAgIHtjb3VudEFyKGMucGVuZGluZ09mZmVycywgWyLYudix2LYiLCAi2LnYsdi22KfZhiIsICLYudix2YjYtiJdLCAi2LnYsdi22KfZiyIpfSDZgdmKINin2YbYqti42KfYsSDYsdiv2ZHZgwogICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICApIDogbnVsbH0KICAgICAgICA8L2Rpdj4KCiAgICAgICAgPFNlcnZpY2VQaWNrZXJTaGVldCAvPgogICAgICA8L3NlY3Rpb24+CgogICAgPC9kaXY+CiAgKTsKfQoKLy8g4pSA4pSAINmE2YjYrdipINin2YTYrdix2ZHYp9mBIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApmdW5jdGlvbiBQcm92aWRlckRhc2hib2FyZCgpIHsKICBjb25zdCBxID0gdHJwYy5kYXNoYm9hcmQucHJvdmlkZXIudXNlUXVlcnkoKTsKCiAgaWYgKHEuaXNMb2FkaW5nKSB7CiAgICByZXR1cm4gKAogICAgICA8ZGl2IGNsYXNzTmFtZT0iZ3JpZCI+CiAgICAgICAgPGRpdiBjbGFzc05hbWU9ImhpcmZpLXNrZWxldG9uIGgtWzM0c3ZoXSIgLz4KICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZ3JpZCBnYXAtMyBweC00IHB5LTUiPgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImhpcmZpLXNrZWxldG9uIGgtMjQgcm91bmRlZC0zeGwiIC8+CiAgICAgICAgICA8TGlzdFNrZWxldG9uIGNvdW50PXsyfSAvPgogICAgICAgIDwvZGl2PgogICAgICA8L2Rpdj4KICAgICk7CiAgfQoKICBpZiAocS5pc0Vycm9yKSB7CiAgICByZXR1cm4gKAogICAgICA8ZGl2IGNsYXNzTmFtZT0icC00Ij4KICAgICAgICA8RXJyb3JTdGF0ZSBtZXNzYWdlPXtlcnJvck1lc3NhZ2UocS5lcnJvcil9IG9uUmV0cnk9eygpID0+IHZvaWQgcS5yZWZldGNoKCl9IC8+CiAgICAgIDwvZGl2PgogICAgKTsKICB9CgogIGNvbnN0IHAgPSBxLmRhdGE/LnByb2ZpbGU7CiAgY29uc3QgYyA9IHEuZGF0YT8uY291bnRzOwogIGNvbnN0IGZyZXNoID0gKHEuZGF0YT8uZnJlc2ggPz8gW10pIGFzIFJlcXVlc3RDYXJkRGF0YVtdOwogIGNvbnN0IGpvYnMgPSAocS5kYXRhPy5qb2JzID8/IFtdKSBhcyBSZXF1ZXN0Q2FyZERhdGFbXTsKICBjb25zdCBhdmcgPSBwICYmIHAucmF0aW5nQ291bnQgPyBNYXRoLnJvdW5kKChwLnJhdGluZ1N1bSAvIHAucmF0aW5nQ291bnQpICogMTApIC8gMTAgOiBudWxsOwogIGNvbnN0IGFjdGl2ZUpvYiA9IGpvYnMuZmluZCgoaikgPT4gai5zdGF0dXMgIT09ICJjb21wbGV0ZWQiKTsKICBjb25zdCBhY3RpdmVNZXRhID0gYWN0aXZlSm9iID8gcmVxdWVzdFN0YXR1c01ldGEoYWN0aXZlSm9iLnN0YXR1cykgOiBudWxsOwoKICBjb25zdCBwaW5zOiBNYXBQaW5TcGVjW10gPSBbCiAgICBNRV9QSU4sCiAgICAuLi5mcmVzaC5zbGljZSgwLCBQSU5fU1BPVFMubGVuZ3RoKS5tYXAoKHIsIGkpID0+ICh7CiAgICAgIGlkOiByLmlkLAogICAgICB4OiBQSU5fU1BPVFNbaV0ueCwKICAgICAgeTogUElOX1NQT1RTW2ldLnksCiAgICAgIGtpbmQ6ICJyZXF1ZXN0IiBhcyBjb25zdCwKICAgICAgbGFiZWw6IHIudGl0bGUudHJpbSgpLmNoYXJBdCgwKSwKICAgIH0pKSwKICBdOwoKICByZXR1cm4gKAogICAgPGRpdiBjbGFzc05hbWU9ImdyaWQiPgogICAgICA8c2VjdGlvbiBjbGFzc05hbWU9InJlbGF0aXZlIj4KICAgICAgICA8TWFwQ2FudmFzIHBpbnM9e3BpbnN9IGhlaWdodD0iMzRzdmgiIC8+CgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJhYnNvbHV0ZSBpbnNldC14LTQgdG9wLTMgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGdhcC0yIj4KICAgICAgICAgIDxMaXZlRG90IGxhYmVsPXtgJHtjb3VudEFyKGM/Lm9wZW5OZWFyID8/IDAsIFsi2LfZhNioIiwgIti32YTYqNin2YYiLCAi2LfZhNio2KfYqiJdLCAi2LfZhNio2KfZiyIpfSDZgtix2YrYqGB9IC8+CiAgICAgICAgICB7Yz8ub2ZmZXJzUGVuZGluZyA/ICgKICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSByb3VuZGVkLWZ1bGwgYmctYmFja2dyb3VuZC85NSBweC0zIHB5LTEuNSB0ZXh0LVsxMnB4XSBmb250LWJsYWNrIHNoYWRvdy1tZCBiYWNrZHJvcC1ibHVyIj4KICAgICAgICAgICAgICA8U2VuZCBjbGFzc05hbWU9InNpemUtMy41IHRleHQtYnJhbmQtZGFyayIgLz4KICAgICAgICAgICAgICB7Y291bnRBcihjLm9mZmVyc1BlbmRpbmcsIFsi2LnYsdi2IiwgIti52LHYttin2YYiLCAi2LnYsdmI2LYiXSwgIti52LHYttin2YsiKX0g2YHZiiDYp9mG2KrYuNin2LEg2LHYr9mR2YMKICAgICAgICAgICAgPC9zcGFuPgogICAgICAgICAgKSA6IG51bGx9CiAgICAgICAgPC9kaXY+CgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJzaGVldCByZWxhdGl2ZSB6LTEwIC1tdC03IHB4LTQgcHQtMyBwYi01Ij4KICAgICAgICAgIDxEcmFnSGFuZGxlIGNsYXNzTmFtZT0ibWItNCIgLz4KCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBpdGVtcy1zdGFydCBqdXN0aWZ5LWJldHdlZW4gZ2FwLTMiPgogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ibWluLXctMCI+CiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggZmxleC13cmFwIGl0ZW1zLWNlbnRlciBnYXAtMS41Ij4KICAgICAgICAgICAgICAgIDxoMSBjbGFzc05hbWU9InRleHQtWzIycHhdIGxlYWRpbmctdGlnaHQgZm9udC1ibGFjayI+CiAgICAgICAgICAgICAgICAgIHtwID8gcC5kaXNwbGF5TmFtZSA6ICLZhNmI2K3YqSDYp9mE2K3YsdmR2KfZgSJ9CiAgICAgICAgICAgICAgICA8L2gxPgogICAgICAgICAgICAgICAge3A/LmlzVmVyaWZpZWQgPyA8VmVyaWZpZWRCYWRnZSAvPiA6IG51bGx9CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJtdC0xIGZsZXggZmxleC13cmFwIGl0ZW1zLWNlbnRlciBnYXAteC0yIHRleHQtWzEycHhdIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+CiAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9ImlubGluZS1mbGV4IGl0ZW1zLWNlbnRlciBnYXAtMSBmb250LWJvbGQgdGV4dC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgICAgICAgPFN0YXIgY2xhc3NOYW1lPSJzaXplLTMuNSBmaWxsLXdhcm4gdGV4dC13YXJuIiAvPgogICAgICAgICAgICAgICAgICB7YXZnICE9PSBudWxsID8gYCR7YXZnfSDZhdmGIDUgKCR7cD8ucmF0aW5nQ291bnR9KWAgOiAi2KjZhNinINiq2YLZitmK2YUg2KjYudivIn0KICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgIDxzcGFuPgogICAgICAgICAgICAgICAgICB7cD8uY2l0eX0KICAgICAgICAgICAgICAgICAge3A/LmRpc3RyaWN0ID8gYCDigJQgJHtwLmRpc3RyaWN0fWAgOiAiIn0KICAgICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICAgIDxzcGFuPntjb3VudEFyKHA/LmNvbXBsZXRlZEpvYnMgPz8gMCwgWyLYudmF2YQiLCAi2LnZhdmE2KfZhiIsICLYo9i52YXYp9mEIl0sICLYudmF2YTYp9mLIil9INmF2YbYrNiyPC9zcGFuPgogICAgICAgICAgICAgIDwvcD4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8L2Rpdj4KCiAgICAgICAgICB7Lyog2KPYsdmC2KfZhSDYp9mE2K3YsdmR2KfZgSAqL30KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJtdC00IGdyaWQgZ3JpZC1jb2xzLTIgZ2FwLTIiPgogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0icm91bmRlZC0yeGwgYmctbXV0ZWQvNzAgcHgtMyBweS0yLjUiPgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJ0ZXh0LVsxMC41cHhdIGZvbnQtYm9sZCB0ZXh0LW11dGVkLWZvcmVncm91bmQiPtil2KzZhdin2YTZiiDYp9mE2YXYtNit2YjZhjwvZGl2PgogICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJ0ZXh0LXByaWNlIG10LTEgdGV4dC1bMjJweF0gbGVhZGluZy1ub25lIj4KICAgICAgICAgICAgICAgIHttYWROdW1iZXIoYz8uZWFybmluZ3MgPz8gMCl9CiAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9Im1zLTEgdGV4dC1bMTAuNXB4XSBmb250LWJvbGQgdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj7Yr9ix2YfZhTwvc3Bhbj4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJyb3VuZGVkLTJ4bCBiZy1tdXRlZC83MCBweC0zIHB5LTIuNSI+CiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9InRleHQtWzEwLjVweF0gZm9udC1ib2xkIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+2LHYtdmK2K8g2YXYqtin2K08L2Rpdj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17InRleHQtcHJpY2UgbXQtMSB0ZXh0LVsyMnB4XSBsZWFkaW5nLW5vbmUgIiArICgoYz8ud2FsbGV0QmFsYW5jZSA/PyAwKSA8IDAgPyAidGV4dC1kZXN0cnVjdGl2ZSIgOiAiIil9PgogICAgICAgICAgICAgICAge21hZE51bWJlcihjPy53YWxsZXRCYWxhbmNlID8/IDApfQogICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJtcy0xIHRleHQtWzEwLjVweF0gZm9udC1ib2xkIHRleHQtbXV0ZWQtZm9yZWdyb3VuZCI+2K/YsdmH2YU8L3NwYW4+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPC9kaXY+CgogICAgICAgICAgeyhjPy53YWxsZXRCYWxhbmNlID8/IDApIDw9IDAgPyAoCiAgICAgICAgICAgIDxMaW5rCiAgICAgICAgICAgICAgaHJlZj0iL3dhbGxldCIKICAgICAgICAgICAgICBjbGFzc05hbWU9Im10LTMgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTMgcm91bmRlZC0zeGwgYmctZGVzdHJ1Y3RpdmUvMTAgcC0zLjUgdGV4dC1kZXN0cnVjdGl2ZSB0cmFuc2l0aW9uLWNvbG9ycyBhY3RpdmU6YmctZGVzdHJ1Y3RpdmUvMTUiCiAgICAgICAgICAgID4KICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9ImdyaWQgc2l6ZS0xMCBzaHJpbmstMCBwbGFjZS1pdGVtcy1jZW50ZXIgcm91bmRlZC1mdWxsIGJnLWRlc3RydWN0aXZlLzEyIj4KICAgICAgICAgICAgICAgIDxXYWxsZXQgY2xhc3NOYW1lPSJzaXplLTQuNSIgLz4KICAgICAgICAgICAgICA8L3NwYW4+CiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im1pbi13LTAgZmxleC0xIj4KICAgICAgICAgICAgICAgIDxiIGNsYXNzTmFtZT0idGV4dC1bMTMuNXB4XSI+2KfYtNit2YYg2K3Ys9in2KjZgyDZhNil2LHYs9in2YQg2KfZhNi52LHZiNi2PC9iPgogICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJtdC0wLjUgdGV4dC1bMTEuNXB4XSBvcGFjaXR5LTgwIj4KICAgICAgICAgICAgICAgICAg2YTYp9iy2YUg2YrZg9mI2YYg2YHZiiDZhdit2YHYuNiq2YMg2LHYtdmK2K8g2YrYuti32ZHZiiDYudmF2YjZhNipINin2YTZhdmG2LXZkdipINmC2KjZhCDYqtmC2K/ZitmFINij2Yog2LnYsdi2LgogICAgICAgICAgICAgICAgPC9wPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxBcnJvd0xlZnQgY2xhc3NOYW1lPSJzaXplLTQgc2hyaW5rLTAiIC8+CiAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICkgOiBudWxsfQoKICAgICAgICAgIHsvKiDYp9mE2LnZhdmEINin2YTYrNin2LHZiiAqL30KICAgICAgICAgIHthY3RpdmVKb2IgJiYgYWN0aXZlTWV0YSA/ICgKICAgICAgICAgICAgPExpbmsKICAgICAgICAgICAgICBocmVmPXtgL3JlcXVlc3RzLyR7YWN0aXZlSm9iLmlkfWB9CiAgICAgICAgICAgICAgY2xhc3NOYW1lPSJtdC0zIGZsZXggaXRlbXMtY2VudGVyIGdhcC0zIHJvdW5kZWQtM3hsIGJnLWJyYW5kLzEyIHAtMy41IHRyYW5zaXRpb24tY29sb3JzIGFjdGl2ZTpiZy1icmFuZC8yMCIKICAgICAgICAgICAgPgogICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0iZ3JpZCBzaXplLTEwIHNocmluay0wIHBsYWNlLWl0ZW1zLWNlbnRlciByb3VuZGVkLWZ1bGwgYmctYnJhbmQgdGV4dC1icmFuZC1pbmsiPgogICAgICAgICAgICAgICAgPEJyaWVmY2FzZSBjbGFzc05hbWU9InNpemUtNC41IiAvPgogICAgICAgICAgICAgIDwvc3Bhbj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ibWluLXctMCBmbGV4LTEiPgogICAgICAgICAgICAgICAgPEJhZGdlIHRvbmU9e2FjdGl2ZU1ldGEudG9uZX0+e2FjdGl2ZU1ldGEubGFiZWx9PC9CYWRnZT4KICAgICAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9Im10LTEuNSB0cnVuY2F0ZSB0ZXh0LVsxNC41cHhdIGZvbnQtYmxhY2siPnthY3RpdmVKb2IudGl0bGV9PC9oMj4KICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0ibXQtMC41IHRleHQtWzExLjVweF0gdGV4dC1tdXRlZC1mb3JlZ3JvdW5kIj4KICAgICAgICAgICAgICAgICAge2FjdGl2ZUpvYi5jYXRlZ29yeU5hbWV9IMK3IHthY3RpdmVKb2IuY2l0eX0KICAgICAgICAgICAgICAgIDwvcD4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8QXJyb3dMZWZ0IGNsYXNzTmFtZT0ic2l6ZS00IHNocmluay0wIiAvPgogICAgICAgICAgICA8L0xpbms+CiAgICAgICAgICApIDogKAogICAgICAgICAgICA8cCBjbGFzc05hbWU9Im10LTMgcm91bmRlZC0zeGwgYmctbXV0ZWQvNzAgcHgtMy41IHB5LTQgdGV4dC1jZW50ZXIgdGV4dC1bMTIuNXB4XSB0ZXh0LW11dGVkLWZvcmVncm91bmQiPgogICAgICAgICAgICAgINmE2Kcg2LnZhdmEINmF2Y/Ys9mG2K8g2K3Yp9mE2YrYp9mLIOKAlCDZgtiv2ZHZhSDYudix2LbYp9mLINi52YTZiSDYt9mE2Kgg2YLYsdmK2Kgg2YTZiti42YfYsSDZh9mG2KcuCiAgICAgICAgICAgIDwvcD4KICAgICAgICAgICl9CgogICAgICAgICAgPGRpdiBjbGFzc05hbWU9Im10LTMgZ3JpZCBncmlkLWNvbHMtMiBnYXAtMiI+CiAgICAgICAgICAgIDxCdXR0b24gYXNDaGlsZCBzaXplPSJsZyIgY2xhc3NOYW1lPSJ3LWZ1bGwgZ2FwLTIiPgogICAgICAgICAgICAgIDxMaW5rIGhyZWY9Ii9icm93c2UiPgogICAgICAgICAgICAgICAgPFNlYXJjaCBjbGFzc05hbWU9InNpemUtNC41IiAvPgogICAgICAgICAgICAgICAg2KrYtdmB2ZHYrSDYp9mE2LfZhNio2KfYqgogICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgPC9CdXR0b24+CiAgICAgICAgICAgIDxCdXR0b24gYXNDaGlsZCBzaXplPSJsZyIgdmFyaWFudD0ib3V0bGluZSIgY2xhc3NOYW1lPSJ3LWZ1bGwgZ2FwLTIiPgogICAgICAgICAgICAgIDxMaW5rIGhyZWY9Ii9vZmZlcnMiPgogICAgICAgICAgICAgICAgPFNlbmQgY2xhc3NOYW1lPSJzaXplLTQuNSIgLz4KICAgICAgICAgICAgICAgINi52LHZiNi22YogKHtjPy5vZmZlcnNUb3RhbCA/PyAwfSkKICAgICAgICAgICAgICA8L0xpbms+CiAgICAgICAgICAgIDwvQnV0dG9uPgogICAgICAgICAgPC9kaXY+CiAgICAgICAgPC9kaXY+CiAgICAgIDwvc2VjdGlvbj4KCiAgICAgIHsvKiDYo9i52YXYp9mE2Yog2KfZhNmF2Y/Ys9mG2K/YqSAqL30KICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPSJncmlkIGdhcC0zIHB4LTQgcHQtNCI+CiAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBnYXAtMyI+CiAgICAgICAgICA8aDIgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiB0ZXh0LVsxN3B4XSBmb250LWJsYWNrIj4KICAgICAgICAgICAgPEJyaWVmY2FzZSBjbGFzc05hbWU9InNpemUtNC41IHRleHQtdGVhbCIgLz4KICAgICAgICAgICAg2KPYudmF2KfZhNmKINin2YTZhdmP2LPZhtiv2KkKICAgICAgICAgIDwvaDI+CiAgICAgICAgICB7am9icy5sZW5ndGggPiAwID8gKAogICAgICAgICAgICA8QnV0dG9uIGFzQ2hpbGQgdmFyaWFudD0iZ2hvc3QiIHNpemU9InNtIiBjbGFzc05hbWU9ImdhcC0xIj4KICAgICAgICAgICAgICA8TGluayBocmVmPSIvb2ZmZXJzIj4KICAgICAgICAgICAgICAgINin2YTZg9mECiAgICAgICAgICAgICAgICA8QXJyb3dMZWZ0IGNsYXNzTmFtZT0ic2l6ZS0zLjUiIC8+CiAgICAgICAgICAgICAgPC9MaW5rPgogICAgICAgICAgICA8L0J1dHRvbj4KICAgICAgICAgICkgOiBudWxsfQogICAgICAgIDwvZGl2PgoKICAgICAgICB7am9icy5sZW5ndGggPT09IDAgPyAoCiAgICAgICAgICA8RW1wdHlTdGF0ZQogICAgICAgICAgICBpY29uPXtCcmllZmNhc2V9CiAgICAgICAgICAgIHRpdGxlPSLZhNinINi02LrZhCDZhdmC2KjZiNmEINio2LnYryIKICAgICAgICAgICAgZGVzY3JpcHRpb249Iti52YbYr9mF2Kcg2YrZgtio2YQg2LLYqNmI2YYg2LnYsdi22YMg2LPZiti42YfYsSDYp9mE2LfZhNioINmH2YbYpyDZhdi5INit2KfZhNipINin2YTYqtmG2YHZitiwINmI2KPYr9mI2KfYqiDYp9mE2YXYrdin2K/Yq9ipINmI2KfZhNiq2YLZitmK2YUuIgogICAgICAgICAgICBhY3Rpb25MYWJlbD0i2KrYtdmB2ZHYrSDYp9mE2LfZhNio2KfYqiDYp9mE2YLYsdmK2KjYqSIKICAgICAgICAgICAgYWN0aW9uSHJlZj0iL2Jyb3dzZSIKICAgICAgICAgIC8+CiAgICAgICAgKSA6ICgKICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJncmlkIGdhcC0zIj4KICAgICAgICAgICAge2pvYnMubWFwKChyKSA9PiAoCiAgICAgICAgICAgICAgPFJlcXVlc3RDYXJkIGtleT17ci5pZH0gcmVxdWVzdD17cn0gaHJlZj17YC9yZXF1ZXN0cy8ke3IuaWR9YH0gLz4KICAgICAgICAgICAgKSl9CiAgICAgICAgICA8L2Rpdj4KICAgICAgICApfQogICAgICA8L3NlY3Rpb24+CgogICAgICB7Lyog2LfZhNio2KfYqiDYrNiv2YrYr9ipINmB2Yog2YXYr9mK2YbYqtmDICovfQogICAgICA8c2VjdGlvbiBjbGFzc05hbWU9ImdyaWQgZ2FwLTMgcHgtNCBwdC00IHBiLTYiPgogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gZ2FwLTMiPgogICAgICAgICAgPGgyIGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgdGV4dC1bMTdweF0gZm9udC1ibGFjayI+CiAgICAgICAgICAgIDxDaXJjbGVEb2xsYXJTaWduIGNsYXNzTmFtZT0ic2l6ZS00LjUgdGV4dC1icmFuZC1kYXJrIiAvPgogICAgICAgICAgICDYt9mE2KjYp9iqINis2K/Zitiv2Kkg2YHZiiDZhdiv2YrZhtiq2YMKICAgICAgICAgIDwvaDI+CiAgICAgICAgICB7ZnJlc2gubGVuZ3RoID4gMCA/ICgKICAgICAgICAgICAgPEJ1dHRvbiBhc0NoaWxkIHZhcmlhbnQ9Imdob3N0IiBzaXplPSJzbSIgY2xhc3NOYW1lPSJnYXAtMSI+CiAgICAgICAgICAgICAgPExpbmsgaHJlZj0iL2Jyb3dzZSI+CiAgICAgICAgICAgICAgICDYp9mE2YPZhAogICAgICAgICAgICAgICAgPEFycm93TGVmdCBjbGFzc05hbWU9InNpemUtMy41IiAvPgogICAgICAgICAgICAgIDwvTGluaz4KICAgICAgICAgICAgPC9CdXR0b24+CiAgICAgICAgICApIDogbnVsbH0KICAgICAgICA8L2Rpdj4KCiAgICAgICAge2ZyZXNoLmxlbmd0aCA9PT0gMCA/ICgKICAgICAgICAgIDxFbXB0eVN0YXRlCiAgICAgICAgICAgIGljb249e1NlYXJjaH0KICAgICAgICAgICAgdGl0bGU9ItmE2Kcg2LfZhNio2KfYqiDZhdmB2KrZiNit2Kkg2YHZiiDZhdiv2YrZhtiq2YMg2KfZhNii2YYiCiAgICAgICAgICAgIGRlc2NyaXB0aW9uPSLZiNiz2ZHYuSDZhti32KfZgiDYp9mE2KjYrdirINil2YTZiSDCq9io2LnZitivwrsg2KPZiCDYutmK2ZHYsSDYp9mE2YHYptipINmF2YYg2LXZgdit2Kkg2KfZhNiq2LXZgdmR2K0g2YTYqtix2Ykg2LfZhNio2KfYqiDZhdiv2YYg2KPYrtix2YkuIgogICAgICAgICAgICBhY3Rpb25MYWJlbD0i2KfZgdiq2K0g2KfZhNiq2LXZgdmR2K0iCiAgICAgICAgICAgIGFjdGlvbkhyZWY9Ii9icm93c2UiCiAgICAgICAgICAvPgogICAgICAgICkgOiAoCiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZ3JpZCBnYXAtMyI+CiAgICAgICAgICAgIHtmcmVzaC5tYXAoKHIpID0+ICgKICAgICAgICAgICAgICA8UmVxdWVzdENhcmQKICAgICAgICAgICAgICAgIGtleT17ci5pZH0KICAgICAgICAgICAgICAgIHJlcXVlc3Q9e3J9CiAgICAgICAgICAgICAgICBocmVmPXtgL3JlcXVlc3RzLyR7ci5pZH1gfQogICAgICAgICAgICAgICAgdmlld2VyQ2l0eT17cD8uY2l0eX0KICAgICAgICAgICAgICAgIHZpZXdlckRpc3RyaWN0PXtwPy5kaXN0cmljdH0KICAgICAgICAgICAgICAgIHNob3dEaXN0YW5jZQogICAgICAgICAgICAgIC8+CiAgICAgICAgICAgICkpfQogICAgICAgICAgPC9kaXY+CiAgICAgICAgKX0KICAgICAgPC9zZWN0aW9uPgogICAgPC9kaXY+CiAgKTsKfQo=
+// ── لوحة التحكم: خريطة واختيارات الخدمة — اللوحة تتبدّل بحسب الدور ───────────────
+// الشكل مقصود ليطابق شاشة inDrive الرئيسية: الطلبات القريبة على الخريطة،
+// ثم اختيارات واضحة للخدمة التالية.
+import { Link } from "wouter";
+import {
+  CircleDollarSign,
+  Search,
+  Briefcase,
+  Send,
+  Star,
+  Hourglass,
+  ArrowLeft,
+  Wallet,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
+import { ServicePickerSheet } from "@/components/hirfi/service-picker";
+import {
+  Badge,
+  EmptyState,
+  ErrorState,
+  LiveDot,
+  ListSkeleton,
+  Spinner,
+  VerifiedBadge,
+} from "@/components/hirfi/primitives";
+import { RequestCard, type RequestCardData } from "@/components/hirfi/cards";
+import { trpc } from "@/_core/trpc";
+import { useAppRole } from "@/lib/hooks";
+import { countAr, errorMessage, madNumber, requestStatusMeta } from "@/lib/format";
+
+/** مواضع ثابتة للدبابيس — ثابتة كي لا ترتجف الخريطة في كل تصيير. */
+const PIN_SPOTS = [
+  { x: 30, y: 70 },
+  { x: 53, y: 52 },
+  { x: 74, y: 35 },
+  { x: 41, y: 25 },
+  { x: 66, y: 63 },
+];
+const ME_PIN: MapPinSpec = { id: "me", x: 22, y: 82, kind: "me" };
+
+export default function Dashboard() {
+  const { role, isLoading: roleLoading } = useAppRole();
+
+  if (roleLoading) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Spinner />
+          جارٍ تحضير لوحتك…
+        </div>
+      </div>
+    );
+  }
+
+  return role === "provider" ? <ProviderDashboard /> : <CustomerDashboard />;
+}
+
+// ── لوحة الزبون ──────────────────────────────────────────────────────────────────
+function CustomerDashboard() {
+  const q = trpc.dashboard.customer.useQuery();
+
+  if (q.isLoading) {
+    return (
+      <div className="grid">
+        <div className="hirfi-skeleton h-[34svh]" />
+        <div className="grid gap-3 px-4 py-5">
+          <div className="hirfi-skeleton h-24 rounded-3xl" />
+          <ListSkeleton count={2} />
+        </div>
+      </div>
+    );
+  }
+
+  if (q.isError) {
+    return (
+      <div className="p-4">
+        <ErrorState message={errorMessage(q.error)} onRetry={() => void q.refetch()} />
+      </div>
+    );
+  }
+
+  const c = q.data?.counts;
+  const recent = (q.data?.recent ?? []) as RequestCardData[];
+  const hasActiveRequest = recent.some((r) => r.status !== "completed" && r.status !== "cancelled");
+
+  const pins: MapPinSpec[] = [
+    ME_PIN,
+    ...recent
+      .filter((r) => r.status === "open")
+      .slice(0, PIN_SPOTS.length)
+      .map((r, i) => ({
+        id: r.id,
+        x: PIN_SPOTS[i].x,
+        y: PIN_SPOTS[i].y,
+        kind: "request" as const,
+        label: r.title.trim().charAt(0),
+      })),
+  ];
+
+  return (
+    <div className="grid">
+      {/* الخريطة + نافذة الخدمات القابلة للسحب */}
+      <section className="relative h-[calc(100svh-7.25rem)] overflow-hidden">
+        <MapCanvas pins={pins} showRoute={hasActiveRequest} height="100%" />
+
+        <div className="absolute inset-x-4 top-3 flex items-center justify-between gap-2">
+          <LiveDot
+            label={c?.open ? `${countAr(c.open, ["طلب", "طلبان", "طلبات"], "طلباً")} مفتوح` : "لا طلبات مفتوحة"}
+          />
+          {c?.pendingOffers ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-background/95 px-3 py-1.5 text-[12px] font-black shadow-md backdrop-blur">
+              <Hourglass className="size-3.5 text-brand-dark" />
+              {countAr(c.pendingOffers, ["عرض", "عرضان", "عروض"], "عرضاً")} في انتظار ردّك
+            </span>
+          ) : null}
+        </div>
+
+        <ServicePickerSheet />
+      </section>
+
+    </div>
+  );
+}
+
+// ── لوحة الحرّاف ─────────────────────────────────────────────────────────────────
+function ProviderDashboard() {
+  const q = trpc.dashboard.provider.useQuery();
+
+  if (q.isLoading) {
+    return (
+      <div className="grid">
+        <div className="hirfi-skeleton h-[34svh]" />
+        <div className="grid gap-3 px-4 py-5">
+          <div className="hirfi-skeleton h-24 rounded-3xl" />
+          <ListSkeleton count={2} />
+        </div>
+      </div>
+    );
+  }
+
+  if (q.isError) {
+    return (
+      <div className="p-4">
+        <ErrorState message={errorMessage(q.error)} onRetry={() => void q.refetch()} />
+      </div>
+    );
+  }
+
+  const p = q.data?.profile;
+  const c = q.data?.counts;
+  const fresh = (q.data?.fresh ?? []) as RequestCardData[];
+  const jobs = (q.data?.jobs ?? []) as RequestCardData[];
+  const avg = p && p.ratingCount ? Math.round((p.ratingSum / p.ratingCount) * 10) / 10 : null;
+  const activeJob = jobs.find((j) => j.status !== "completed");
+  const activeMeta = activeJob ? requestStatusMeta(activeJob.status) : null;
+
+  const pins: MapPinSpec[] = [
+    ME_PIN,
+    ...fresh.slice(0, PIN_SPOTS.length).map((r, i) => ({
+      id: r.id,
+      x: PIN_SPOTS[i].x,
+      y: PIN_SPOTS[i].y,
+      kind: "request" as const,
+      label: r.title.trim().charAt(0),
+    })),
+  ];
+
+  return (
+    <div className="grid">
+      <section className="relative">
+        <MapCanvas pins={pins} height="34svh" />
+
+        <div className="absolute inset-x-4 top-3 flex items-center justify-between gap-2">
+          <LiveDot label={`${countAr(c?.openNear ?? 0, ["طلب", "طلبان", "طلبات"], "طلباً")} قريب`} />
+          {c?.offersPending ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-background/95 px-3 py-1.5 text-[12px] font-black shadow-md backdrop-blur">
+              <Send className="size-3.5 text-brand-dark" />
+              {countAr(c.offersPending, ["عرض", "عرضان", "عروض"], "عرضاً")} في انتظار ردّك
+            </span>
+          ) : null}
+        </div>
+
+        <div className="sheet relative z-10 -mt-7 px-4 pt-3 pb-5">
+          <DragHandle className="mb-4" />
+
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <h1 className="text-[22px] leading-tight font-black">
+                  {p ? p.displayName : "لوحة الحرّاف"}
+                </h1>
+                {p?.isVerified ? <VerifiedBadge /> : null}
+              </div>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1 font-bold text-foreground">
+                  <Star className="size-3.5 fill-warn text-warn" />
+                  {avg !== null ? `${avg} من 5 (${p?.ratingCount})` : "بلا تقييم بعد"}
+                </span>
+                <span>
+                  {p?.city}
+                  {p?.district ? ` — ${p.district}` : ""}
+                </span>
+                <span>{countAr(p?.completedJobs ?? 0, ["عمل", "عملان", "أعمال"], "عملاً")} منجز</span>
+              </p>
+            </div>
+          </div>
+
+          {/* أرقام الحرّاف */}
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-2xl bg-muted/70 px-3 py-2.5">
+              <div className="text-[10.5px] font-bold text-muted-foreground">إجمالي المشحون</div>
+              <div className="text-price mt-1 text-[22px] leading-none">
+                {madNumber(c?.earnings ?? 0)}
+                <span className="ms-1 text-[10.5px] font-bold text-muted-foreground">درهم</span>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-muted/70 px-3 py-2.5">
+              <div className="text-[10.5px] font-bold text-muted-foreground">رصيد متاح</div>
+              <div className={"text-price mt-1 text-[22px] leading-none " + ((c?.walletBalance ?? 0) < 0 ? "text-destructive" : "")}>
+                {madNumber(c?.walletBalance ?? 0)}
+                <span className="ms-1 text-[10.5px] font-bold text-muted-foreground">درهم</span>
+              </div>
+            </div>
+          </div>
+
+          {(c?.walletBalance ?? 0) <= 0 ? (
+            <Link
+              href="/wallet"
+              className="mt-3 flex items-center gap-3 rounded-3xl bg-destructive/10 p-3.5 text-destructive transition-colors active:bg-destructive/15"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-destructive/12">
+                <Wallet className="size-4.5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <b className="text-[13.5px]">اشحن حسابك لإرسال العروض</b>
+                <p className="mt-0.5 text-[11.5px] opacity-80">
+                  لازم يكون في محفظتك رصيد يغطّي عمولة المنصّة قبل تقديم أي عرض.
+                </p>
+              </div>
+              <ArrowLeft className="size-4 shrink-0" />
+            </Link>
+          ) : null}
+
+          {/* العمل الجاري */}
+          {activeJob && activeMeta ? (
+            <Link
+              href={`/requests/${activeJob.id}`}
+              className="mt-3 flex items-center gap-3 rounded-3xl bg-brand/12 p-3.5 transition-colors active:bg-brand/20"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand text-brand-ink">
+                <Briefcase className="size-4.5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <Badge tone={activeMeta.tone}>{activeMeta.label}</Badge>
+                <h2 className="mt-1.5 truncate text-[14.5px] font-black">{activeJob.title}</h2>
+                <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                  {activeJob.categoryName} · {activeJob.city}
+                </p>
+              </div>
+              <ArrowLeft className="size-4 shrink-0" />
+            </Link>
+          ) : (
+            <p className="mt-3 rounded-3xl bg-muted/70 px-3.5 py-4 text-center text-[12.5px] text-muted-foreground">
+              لا عمل مُسند حالياً — قدّم عرضاً على طلب قريب ليظهر هنا.
+            </p>
+          )}
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Button asChild size="lg" className="w-full gap-2">
+              <Link href="/browse">
+                <Search className="size-4.5" />
+                تصفّح الطلبات
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="w-full gap-2">
+              <Link href="/offers">
+                <Send className="size-4.5" />
+                عروضي ({c?.offersTotal ?? 0})
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* أعمالي المُسندة */}
+      <section className="grid gap-3 px-4 pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-[17px] font-black">
+            <Briefcase className="size-4.5 text-teal" />
+            أعمالي المُسندة
+          </h2>
+          {jobs.length > 0 ? (
+            <Button asChild variant="ghost" size="sm" className="gap-1">
+              <Link href="/offers">
+                الكل
+                <ArrowLeft className="size-3.5" />
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+
+        {jobs.length === 0 ? (
+          <EmptyState
+            icon={Briefcase}
+            title="لا شغل مقبول بعد"
+            description="عندما يقبل زبون عرضك سيظهر الطلب هنا مع حالة التنفيذ وأدوات المحادثة والتقييم."
+            actionLabel="تصفّح الطلبات القريبة"
+            actionHref="/browse"
+          />
+        ) : (
+          <div className="grid gap-3">
+            {jobs.map((r) => (
+              <RequestCard key={r.id} request={r} href={`/requests/${r.id}`} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* طلبات جديدة في مدينتك */}
+      <section className="grid gap-3 px-4 pt-4 pb-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-[17px] font-black">
+            <CircleDollarSign className="size-4.5 text-brand-dark" />
+            طلبات جديدة في مدينتك
+          </h2>
+          {fresh.length > 0 ? (
+            <Button asChild variant="ghost" size="sm" className="gap-1">
+              <Link href="/browse">
+                الكل
+                <ArrowLeft className="size-3.5" />
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+
+        {fresh.length === 0 ? (
+          <EmptyState
+            icon={Search}
+            title="لا طلبات مفتوحة في مدينتك الآن"
+            description="وسّع نطاق البحث إلى «بعيد» أو غيّر الفئة من صفحة التصفّح لترى طلبات مدن أخرى."
+            actionLabel="افتح التصفّح"
+            actionHref="/browse"
+          />
+        ) : (
+          <div className="grid gap-3">
+            {fresh.map((r) => (
+              <RequestCard
+                key={r.id}
+                request={r}
+                href={`/requests/${r.id}`}
+                viewerCity={p?.city}
+                viewerDistrict={p?.district}
+                showDistance
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
