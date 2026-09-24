@@ -62,7 +62,35 @@ import {
 export default function RequestDetail() {
   const params = useParams() as { id?: string };
   const id = params.id ?? "";
-  const q = trpc.requests.detail.useQuery({ id }, { enabled: !!id });
+  const q = trpc.requests.detail.useQuery(
+    { id },
+    { enabled: !!id, refetchInterval: id ? POLL_INTERVAL_MS : false },
+  );
+  const [newOfferIds, setNewOfferIds] = useState<string[]>([]);
+  const knownOfferIdsRef = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    const data = q.data;
+    if (!data) return;
+
+    const currentIds = data.offers
+      .filter((offer) => offer.providerUserId !== data.request.customerId && offer.status === "pending")
+      .map((offer) => offer.id);
+    const knownIds = knownOfferIdsRef.current;
+    const freshIds = knownIds ? currentIds.filter((offerId) => !knownIds.has(offerId)) : [];
+    const currentIdSet = new Set(currentIds);
+    knownOfferIdsRef.current = currentIdSet;
+
+    setNewOfferIds((previousIds) => {
+      const nextIds = [
+        ...previousIds.filter((offerId) => currentIdSet.has(offerId)),
+        ...freshIds.filter((offerId) => !previousIds.includes(offerId)),
+      ];
+      return nextIds.length === previousIds.length && nextIds.every((offerId, index) => offerId === previousIds[index])
+        ? previousIds
+        : nextIds;
+    });
+  }, [q.data]);
 
   if (!id) {
     return (
@@ -104,9 +132,23 @@ export default function RequestDetail() {
   // العروض: ما قدّمه الحرّافون منفصل عن العروض المضادة التي كتبها الزبون.
   const incomingOffers = d.offers.filter((o) => o.providerUserId !== r.customerId);
   const myCounters = d.offers.filter((o) => o.providerUserId === r.customerId);
+  const newOffers = d.isOwner
+    ? incomingOffers.filter((offer) => newOfferIds.includes(offer.id) && offer.status === "pending").slice(-3)
+    : [];
+
+  function dismissNewOffer(idToDismiss: string) {
+    setNewOfferIds((ids) => ids.filter((offerId) => offerId !== idToDismiss));
+  }
 
   return (
     <div className="grid pb-6">
+      {newOffers.length > 0 ? (
+        <OfferNotificationStack
+          offers={newOffers}
+          onDismiss={dismissNewOffer}
+          onRefresh={() => void q.refetch()}
+        />
+      ) : null}
       {/* رجوع */}
       <div className="px-4 pt-4">
         <Link
@@ -406,6 +448,120 @@ export default function RequestDetail() {
           </p>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function OfferNotificationStack({
+  offers,
+  onDismiss,
+  onRefresh,
+}: {
+  offers: OfferRow[];
+  onDismiss: (id: string) => void;
+  onRefresh: () => void;
+}) {
+  const accept = trpc.offers.accept.useMutation();
+  const reject = trpc.offers.reject.useMutation();
+  const utils = trpc.useUtils();
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function decide(offer: OfferRow, action: "accept" | "reject") {
+    setBusyId(offer.id);
+    try {
+      if (action === "accept") await accept.mutateAsync({ id: offer.id });
+      else await reject.mutateAsync({ id: offer.id });
+      await utils.invalidate();
+      onDismiss(offer.id);
+      onRefresh();
+      toast.success(action === "accept" ? "تم قبول العرض وتثبيت السعر" : "رُفض العرض");
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div
+      className="pointer-events-none fixed inset-x-0 top-[4.5rem] z-[60] mx-auto w-full max-w-[460px] px-3"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="pointer-events-auto grid gap-2.5">
+        {offers.map((offer) => {
+          const avg = offer.providerRatingCount
+            ? Math.round((offer.providerRatingSum / offer.providerRatingCount) * 10) / 10
+            : null;
+          const busy = busyId === offer.id;
+          return (
+            <article
+              key={offer.id}
+              className="relative overflow-hidden rounded-[20px] bg-card p-3.5 shadow-2xl ring-1 ring-foreground/10"
+            >
+              <span className="absolute inset-x-0 top-0 h-1 bg-brand" />
+              <div className="flex items-start gap-2.5 pt-1">
+                <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary font-display text-[17px] font-black">
+                  {offer.providerAvatarUrl ? (
+                    <img src={offer.providerAvatarUrl} alt="" className="size-full object-cover" />
+                  ) : (
+                    offer.providerName.trim().charAt(0)
+                  )}
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <b className="block truncate text-[15px] font-black">{offer.providerName}</b>
+                  <p className="mt-0.5 truncate text-[12px] text-muted-foreground">حرّاف قريب منك</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 font-bold text-foreground">
+                      <Star className="size-3 fill-warn text-warn" />
+                      {avg !== null ? avg : "جديد"}
+                      {offer.providerRatingCount ? ` (${offer.providerRatingCount})` : ""}
+                    </span>
+                    <span>{countAr(offer.providerCompletedJobs, ["عمل", "عملان", "أعمال"], "عملاً")}</span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 text-end">
+                  <div className="text-price text-[26px] leading-none text-brand-dark">{madNumber(offer.price)}</div>
+                  <div className="mt-1 text-[10.5px] font-bold text-muted-foreground">
+                    {formatDuration(offer.durationMinutes)}
+                  </div>
+                  <div className="mt-0.5 max-w-20 truncate text-[10px] text-muted-foreground">
+                    {offer.providerDistrict || offer.providerCity}
+                  </div>
+                </div>
+              </div>
+
+              {offer.message ? (
+                <p className="mt-2 truncate rounded-xl bg-muted/70 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                  {offer.message}
+                </p>
+              ) : null}
+
+              <div className="mt-3 grid grid-cols-2 gap-2" dir="ltr">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-10 rounded-xl text-[12px] font-black text-destructive"
+                  disabled={busy}
+                  onClick={() => void decide(offer, "reject")}
+                >
+                  {busy && reject.isPending ? <Spinner /> : "ارفض"}
+                </Button>
+                <Button
+                  type="button"
+                  className="h-10 rounded-xl bg-brand text-[12px] font-black text-brand-ink hover:bg-brand-dark"
+                  disabled={busy}
+                  onClick={() => void decide(offer, "accept")}
+                >
+                  {busy && accept.isPending ? <Spinner /> : "اقبل"}
+                </Button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
     </div>
   );
 }
