@@ -540,7 +540,7 @@ export default function RequestNew() {
             </span>
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            غادي يوصل الطلب للحرّافين القريبين من {city}.
+            غادي يوصل الطلب للحرّافين القريبين منك.
           </p>
         </section>
 
