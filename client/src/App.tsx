@@ -97,60 +97,44 @@ export default function App() {
         </Protected>
       </Route>
       <Route path="/admin">
-        <Protected>
-          <AdminOnly>
-            <AdminOverview />
-          </AdminOnly>
-        </Protected>
+        <AdminOnly>
+          <AdminOverview />
+        </AdminOnly>
       </Route>
       <Route path="/admin/users">
-        <Protected>
-          <AdminOnly>
-            <AdminUsers />
-          </AdminOnly>
-        </Protected>
+        <AdminOnly>
+          <AdminUsers />
+        </AdminOnly>
       </Route>
       <Route path="/admin/requests">
-        <Protected>
-          <AdminOnly>
-            <AdminRequests />
-          </AdminOnly>
-        </Protected>
+        <AdminOnly>
+          <AdminRequests />
+        </AdminOnly>
       </Route>
       <Route path="/admin/offers">
-        <Protected>
-          <AdminOnly>
-            <AdminOffers />
-          </AdminOnly>
-        </Protected>
+        <AdminOnly>
+          <AdminOffers />
+        </AdminOnly>
       </Route>
       <Route path="/admin/wallets">
-        <Protected>
-          <AdminOnly>
-            <AdminWallets />
-          </AdminOnly>
-        </Protected>
+        <AdminOnly>
+          <AdminWallets />
+        </AdminOnly>
       </Route>
       <Route path="/admin/reviews">
-        <Protected>
-          <AdminOnly>
-            <AdminReviews />
-          </AdminOnly>
-        </Protected>
+        <AdminOnly>
+          <AdminReviews />
+        </AdminOnly>
       </Route>
       <Route path="/admin/categories">
-        <Protected>
-          <AdminOnly>
-            <AdminCategories />
-          </AdminOnly>
-        </Protected>
+        <AdminOnly>
+          <AdminCategories />
+        </AdminOnly>
       </Route>
       <Route path="/admin/audit">
-        <Protected>
-          <AdminOnly>
-            <AdminAudit />
-          </AdminOnly>
-        </Protected>
+        <AdminOnly>
+          <AdminAudit />
+        </AdminOnly>
       </Route>
       <Route component={NotFound} />
     </Switch>
