@@ -13,6 +13,7 @@ import {
   Plus,
   Briefcase,
   Home as HomeIcon,
+  ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/_core/useAuth";
@@ -44,6 +45,7 @@ function navFor(isProvider: boolean): NavItem[] {
 export function Shell({ children }: { children: ReactNode }) {
   const [path] = useLocation();
   const { logout } = useAuth();
+  const { user } = useAuth();
   const { role } = useAppRole();
   const unread = useUnreadCount();
   const utils = trpc.useUtils();
@@ -75,6 +77,16 @@ export function Shell({ children }: { children: ReactNode }) {
           </Link>
 
           <div className="flex items-center gap-1">
+            {user?.role === "admin" ? (
+              <Link
+                href="/admin"
+                aria-label="لوحة الإدارة"
+                title="لوحة الإدارة"
+                className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <ShieldCheck className="size-5" />
+              </Link>
+            ) : null}
             <Link
               href="/notifications"
               aria-label="الإشعارات"
@@ -175,5 +187,22 @@ export function ProviderOnly({ children }: { children: ReactNode }) {
     );
   }
   if (role !== "provider") return <Redirect to="/dashboard" />;
+  return <>{children}</>;
+}
+
+/** مسار خاص بمشرف المنصّة؛ أي دور آخر يُعاد إلى لوحته بدل صفحة خطأ. */
+export function AdminOnly({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Spinner />
+          جارٍ التحميل…
+        </div>
+      </div>
+    );
+  }
+  if (user?.role !== "admin") return <Redirect to="/dashboard" />;
   return <>{children}</>;
 }
