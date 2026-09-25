@@ -27,6 +27,7 @@ import {
 import { PLATFORM_FEE_PERCENT } from "../shared/constants";
 
 const DEMO_PASSWORD = "demo1234";
+const ADMIN_EMAIL = "admin@hirfi.ma";
 const NOW = new Date();
 const hash = bcrypt.hashSync(DEMO_PASSWORD, 10);
 
@@ -804,6 +805,31 @@ async function main() {
 
   // ── المستخدمون + الملفات ──
   const userIdByEmail = new Map<string, string>();
+
+  // حساب المشرف — خارج قائمة USERS التجريبية لأنّ دوره مختلف تماماً (admin لا
+  // يظهر في السوق ولا يُقيَّم). كلمة مروره من نفس DEMO_PASSWORD للعرض المحلي.
+  {
+    const [adminRow] = await db
+      .insert(users)
+      .values({
+        email: ADMIN_EMAIL,
+        passwordHash: hash,
+        name: "مشرف المنصّة",
+        role: "admin",
+      })
+      .returning();
+    await db.insert(providerProfiles).values({
+      userId: adminRow.id,
+      role: "customer",
+      displayName: "مشرف المنصّة",
+      city: "الدار البيضاء",
+      isVerified: false,
+      createdAt: daysAgo(120),
+      updatedAt: daysAgo(1),
+    });
+    console.log(`  ✓ حساب المشرف: ${ADMIN_EMAIL} / ${DEMO_PASSWORD}`);
+  }
+
   for (const u of USERS) {
     const [row] = await db
       .insert(users)

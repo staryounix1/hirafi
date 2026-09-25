@@ -24,8 +24,33 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"), // null for SSO-linked users (future)
   name: text("name"),
   role: text("role").notNull().default("user"), // 'user' | 'admin'
+  /**
+   * الحظر الإداري — `null` يعني الحساب نشط. الحظر **لا يحذف** شيئاً: يُبقي كل
+   * طلبات المستخدم وعروضه وتقييماته في مكانها، ويمنع فقط الدخول وإرسال العروض.
+   * `blockedReason` يُحفظ للشفافية ويعرضه الأدمن في سجل الإدارة.
+   */
+  blockedAt: timestamp("blocked_at", { withTimezone: true }),
+  blockedReason: text("blocked_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * سجل عمليات الإدارة — كل إجراء إداري يُكتب هنا في نفس معاملة الإجراء، فلا
+ * يوجد تعديل بلا أثر. القراءة فقط للأدمن.
+ */
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    adminId: uuid("admin_id").references(() => users.id, { onDelete: "set null" }),
+    action: text("action").notNull(), // مثال: BLOCK_USER | VERIFY_PROVIDER | CANCEL_REQUEST
+    targetType: text("target_type").notNull(), // user | request | offer | review | category | wallet
+    targetId: text("target_id"),
+    detail: text("detail"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("admin_audit_created_idx").on(t.createdAt)],
+);
 
 export const files = pgTable(
   "files",
