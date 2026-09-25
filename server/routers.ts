@@ -14,6 +14,7 @@ import {
   StorageError,
 } from "./_core/storage";
 import * as q from "./db";
+import { adminRouter } from "./admin-router";
 import {
   APP_ROLES,
   URGENCIES,
@@ -76,6 +77,11 @@ const authRouter = router({
     .mutation(async ({ ctx, input }) => {
       try {
         const user = await authProvider().login(ctx.c, input.email, input.password);
+        // الحظر الإداري يمنع الدخول فوراً، ولو كانت كلمة المرور صحيحة.
+        if (await q.isUserBlocked(user.id)) {
+          await authProvider().logout(ctx.c);
+          return fail("FORBIDDEN", "حسابك موقوف مؤقتاً. تواصل مع الدعم.");
+        }
         // ملف ناقص/قديم يُستدرَك عند أول دخول (حساب أُنشئ قبل الـ seed مثلاً).
         await q.ensureProfile({
           userId: user.id,
@@ -456,6 +462,7 @@ export const appRouter = router({
   notifications: notificationsRouter,
   dashboard: dashboardRouter,
   files: filesRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;
