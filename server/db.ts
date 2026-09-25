@@ -6,6 +6,7 @@ import type { BatchItem } from "drizzle-orm/batch";
 import type { AppDB } from "./_core/db";
 import { db, atomic as atomicRaw, isUniqueViolation } from "./_core/db";
 import {
+  users,
   serviceCategories,
   providerProfiles,
   providerCategories,
@@ -54,6 +55,23 @@ export async function listCategories() {
 export async function getProfile(userId: string) {
   const [row] = await db.select().from(providerProfiles).where(eq(providerProfiles.userId, userId)).limit(1);
   return row ?? null;
+}
+
+/** هل الحساب موقوف إدارياً؟ يُفحص عند الدخول وعند كل فعل حسّاس. */
+export async function isUserBlocked(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ blockedAt: users.blockedAt })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return !!row?.blockedAt;
+}
+
+/** يمنع الفعل إن كان الحساب موقوفاً — رسالة مباشرة قابلة للعرض. */
+export async function assertNotBlocked(userId: string): Promise<void> {
+  if (await isUserBlocked(userId)) {
+    throw new ForbiddenError("حسابك موقوف مؤقتاً. تواصل مع الدعم.");
+  }
 }
 
 /** ينشئ الملف إن لم يكن موجوداً (يُستدعى عند التسجيل/الدخول التجريبي). */
@@ -323,6 +341,7 @@ export async function createRequest(input: {
   scheduledFor?: Date | null;
   imageUrls: string[];
 }) {
+  await assertNotBlocked(input.customerId);
   const id = crypto.randomUUID();
   await atomic((d) => [
     d.insert(requests).values({
@@ -615,6 +634,7 @@ export async function createOffer(input: {
   durationMinutes: number;
   message: string;
 }) {
+  await assertNotBlocked(input.providerUserId);
   const [req] = await db.select().from(requests).where(eq(requests.id, input.requestId)).limit(1);
   if (!req) throw new NotFoundError("الطلب غير موجود");
   if (req.customerId === input.providerUserId) throw new ForbiddenError("لا يمكنك العرض على طلبك");
@@ -1024,6 +1044,7 @@ export async function listMessages(requestId: string, viewerId: string) {
 }
 
 export async function sendMessage(input: { requestId: string; senderId: string; body: string }) {
+  await assertNotBlocked(input.senderId);
   const detail = await getRequestDetail(input.requestId, input.senderId);
   if (!detail) throw new ForbiddenError("لا تملك صلاحية على هذه المحادثة");
   if (!detail.canWriteMessages) throw new ForbiddenError("المحادثة متاحة للطرفين المتعاقدين");
@@ -1217,6 +1238,7 @@ export async function providerCanOffer(providerUserId: string): Promise<boolean>
  * خاصة بالعمولة؛ بقية الدورة تعتمد على هذا الرصيد كحاجز.
  */
 export async function topupWallet(userId: string, amount: number) {
+  await assertNotBlocked(userId);
   if (amount <= 0) throw new InvalidStateError("المبلغ يجب أن يكون أكبر من صفر");
   const [row] = await db
     .insert(walletTransactions)
