@@ -11,6 +11,7 @@ import {
   offers,
   providerCategories,
   providerProfiles,
+  reports,
   requests,
   reviews,
   serviceCategories,
@@ -28,7 +29,7 @@ export { isUniqueViolation };
 export async function recordAdminAction(input: {
   adminId: string;
   action: string;
-  targetType: "user" | "request" | "offer" | "review" | "category" | "wallet";
+  targetType: "user" | "request" | "offer" | "review" | "category" | "wallet" | "report";
   targetId?: string | null;
   detail?: string | null;
 }) {
@@ -571,8 +572,11 @@ export async function adminListCategories() {
       nameAr: serviceCategories.nameAr,
       icon: serviceCategories.icon,
       sortOrder: serviceCategories.sortOrder,
-      requestsCount: sql<number>`(select count(*) from ${requests} r where r.category_id = ${serviceCategories.id})::int`,
-      providersCount: sql<number>`(select count(*) from ${providerCategories} pc where pc.category_id = ${serviceCategories.id})::int`,
+      // مهم: نستعمل اسم الجدول المؤهَّل صراحةً. داخل قالب sql()، Drizzle كيصدر
+      // ${serviceCategories.id} كـ"id" غير مؤهَّل، والاستعلام الفرعي كيحلّو على
+      // جدول requests/provider_categories (اللي عندهم id) — فيرجع العدد دائماً 0.
+      requestsCount: sql<number>`(select count(*) from ${requests} r where r.category_id = service_categories.id)::int`,
+      providersCount: sql<number>`(select count(*) from ${providerCategories} pc where pc.category_id = service_categories.id)::int`,
     })
     .from(serviceCategories)
     .orderBy(serviceCategories.sortOrder);
@@ -660,6 +664,19 @@ export const ADMIN_FEE_PERCENT = PLATFORM_FEE_PERCENT;
 /** صفوف تحتاج تدخّلاً فورياً — تُعرض كطوابير عمل في النظرة العامة. */
 export async function adminWorkQueues() {
   const owing = await adminListWallets({ onlyOwing: true, limit: 10 });
+  const openReports = await db
+    .select({
+      id: reports.id,
+      category: reports.category,
+      body: reports.body,
+      targetType: reports.targetType,
+      createdAt: reports.createdAt,
+      reporterName: sql<string>`(select coalesce(p.display_name, u.email) from ${providerProfiles} p right join ${users} u on u.id = p.user_id where u.id = ${reports.reporterId})`,
+    })
+    .from(reports)
+    .where(sql`${reports.status} in ('open','reviewing')`)
+    .orderBy(desc(reports.createdAt))
+    .limit(10);
   const noOffers = await db
     .select({
       id: requests.id,
@@ -711,5 +728,113 @@ export async function adminWorkQueues() {
     )
     .orderBy(offers.createdAt)
     .limit(10);
-  return { owing, noOffers, unverified, staleOffers };
+  return { owing, noOffers, unverified, staleOffers, openReports };
+}
+
+// ── البلاغات والشكاوى ─────────────────────────────────────────────────────────
+/** لائحة بلاغات للإدارة — مفلترة بالحالة و/أو نوع الفئة، الأحدث أولاً. */
+export async function adminListReports(input: {
+  status?: string;
+  category?: string;
+  search?: string;
+  limit?: number;
+}) {
+  const conds: SQL[] = [];
+  if (input.status) conds.push(eq(reports.status, input.status));
+  if (input.category) conds.push(eq(reports.category, input.category));
+  if (input.search) {
+    const like = `%${input.search}%`;
+    conds.push(or(sql`${reports.body} ilike ${like}`, sql`${reports.adminNote} ilike ${like}`)!);
+  }
+
+  return db
+    .select({
+      id: reports.id,
+      targetType: reports.targetType,
+      category: reports.category,
+      body: reports.body,
+      status: reports.status,
+      adminNote: reports.adminNote,
+      handledAt: reports.handledAt,
+      createdAt: reports.createdAt,
+      reporterId: reports.reporterId,
+      reporterName: sql<string>`(select coalesce(p.display_name, u.email) from ${providerProfiles} p right join ${users} u on u.id = p.user_id where u.id = ${reports.reporterId})`,
+      targetUserId: reports.targetUserId,
+      targetUserName: sql<string>`(select coalesce(p.display_name, u.email) from ${providerProfiles} p right join ${users} u on u.id = p.user_id where u.id = ${reports.targetUserId})`,
+      targetUserBlockedAt: sql<string>`(select u.blocked_at from ${users} u where u.id = ${reports.targetUserId})`,
+      requestId: reports.requestId,
+      requestTitle: sql<string>`(select r.title from ${requests} r where r.id = ${reports.requestId})`,
+      handledByName: sql<string>`(select coalesce(p.display_name, u.email) from ${providerProfiles} p right join ${users} u on u.id = p.user_id where u.id = ${reports.handledByAdminId})`,
+    })
+    .from(reports)
+    .orderBy(desc(reports.createdAt))
+    .limit(input.limit ?? 100);
+}
+
+/** ملخّص سريع للطوابير: كم بلاغ مفتوح، وكم قيد المراجعة. */
+export async function adminReportCounts() {
+  const [row] = await db
+    .select({
+      open: sql<number>`(select count(*) from ${reports} where status = 'open')::int`,
+      reviewing: sql<number>`(select count(*) from ${reports} where status = 'reviewing')::int`,
+      resolved: sql<number>`(select count(*) from ${reports} where status = 'resolved')::int`,
+      dismissed: sql<number>`(select count(*) from ${reports} where status = 'dismissed')::int`,
+    })
+    .from(sql`(select 1) as x`);
+  return row;
+}
+
+/**
+ * تحديث حالة بلاغ — لا حذف أبداً. الإجراء المدمِّر (إغلاق/رفض) يتطلّب ملاحظة،
+ * وتُرسل للمبلّغ إشعاراً داخل التطبيق.
+ */
+export async function adminUpdateReport(input: {
+  reportId: string;
+  status: "open" | "reviewing" | "resolved" | "dismissed";
+  note?: string | null;
+  adminId: string;
+}) {
+  const [before] = await db
+    .select({ id: reports.id, reporterId: reports.reporterId, status: reports.status })
+    .from(reports)
+    .where(eq(reports.id, input.reportId))
+    .limit(1);
+  if (!before) throw new NotFoundError("البلاغ غير موجود");
+
+  const [row] = await db
+    .update(reports)
+    .set({
+      status: input.status,
+      adminNote: input.note?.trim() || null,
+      handledByAdminId: input.status === "open" || input.status === "reviewing" ? null : input.adminId,
+      handledAt: input.status === "open" || input.status === "reviewing" ? null : new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(reports.id, input.reportId))
+    .returning();
+
+  // إشعار المبلّغ إلا إذا رجع البلاغ لحالة الانتظار.
+  if (input.status !== before.status && before.status !== "open") {
+    const titles: Record<string, string> = {
+      reviewing: "بلاغك قيد المراجعة",
+      resolved: "تمّت معالجة بلاغك",
+      dismissed: "أُغلق بلاغك",
+      open: "أُعيد فتح بلاغك",
+    };
+    await db.insert(notifications).values({
+      userId: before.reporterId,
+      type: "report",
+      title: titles[input.status] ?? "تحديث على بلاغك",
+      body: input.note?.trim() || "راجعت الإدارة بلاغك.",
+    });
+  }
+
+  await recordAdminAction({
+    adminId: input.adminId,
+    action: "HANDLE_REPORT",
+    targetType: "report",
+    targetId: input.reportId,
+    detail: `${input.status}${input.note ? ` — ${input.note}` : ""}`,
+  });
+  return row;
 }

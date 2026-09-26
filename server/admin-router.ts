@@ -167,6 +167,40 @@ const auditRouter = router({
     .query(({ input }) => guarded(() => a.listAuditLog(input?.limit ?? 100))),
 });
 
+const reportsRouter = router({
+  list: adminProcedure
+    .input(
+      z.object({
+        status: z.enum(["open", "reviewing", "resolved", "dismissed"]).optional(),
+        category: z.enum(["no_show", "fraud", "abuse", "quality", "spam", "other"]).optional(),
+        search: z.string().max(80).optional(),
+        limit: z.number().int().min(1).max(300).optional(),
+      }),
+    )
+    .query(({ input }) => guarded(() => a.adminListReports(input))),
+
+  counts: adminProcedure.query(() => guarded(() => a.adminReportCounts())),
+
+  update: adminProcedure
+    .input(
+      z.object({
+        reportId: z.uuid(),
+        status: z.enum(["open", "reviewing", "resolved", "dismissed"]),
+        note: z.string().max(600).nullish(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        a.adminUpdateReport({
+          reportId: input.reportId,
+          status: input.status,
+          note: input.note ?? null,
+          adminId: ctx.user.id,
+        }),
+      ),
+    ),
+});
+
 export const adminRouter = router({
   overview: overviewRouter,
   users: usersRouter,
@@ -176,4 +210,5 @@ export const adminRouter = router({
   reviews: reviewsRouter,
   categories: categoriesRouter,
   audit: auditRouter,
+  reports: reportsRouter,
 });

@@ -1,6 +1,6 @@
 // ── إدارة التصنيفات: إضافة/تعديل/حذف الفئات، مع منع حذف فئة مستعملة ───────────
 import { useState } from "react";
-import { Tags, Plus, Pencil, Trash2, RefreshCw, Save, X } from "lucide-react";
+import { Tags, Plus, Pencil, Trash2, RefreshCw, Save, X, Lock } from "lucide-react";
 import { AdminShell, DataTable, Tr, Td } from "@/components/hirfi/admin-shell";
 import { TableSkeleton } from "@/components/hirfi/admin-skeleton";
 import { ReasonDialog } from "@/components/hirfi/admin-ui";
@@ -182,11 +182,11 @@ export default function AdminCategories() {
                       size="sm"
                       variant="destructive"
                       disabled={used}
-                      title={used ? "الفئة مستعملة — لا يمكن حذفها" : undefined}
-                      className="h-7 gap-1 rounded-lg px-2 text-[11px]"
-                      onClick={() => setRemoveTarget({ id: c.id, name: c.nameAr })}
+                      title={used ? "الفئة مستعملة في طلبات أو مهارات — لا يمكن حذفها، عطّلها بالعدّل بدل ذلك" : "حذف الفئة"}
+                      className="h-7 gap-1 rounded-lg px-2 text-[11px] disabled:opacity-40"
+                      onClick={() => !used && setRemoveTarget({ id: c.id, name: c.nameAr })}
                     >
-                      <Trash2 className="size-3" /> حذف
+                      {used ? <Lock className="size-3" /> : <Trash2 className="size-3" />} حذف
                     </Button>
                   </div>
                 </Td>

@@ -377,6 +377,34 @@ const notificationsRouter = router({
   markAllRead: protectedProcedure.mutation(({ ctx }) => q.markAllNotificationsRead(ctx.user.id)),
 });
 
+// ── البلاغات (من المستخدم) ────────────────────────────────────────────────────
+const reportsRouter = router({
+  mine: protectedProcedure.query(({ ctx }) => q.listMyReports(ctx.user.id)),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        targetType: z.enum(["user", "request", "other"]),
+        targetUserId: z.uuid().nullish(),
+        requestId: z.uuid().nullish(),
+        category: z.enum(["no_show", "fraud", "abuse", "quality", "spam", "other"]),
+        body: z.string().min(10).max(1200),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        q.submitReport({
+          reporterId: ctx.user.id,
+          targetType: input.targetType,
+          targetUserId: input.targetUserId ?? null,
+          requestId: input.requestId ?? null,
+          category: input.category,
+          body: input.body,
+        }),
+      ),
+    ),
+});
+
 // ── لوحات التحكم ─────────────────────────────────────────────────────────────
 const dashboardRouter = router({
   customer: protectedProcedure.query(({ ctx }) => q.customerDashboard(ctx.user.id)),
@@ -463,6 +491,7 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   files: filesRouter,
   admin: adminRouter,
+  reports: reportsRouter,
 });
 
 export type AppRouter = typeof appRouter;
