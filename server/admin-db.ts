@@ -813,8 +813,9 @@ export async function adminUpdateReport(input: {
     .where(eq(reports.id, input.reportId))
     .returning();
 
-  // إشعار المبلّغ إلا إذا رجع البلاغ لحالة الانتظار.
-  if (input.status !== before.status && before.status !== "open") {
+  // إشعار المبلّغ عند أي تغيّر حقيقي في الحالة. (كان الشرط يستثني الانتقال
+  // المباشر من open إلى resolved/dismissed بالخطأ، وهو المسار الأكثر شيوعاً.)
+  if (input.status !== before.status) {
     const titles: Record<string, string> = {
       reviewing: "بلاغك قيد المراجعة",
       resolved: "تمّت معالجة بلاغك",
