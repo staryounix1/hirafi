@@ -18,6 +18,7 @@ import {
   reviews,
   walletTransactions,
   notifications,
+  reports,
 } from "../drizzle/schema";
 import { NotFoundError, ForbiddenError, ConflictError, InvalidStateError } from "./errors";
 import { PLATFORM_FEE_PERCENT, type AppRole, type RequestStatus } from "../shared/constants";
@@ -1294,6 +1295,109 @@ export async function markNotificationRead(id: string, userId: string) {
 export async function markAllNotificationsRead(userId: string) {
   await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, userId));
   return { ok: true };
+}
+
+// ── البلاغات (من المستخدم) ────────────────────────────────────────────────────
+/**
+ * يقدّم المستخدم بلاغاً عن طلب أو مستخدم آخر. لا يمكن التبلّغ عن النفس، ولا
+ * تكرار بلاغ مفتوح على نفس الهدف (يُرجَع البلاغ القائم بدل إنشاء ثانٍ).
+ */
+export async function submitReport(input: {
+  reporterId: string;
+  targetType: "user" | "request" | "other";
+  targetUserId?: string | null;
+  requestId?: string | null;
+  category: string;
+  body: string;
+}) {
+  await assertNotBlocked(input.reporterId);
+
+  if (input.targetType === "user") {
+    if (!input.targetUserId) throw new InvalidStateError("حدّد المستخدم المبلَّغ عنه");
+    if (input.targetUserId === input.reporterId) throw new ForbiddenError("لا يمكنك التبلّغ عن نفسك");
+    const [target] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, input.targetUserId))
+      .limit(1);
+    if (!target) throw new NotFoundError("المستخدم غير موجود");
+  }
+
+  if (input.targetType === "request") {
+    if (!input.requestId) throw new InvalidStateError("حدّد الطلب المبلَّغ عنه");
+    const [req] = await db
+      .select({ id: requests.id, customerId: requests.customerId })
+      .from(requests)
+      .where(eq(requests.id, input.requestId))
+      .limit(1);
+    if (!req) throw new NotFoundError("الطلب غير موجود");
+    if (req.customerId === input.reporterId) {
+      throw new ForbiddenError("لا يمكنك التبلّغ عن طلبك — تواصل مع الدعم مباشرة");
+    }
+  }
+
+  // منع التكرار: بلاغ مفتوح/قيد المراجعة على نفس الهدف من نفس المبلّغ.
+  const dupConds = [
+    eq(reports.reporterId, input.reporterId),
+    inArray(reports.status, ["open", "reviewing"]),
+    input.targetUserId ? eq(reports.targetUserId, input.targetUserId) : undefined,
+    input.requestId ? eq(reports.requestId, input.requestId) : undefined,
+  ].filter(Boolean) as ReturnType<typeof eq>[];
+  if (dupConds.length > 1) {
+    const [dup] = await db
+      .select({ id: reports.id })
+      .from(reports)
+      .where(and(...dupConds))
+      .limit(1);
+    if (dup) throw new ConflictError("سبق أن أرسلت بلاغاً على هذا الهدف وهو قيد المعالجة");
+  }
+
+  const [row] = await db
+    .insert(reports)
+    .values({
+      reporterId: input.reporterId,
+      targetType: input.targetType,
+      targetUserId: input.targetUserId ?? null,
+      requestId: input.requestId ?? null,
+      category: input.category,
+      body: input.body.trim(),
+    })
+    .returning();
+
+  // إشعار كل المشرفين بوجود بلاغ جديد.
+  const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin"));
+  if (admins.length > 0) {
+    await db.insert(notifications).values(
+      admins.map((a) => ({
+        userId: a.id,
+        type: "report_new",
+        title: "بلاغ جديد",
+        body: `بلاغ جديد بخصوص ${input.targetType === "request" ? "طلب" : "مستخدم"}: ${input.body.trim().slice(0, 80)}`,
+        requestId: input.requestId ?? null,
+      })),
+    );
+  }
+
+  return row;
+}
+
+/** بلاغات المستخدم الحالي — يرى حالتها وما ردّت به الإدارة. */
+export async function listMyReports(userId: string, limit = 40) {
+  return db
+    .select({
+      id: reports.id,
+      targetType: reports.targetType,
+      category: reports.category,
+      body: reports.body,
+      status: reports.status,
+      adminNote: reports.adminNote,
+      handledAt: reports.handledAt,
+      createdAt: reports.createdAt,
+    })
+    .from(reports)
+    .where(eq(reports.reporterId, userId))
+    .orderBy(desc(reports.createdAt))
+    .limit(limit);
 }
 
 // ── لوحات التحكم ─────────────────────────────────────────────────────────────

@@ -296,3 +296,36 @@ export const notifications = pgTable(
   },
   (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)],
 );
+
+/**
+ * البلاغات والشكاوى — الزبون أو الحرّاف يبلّغ عن طلب/مستخدم، والإدارة تعالج.
+ * البلاغ **لا يُحذف** أبداً: يُغلق (resolved/dismissed) مقابل أثر. `targetUserId`
+ * و`requestId` اختياريان حسب نوع البلاغ، و`reporterId` إجباري للتتبّع.
+ */
+export const reports = pgTable(
+  "reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reporterId: uuid("reporter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // user | request | other — يحدّد أي هدف أدناه ذو معنى.
+    targetType: text("target_type").notNull().default("user"),
+    targetUserId: uuid("target_user_id").references(() => users.id, { onDelete: "set null" }),
+    requestId: uuid("request_id").references(() => requests.id, { onDelete: "set null" }),
+    // no_show | fraud | abuse | quality | spam | other
+    category: text("category").notNull().default("other"),
+    body: text("body").notNull(),
+    status: text("status").notNull().default("open"), // open | reviewing | resolved | dismissed
+    adminNote: text("admin_note"),
+    handledByAdminId: uuid("handled_by_admin_id").references(() => users.id, { onDelete: "set null" }),
+    handledAt: timestamp("handled_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("reports_status_idx").on(t.status, t.createdAt),
+    index("reports_reporter_idx").on(t.reporterId),
+    index("reports_target_user_idx").on(t.targetUserId),
+  ],
+);
