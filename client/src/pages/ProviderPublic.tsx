@@ -10,11 +10,14 @@ import {
   VerifiedBadge,
 } from "@/components/hirfi/primitives";
 import { trpc } from "@/_core/trpc";
+import { useAuth } from "@/_core/useAuth";
+import { ReportButton } from "@/components/hirfi/report";
 import { categoryIcon, countAr, errorMessage, formatDateAr, ratingAvg } from "@/lib/format";
 
 export default function ProviderPublic() {
   const params = useParams() as { id?: string };
   const id = params.id ?? "";
+  const { user } = useAuth();
   const q = trpc.profile.public.useQuery({ userId: id }, { enabled: !!id });
 
   if (!id)
@@ -57,6 +60,12 @@ export default function ProviderPublic() {
           عودة
         </Link>
       </div>
+
+      {user && user.id !== profile.userId ? (
+        <div className="flex justify-end px-4 pt-2">
+          <ReportButton targetType="user" targetUserId={profile.userId} label="تبليغ عن هذا المستخدم" />
+        </div>
+      ) : null}
 
       <PageHeader
         icon={isProvider ? Briefcase : MapPin}

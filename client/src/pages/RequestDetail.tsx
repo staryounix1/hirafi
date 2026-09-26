@@ -39,6 +39,7 @@ import {
   Stars,
 } from "@/components/hirfi/primitives";
 import { LifecycleBar, OfferCard, RefCode, type OfferRow } from "@/components/hirfi/cards";
+import { ReportButton } from "@/components/hirfi/report";
 import { trpc } from "@/_core/trpc";
 import { useAuth } from "@/_core/useAuth";
 import { POLL_INTERVAL_MS } from "@/lib/hooks";
@@ -154,7 +155,7 @@ export default function RequestDetail() {
         />
       ) : null}
       {/* رجوع */}
-      <div className="px-4 pt-4">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4">
         <Link
           href={d.isOwner ? "/requests" : "/browse"}
           className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-muted-foreground"
@@ -162,6 +163,9 @@ export default function RequestDetail() {
           <ArrowRight className="size-3.5" />
           {d.isOwner ? "عودة إلى طلباتي" : "عودة إلى التصفّح"}
         </Link>
+        {!d.isOwner && r.status !== "cancelled" ? (
+          <ReportButton targetType="request" requestId={r.id} label="تبليغ عن الطلب" />
+        ) : null}
       </div>
 
       <PageHeader
