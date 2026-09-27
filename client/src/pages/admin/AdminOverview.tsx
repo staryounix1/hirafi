@@ -7,6 +7,7 @@ import {
   Inbox,
   Clock,
   ShieldAlert,
+  HandCoins,
 } from "lucide-react";
 import { AdminShell, MetricCard, DataTable, Tr, Td } from "@/components/hirfi/admin-shell";
 import { ErrorState, EmptyState, Badge } from "@/components/hirfi/primitives";
@@ -67,6 +68,7 @@ type Stats = {
     walletsNegativeSum: number;
     requestsNoOffers: number;
     providersUnverified: number;
+    topupsPending: number;
   };
   daily: { day: string; count: number }[];
   byCategory: { name: string; icon: string; count: number }[];
@@ -98,7 +100,15 @@ function OverviewBody({ stats }: { stats: Stats }) {
           tone="danger"
         />
         <MetricCard label="طلبات بلا عروض" value={c.requestsNoOffers} hint="منشورة ولم يلمسها حرّاف" tone="warn" />
+        <MetricCard
+          label="طلبات شحن معلّقة"
+          value={c.topupsPending}
+          hint="بانتظار تفاوض/تأكيد الإدارة"
+          tone="warn"
+        />
         <MetricCard label="حرّافون غير موثّقين" value={c.providersUnverified} hint="بانتظار مراجعة الملف" tone="warn" />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricCard label="مستخدمون موقوفون" value={c.blocked} hint={`${c.requestsCompleted} طلب منتهٍ`} tone="danger" />
       </div>
 
@@ -179,6 +189,16 @@ type Queues = {
     createdAt: Date | string;
     providerName: string | null;
   }[];
+  pendingTopups: {
+    id: string;
+    requestedAmount: number;
+    agreedAmount: number | null;
+    status: string;
+    createdAt: Date | string;
+    providerName: string | null;
+    phone: string | null;
+    email: string;
+  }[];
 };
 
 function Queues({ queues }: { queues: Queues }) {
@@ -186,7 +206,8 @@ function Queues({ queues }: { queues: Queues }) {
     queues.owing.length === 0 &&
     queues.noOffers.length === 0 &&
     queues.unverified.length === 0 &&
-    queues.staleOffers.length === 0;
+    queues.staleOffers.length === 0 &&
+    queues.pendingTopups.length === 0;
 
   if (empty) {
     return (
@@ -203,6 +224,38 @@ function Queues({ queues }: { queues: Queues }) {
   return (
     <div className="mt-6 flex flex-col gap-5">
       <h2 className="text-[15px] font-black">طوابير العمل</h2>
+
+      {queues.pendingTopups.length > 0 ? (
+        <QueueBlock
+          icon={HandCoins}
+          tone="warn"
+          title="طلبات شحن معلّقة"
+          hint="حرّافون يطلبون شحن محفظتهم — تفاوض على واتساب ثم أكّد الشحن من قسم «طلبات الشحن»."
+        >
+          <DataTable columns={["الحرّاف", "البريد", "المطلوب", "المتفق", "الحالة", "منذ"]}>
+            {queues.pendingTopups.map((t) => (
+              <Tr key={t.id}>
+                <Td className="font-bold">{t.providerName ?? "—"}</Td>
+                <Td className="text-muted-foreground">{t.email}</Td>
+                <Td className="font-black">{formatMAD(t.requestedAmount)}</Td>
+                <Td className="text-muted-foreground">
+                  {t.agreedAmount ? formatMAD(t.agreedAmount) : "—"}
+                </Td>
+                <Td>
+                  <Badge tone={t.status === "pending" ? "brand" : "warn"}>
+                    {t.status === "pending"
+                      ? "جديد"
+                      : t.status === "contacted"
+                        ? "قيد التفاوض"
+                        : "انتظار التحويل"}
+                  </Badge>
+                </Td>
+                <Td className="text-muted-foreground">{timeAgoAr(t.createdAt)}</Td>
+              </Tr>
+            ))}
+          </DataTable>
+        </QueueBlock>
+      ) : null}
 
       {queues.owing.length > 0 ? (
         <QueueBlock

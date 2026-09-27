@@ -227,6 +227,19 @@ export function walletTypeMeta(t: string) {
   return WALLET_TYPE_META[t] ?? { label: t, tone: "muted" as Tone, sign: "+" as const };
 }
 
+/** حالة طلب شحن المحفظة ← تسمية ورمز. الشحن يدوي عبر واتساب ثم تأكيد الإدارة. */
+export const TOPUP_STATUS_META: Record<string, { label: string; tone: Tone }> = {
+  pending: { label: "بانتظار ردّ الإدارة", tone: "brand" },
+  contacted: { label: "الإدارة ستتواصل معك", tone: "info" },
+  awaiting_payment: { label: "في انتظار تحويلك", tone: "warn" },
+  credited: { label: "تمّ الشحن", tone: "success" },
+  rejected: { label: "مرفوض", tone: "danger" },
+};
+
+export function topupStatusMeta(s: string) {
+  return TOPUP_STATUS_META[s] ?? { label: s, tone: "muted" as Tone };
+}
+
 export const DISTANCE_LABELS: Record<string, { label: string; hint: string; tone: Tone }> = {
   near: { label: "قريب", hint: "نفس الحي", tone: "success" },
   medium: { label: "متوسط", hint: "نفس المدينة", tone: "warn" },

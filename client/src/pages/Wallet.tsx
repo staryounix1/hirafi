@@ -1,7 +1,8 @@
-// ── المحفظة: رصيد الحرّاف + شحن + سجل العمولات ─────────────────────────────────
-// المنصّة لا تحرّك مال الزبون: الزبون يدفع الحرّاف مباشرة بعد إتمام الخدمة.
-// محفظة الحرّاف هنا رصيد يغطّي به **عمولة المنصّة** (تُخصم لحظة قبول عرضه)،
-// وبدونه لا يمكنه إرسال عروض ولا بدء التنفيذ. الشحن في هذه النسخة تسجيل داخلي.
+// ── المحفظة: رصيد الحرّاف + طلب شحن (يدوي عبر واتساب) + سجل العمولات ─────────
+// المنصّة لا تحرّك مال الزبون ولا تستقبل مالاً آلياً: الزبون يدفع الحرّاف مباشرة،
+// والحرّاف يشحن محفظته لتغطية **عمولة المنصّة**. الشحن **ليس آلياً**: الحرّاف يرسل
+// طلب شحن → الإدارة تتفاوض معه على واتساب خارج المنصّة → بعد وصول المبلغ تؤكّد
+// الإدارة الشحن فيُقيَّد الرصيد. لا يمكن للحرّاف أن يشحن نفسه.
 import { useState } from "react";
 import {
   Wallet as WalletIcon,
@@ -12,9 +13,12 @@ import {
   Receipt,
   Info,
   AlertTriangle,
+  MessageCircle,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Badge,
   EmptyState,
@@ -27,24 +31,29 @@ import {
 import { trpc } from "@/_core/trpc";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { SUPPORT_WHATSAPP } from "@shared/constants";
 import {
   countAr,
   errorMessage,
   formatDateTimeAr,
   formatMAD,
   madNumber,
+  topupStatusMeta,
   walletTypeMeta,
 } from "@/lib/format";
 
 const MIN_TOPUP = 10;
 const QUICK = [50, 100, 200, 500];
+const ACTIVE = ["pending", "contacted", "awaiting_payment"];
 
 export default function Wallet() {
   const q = trpc.wallet.me.useQuery();
   const fee = trpc.wallet.feePercent.useQuery();
-  const topup = trpc.wallet.topup.useMutation();
+  const myTopups = trpc.wallet.myTopups.useQuery();
+  const requestTopup = trpc.wallet.requestTopup.useMutation();
   const utils = trpc.useUtils();
   const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
   const [open, setOpen] = useState(false);
 
   if (q.isLoading) {
@@ -67,15 +76,19 @@ export default function Wallet() {
   const { rows, balance, earnings, spend } = q.data;
   const num = Number(amount);
   const insufficient = balance < 0;
+  const topups = myTopups.data ?? [];
+  const active = topups.find((t) => ACTIVE.includes(t.status));
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
-    if (!num || num < MIN_TOPUP) return toast.error(`أقل مبلغ للشحن ${formatMAD(MIN_TOPUP)}`);
+    const value = Math.round(num);
+    if (!value || value < MIN_TOPUP) return toast.error(`أقل مبلغ للشحن ${formatMAD(MIN_TOPUP)}`);
     try {
-      await topup.mutateAsync({ amount: Math.round(num) });
+      await requestTopup.mutateAsync({ amount: value, note: note.trim() || null });
       await utils.invalidate();
-      toast.success("تم شحن حسابك — يمكنك الآن إرسال العروض");
+      toast.success("وصل طلبك للإدارة — سنتواصل معك على واتساب");
       setAmount("");
+      setNote("");
       setOpen(false);
     } catch (e) {
       toast.error(errorMessage(e));
@@ -87,7 +100,7 @@ export default function Wallet() {
       <PageHeader
         icon={WalletIcon}
         title="محفظة الحرّاف"
-        description="رصيدك لتغطية عمولة المنصّة. تُخصم العمولة لحظة قبول الزبون لعرضك. الزبون يدفع لك مباشرة بعد إتمام الخدمة."
+        description="رصيدك لتغطية عمولة المنصّة. تُخصم العمولة لحظة قبول الزبون لعرضك. الشحن يتم بالتنسيق مع الإدارة عبر واتساب."
       />
 
       {/* بطاقة الرصيد */}
@@ -125,12 +138,12 @@ export default function Wallet() {
           <div className="mt-3 flex items-center justify-between gap-3">
             <p className="text-[10.5px] leading-snug text-background/60">
               {insufficient
-                ? "رصيدك سالب — اشحن لتستأنف إرسال العروض والتنفيذ"
+                ? "رصيدك سالب — اطلب شحناً لتستأنف إرسال العروض والتنفيذ"
                 : balance === 0
-                  ? "اشحن رصيدك لتتمكّن من إرسال عرض"
+                  ? "اطلب شحن رصيدك لتتمكّن من إرسال عرض"
                   : "رصيدك كافٍ لتقديم العروض"}
             </p>
-            {!open ? (
+            {!open && !active ? (
               <Button
                 size="sm"
                 variant="secondary"
@@ -138,22 +151,58 @@ export default function Wallet() {
                 onClick={() => setOpen(true)}
               >
                 <Plus className="size-3.5" />
-                اشحن حسابك
+                طلب شحن
               </Button>
             ) : null}
           </div>
         </div>
       </section>
 
-      {/* نموذج الشحن */}
-      {open ? (
+      {/* طلب نشط — لا يُسمح بطلب ثانٍ حتى يُحسم */}
+      {active ? (
+        <section className="px-4 pt-3">
+          <div className="rounded-3xl border border-border bg-card p-4">
+            <div className="flex items-start gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-info-soft text-info">
+                <Clock className="size-4.5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <b className="text-[13.5px]">طلب شحن قيد المعالجة</b>
+                  <Badge tone={topupStatusMeta(active.status).tone}>
+                    {topupStatusMeta(active.status).label}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                  طلبت <b>{formatMAD(active.requestedAmount)}</b>
+                  {active.agreedAmount ? ` — المبلغ المتفق عليه ${formatMAD(active.agreedAmount)}` : ""}.
+                  ستتواصل معك الإدارة على <b>واتساب</b> على الرقم المسجّل في حسابك لترتيب التحويل.
+                </p>
+                {active.adminNote ? (
+                  <p className="mt-2 rounded-lg bg-muted px-2.5 py-1.5 text-[11.5px] text-muted-foreground">
+                    رسالة الإدارة: {active.adminNote}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* نموذج طلب الشحن */}
+      {open && !active ? (
         <section className="px-4 pt-3">
           <form onSubmit={submit} className="card-flat grid gap-3 p-4">
             <h2 className="flex items-center gap-1.5 text-[15px] font-black">
               <Plus className="size-4 text-teal" />
-              شحن المحفظة
+              طلب شحن المحفظة
             </h2>
-            <Field label="المبلغ (درهم)" hint={`أقل مبلغ ${formatMAD(MIN_TOPUP)}`} required>
+            <p className="flex items-start gap-1.5 rounded-2xl bg-muted px-3 py-2.5 text-[11.5px] leading-relaxed text-muted-foreground">
+              <MessageCircle className="mt-0.5 size-4 shrink-0" />
+              الدفع يتم بالتفاهم مع الإدارة على واتساب. بعد وصول المبلغ المتفق عليه تؤكّد الإدارة الشحن
+              فيُضاف الرصيد تلقائياً.
+            </p>
+            <Field label="المبلغ المطلوب (درهم)" hint={`أقل مبلغ ${formatMAD(MIN_TOPUP)}`} required>
               <Input
                 type="number"
                 min={MIN_TOPUP}
@@ -175,14 +224,24 @@ export default function Wallet() {
                 </button>
               ))}
             </div>
+            <Field label="ملاحظة (اختياري)">
+              <Textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+                maxLength={500}
+                placeholder="مثال: بغيت نخلّص قبل نهاية الأسبوع…"
+                className="rounded-xl text-[13px]"
+              />
+            </Field>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="submit"
                 className="gap-1.5 rounded-full"
-                disabled={topup.isPending || !num || num < MIN_TOPUP}
+                disabled={requestTopup.isPending || !num || num < MIN_TOPUP}
               >
-                {topup.isPending ? <Spinner /> : <Plus className="size-4" />}
-                تأكيد الشحن
+                {requestTopup.isPending ? <Spinner /> : <Plus className="size-4" />}
+                إرسال طلب الشحن
               </Button>
               <Button type="button" variant="ghost" className="rounded-full" onClick={() => setOpen(false)}>
                 إلغاء
@@ -192,12 +251,76 @@ export default function Wallet() {
         </section>
       ) : null}
 
+      {SUPPORT_WHATSAPP ? (
+        <section className="px-4 pt-3">
+          <a
+            href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("مرحبا، بغيت نشحن محفظتي فحِرْفي")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 rounded-3xl border border-border bg-card px-4 py-3 text-[13px] font-bold text-teal"
+          >
+            <MessageCircle className="size-4" />
+            تواصل معنا على واتساب
+          </a>
+        </section>
+      ) : null}
+
       {insufficient ? (
         <section className="px-4 pt-3">
           <p className="flex items-start gap-2 rounded-3xl bg-destructive/10 px-3.5 py-3 text-[12px] leading-relaxed text-destructive">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            رصيدك سالب بعد خصم العمولة — اشحن حسابك لإكمال المراحل مع الزبون. لا يمكنك إرسال عروض جديدة حتى يغطّي الرصيد العمولة.
+            رصيدك سالب بعد خصم العمولة — اطلب شحن حسابك لإكمال المراحل مع الزبون. لا يمكنك إرسال عروض جديدة
+            حتى يغطّي الرصيد العمولة.
           </p>
+        </section>
+      ) : null}
+
+      {/* طلبات الشحن */}
+      {topups.length > 0 ? (
+        <section className="grid gap-3 px-4 pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-[17px] font-black">
+              <MessageCircle className="size-4.5 text-teal" />
+              طلبات الشحن
+            </h2>
+            <Badge tone="muted">{countAr(topups.length, ["طلب", "طلبان", "طلبات"], "طلباً")}</Badge>
+          </div>
+          <ul className="grid gap-2">
+            {topups.map((t) => {
+              const meta = topupStatusMeta(t.status);
+              return (
+                <li key={t.id} className="card-flat flex items-start gap-3 p-3.5">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+                    <MessageCircle className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <b className="text-[13px]">
+                        {formatMAD(t.agreedAmount ?? t.requestedAmount)}
+                        {t.agreedAmount && t.agreedAmount !== t.requestedAmount ? (
+                          <span className="ms-1 text-[10.5px] font-normal text-muted-foreground">
+                            (طُلب {formatMAD(t.requestedAmount)})
+                          </span>
+                        ) : null}
+                      </b>
+                      <Badge tone={meta.tone}>{meta.label}</Badge>
+                    </div>
+                    {t.note ? (
+                      <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">{t.note}</p>
+                    ) : null}
+                    {t.adminNote ? (
+                      <p className="mt-1 rounded-lg bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+                        الإدارة: {t.adminNote}
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-[10.5px] text-muted-foreground/80">
+                      {formatDateTimeAr(t.createdAt)}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </section>
       ) : null}
 
@@ -215,7 +338,7 @@ export default function Wallet() {
           <EmptyState
             icon={Receipt}
             title="لا حركات على محفظتك"
-            description="اشحن رصيدك لتقديم العروض. لحظة قبول الزبون لعرضك تُخصم عمولة المنصّة هنا، ويظهر الشحن كقيد موجب."
+            description="اطلب شحن رصيدك لتقديم العروض. لحظة قبول الزبون لعرضك تُخصم عمولة المنصّة هنا، ويظهر الشحن كقيد موجب."
           />
         ) : (
           <ul className="grid gap-2">
@@ -259,7 +382,8 @@ export default function Wallet() {
 
         <p className="flex items-start gap-1.5 px-1 text-[11px] leading-relaxed text-muted-foreground">
           <CircleDollarSign className="mt-0.5 size-3.5 shrink-0" />
-          المنصّة لا تدير أموال الزبون: الدفع للحرّاف يتم بينهما مباشرة بعد إتمام الخدمة. محفظتك هنا لتغطية عمولة المنصّة فقط.
+          المنصّة لا تدير أموال الزبون: الدفع للحرّاف يتم بينهما مباشرة. محفظتك هنا لتغطية عمولة المنصّة،
+          وشحنها يتم بالتنسيق المباشر مع الإدارة على واتساب.
         </p>
       </section>
     </div>
