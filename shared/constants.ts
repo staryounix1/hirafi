@@ -49,6 +49,25 @@ export const WALLET_TYPES = ["payment", "payout", "fee", "refund", "topup"] as c
 export type WalletType = (typeof WALLET_TYPES)[number];
 
 /**
+ * دورة حياة طلب شحن المحفظة. الحرّاف يطلب → الإدارة تتواصل **على واتساب** (خارج
+ * المنصّة) → بعد استلام المبلغ المتفق عليه تؤكّد الإدارة الشحن فيُقيَّد الرصيد.
+ */
+export const TOPUP_REQUEST_STATUSES = [
+  "pending",
+  "contacted",
+  "awaiting_payment",
+  "credited",
+  "rejected",
+] as const;
+export type TopupRequestStatus = (typeof TOPUP_REQUEST_STATUSES)[number];
+
+/**
+ * رقم واتساب الدعم بالصيغة الدولية بلا `+` (مثال: `2126XXXXXXXX`). فارغ = لا
+ * يُعرض زر «تواصل معنا» للحرّاف، ويكفي أن تتواصل معه الإدارة على رقمه المسجّل.
+ */
+export const SUPPORT_WHATSAPP = "";
+
+/**
  * عمولة المنصة `حِرْفي` (نسبة مئوية) — يدفعها **الحرّاف** من محفظته لحظة قبول
  * الزبون لعرضه. الزبون لا يدفع شيئاً عبر المنصة: يدفع الحرّاف مباشرة بعد إتمام
  * الخدمة، والمنصة تكتفي بتحصيل عمولتها من رصيد الحرّاف.

@@ -26,6 +26,7 @@ import AdminWallets from "./pages/admin/AdminWallets";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminReports from "./pages/admin/AdminReports";
+import AdminTopups from "./pages/admin/AdminTopups";
 import AdminAudit from "./pages/admin/AdminAudit";
 import NotFound from "./pages/NotFound";
 
@@ -135,6 +136,11 @@ export default function App() {
       <Route path="/admin/reports">
         <AdminOnly>
           <AdminReports />
+        </AdminOnly>
+      </Route>
+      <Route path="/admin/topups">
+        <AdminOnly>
+          <AdminTopups />
         </AdminOnly>
       </Route>
       <Route path="/admin/audit">

@@ -329,3 +329,42 @@ export const reports = pgTable(
     index("reports_target_user_idx").on(t.targetUserId),
   ],
 );
+
+/**
+ * طلبات شحن المحفظة — الحرّاف يطلب الشحن، والإدارة تتفاوض معه **على واتساب
+ * خارج المنصّة**، وبعد ما يوصل المبلغ المتفق عليه تؤكّد الإدارة الشحن فيُقيَّد
+ * الرصيد في `wallet_transactions`. المنصّة لا تمرّر مالاً: لا بوّابة دفع ولا
+ * تحويل آلي — التأكيد بشري ومسبَّب.
+ *
+ * دورة الحالة: pending → contacted → awaiting_payment → credited | rejected.
+ * لا حذف: كل طلب يبقى بأثره وملاحظة الإدارة.
+ */
+export const topupRequests = pgTable(
+  "topup_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    requestedAmount: integer("requested_amount").notNull(), // المبلغ المطلوب (درهم)
+    agreedAmount: integer("agreed_amount"), // المبلغ المتفق عليه بعد التفاوض
+    note: text("note"), // ملاحظة الحرّاف عند الطلب
+    // pending | contacted | awaiting_payment | credited | rejected
+    status: text("status").notNull().default("pending"),
+    adminNote: text("admin_note"),
+    handledByAdminId: uuid("handled_by_admin_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    handledAt: timestamp("handled_at", { withTimezone: true }),
+    // القيد المالي الناتج عن التأكيد — يمنع الشحن المزدوج ويصل الطلب بمصدره.
+    walletTransactionId: uuid("wallet_transaction_id").references(() => walletTransactions.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("topup_requests_status_idx").on(t.status, t.createdAt),
+    index("topup_requests_user_idx").on(t.userId, t.createdAt),
+  ],
+);

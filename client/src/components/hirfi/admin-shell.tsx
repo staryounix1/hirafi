@@ -13,6 +13,7 @@ import {
   Tags,
   ScrollText,
   Flag,
+  HandCoins,
   ArrowLeft,
   LogOut,
   ShieldCheck,
@@ -32,6 +33,7 @@ export type AdminSection =
   | "reviews"
   | "categories"
   | "reports"
+  | "topups"
   | "audit";
 
 const NAV: { key: AdminSection; href: string; label: string; icon: LucideIcon }[] = [
@@ -43,6 +45,7 @@ const NAV: { key: AdminSection; href: string; label: string; icon: LucideIcon }[
   { key: "reviews", href: "/admin/reviews", label: "التقييمات", icon: Star },
   { key: "categories", href: "/admin/categories", label: "التصنيفات", icon: Tags },
   { key: "reports", href: "/admin/reports", label: "البلاغات", icon: Flag },
+  { key: "topups", href: "/admin/topups", label: "طلبات الشحن", icon: HandCoins },
   { key: "audit", href: "/admin/audit", label: "سجل الإدارة", icon: ScrollText },
 ];
 
