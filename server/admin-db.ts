@@ -15,6 +15,7 @@ import {
   requests,
   reviews,
   serviceCategories,
+  topupRequests,
   users,
   walletTransactions,
 } from "../drizzle/schema";
@@ -29,7 +30,7 @@ export { isUniqueViolation };
 export async function recordAdminAction(input: {
   adminId: string;
   action: string;
-  targetType: "user" | "request" | "offer" | "review" | "category" | "wallet" | "report";
+  targetType: "user" | "request" | "offer" | "review" | "category" | "wallet" | "report" | "topup";
   targetId?: string | null;
   detail?: string | null;
 }) {
@@ -102,6 +103,10 @@ export async function adminOverview() {
       )::int`,
       providersUnverified: sql<number>`(
         select count(*) from ${providerProfiles} where role = 'provider' and not is_verified
+      )::int`,
+      topupsPending: sql<number>`(
+        select count(*) from ${topupRequests}
+        where status in ('pending','contacted','awaiting_payment')
       )::int`,
     })
     .from(sql`(select 1) as x`);
@@ -728,7 +733,24 @@ export async function adminWorkQueues() {
     )
     .orderBy(offers.createdAt)
     .limit(10);
-  return { owing, noOffers, unverified, staleOffers, openReports };
+  const pendingTopups = await db
+    .select({
+      id: topupRequests.id,
+      requestedAmount: topupRequests.requestedAmount,
+      agreedAmount: topupRequests.agreedAmount,
+      status: topupRequests.status,
+      createdAt: topupRequests.createdAt,
+      providerName: providerProfiles.displayName,
+      phone: providerProfiles.phone,
+      email: users.email,
+    })
+    .from(topupRequests)
+    .innerJoin(users, eq(users.id, topupRequests.userId))
+    .leftJoin(providerProfiles, eq(providerProfiles.userId, topupRequests.userId))
+    .where(sql`${topupRequests.status} in ('pending','contacted','awaiting_payment')`)
+    .orderBy(desc(topupRequests.createdAt))
+    .limit(10);
+  return { owing, noOffers, unverified, staleOffers, openReports, pendingTopups };
 }
 
 // ── البلاغات والشكاوى ─────────────────────────────────────────────────────────
@@ -836,6 +858,226 @@ export async function adminUpdateReport(input: {
     targetType: "report",
     targetId: input.reportId,
     detail: `${input.status}${input.note ? ` — ${input.note}` : ""}`,
+  });
+  return row;
+}
+
+// ── طلبات شحن المحفظة (يدوي عبر واتساب) ───────────────────────────────────────
+/**
+ * لائحة طلبات الشحن — الأحدث أولاً، مع رصيد الحرّاف الحالي ورقمه للتفاوض.
+ * التأكيد والرفض يمرّان من `adminConfirmTopup`/`adminSetTopupStatus` ولا حذف أبداً.
+ */
+export async function adminListTopupRequests(input: {
+  status?: string;
+  search?: string;
+  limit?: number;
+}) {
+  const conds: SQL[] = [];
+  if (input.status) conds.push(eq(topupRequests.status, input.status));
+  if (input.search) {
+    const like = `%${input.search}%`;
+    conds.push(
+      or(
+        sql`${topupRequests.note} ilike ${like}`,
+        sql`${topupRequests.adminNote} ilike ${like}`,
+        sql`${providerProfiles.displayName} ilike ${like}`,
+        sql`${users.email} ilike ${like}`,
+        sql`${providerProfiles.phone} ilike ${like}`,
+      )!,
+    );
+  }
+
+  return db
+    .select({
+      id: topupRequests.id,
+      userId: topupRequests.userId,
+      requestedAmount: topupRequests.requestedAmount,
+      agreedAmount: topupRequests.agreedAmount,
+      note: topupRequests.note,
+      status: topupRequests.status,
+      adminNote: topupRequests.adminNote,
+      handledAt: topupRequests.handledAt,
+      walletTransactionId: topupRequests.walletTransactionId,
+      createdAt: topupRequests.createdAt,
+      providerName: providerProfiles.displayName,
+      phone: providerProfiles.phone,
+      email: users.email,
+      balance: sql<number>`coalesce((select sum(amount) from ${walletTransactions} w where w.user_id = ${topupRequests.userId}),0)::int`,
+      handledByName: sql<string>`(select coalesce(p.display_name, u.email) from ${providerProfiles} p right join ${users} u on u.id = p.user_id where u.id = ${topupRequests.handledByAdminId})`,
+    })
+    .from(topupRequests)
+    .innerJoin(users, eq(users.id, topupRequests.userId))
+    .leftJoin(providerProfiles, eq(providerProfiles.userId, topupRequests.userId))
+    .where(conds.length ? and(...conds) : undefined)
+    .orderBy(desc(topupRequests.createdAt))
+    .limit(input.limit ?? 200);
+}
+
+/** ملخّص طلبات الشحن بالحالة — لأعلى صفحة الإدارة. */
+export async function adminTopupCounts() {
+  const [row] = await db
+    .select({
+      pending: sql<number>`(select count(*) from ${topupRequests} where status = 'pending')::int`,
+      contacted: sql<number>`(select count(*) from ${topupRequests} where status = 'contacted')::int`,
+      awaiting: sql<number>`(select count(*) from ${topupRequests} where status = 'awaiting_payment')::int`,
+      credited: sql<number>`(select count(*) from ${topupRequests} where status = 'credited')::int`,
+      rejected: sql<number>`(select count(*) from ${topupRequests} where status = 'rejected')::int`,
+    })
+    .from(sql`(select 1) as x`);
+  return row;
+}
+
+/**
+ * تحديث حالة طلب شحن غير نهائي (بدأ التواصل / انتظار التحويل / رفض).
+ * الرفض يتطلّب سبباً، ويُبلَّغ الحرّاف بكل تغيّر. لا يُسمح بلمس طلب مشحون أو مرفوض.
+ */
+export async function adminSetTopupStatus(input: {
+  topupId: string;
+  status: "contacted" | "awaiting_payment" | "rejected";
+  note?: string | null;
+  agreedAmount?: number | null;
+  adminId: string;
+}) {
+  const [before] = await db
+    .select({
+      id: topupRequests.id,
+      userId: topupRequests.userId,
+      status: topupRequests.status,
+      agreedAmount: topupRequests.agreedAmount,
+      adminNote: topupRequests.adminNote,
+      handledAt: topupRequests.handledAt,
+    })
+    .from(topupRequests)
+    .where(eq(topupRequests.id, input.topupId))
+    .limit(1);
+  if (!before) throw new NotFoundError("طلب الشحن غير موجود");
+  if (before.status === "credited") throw new InvalidStateError("طلب الشحن مؤكَّد — لا يمكن تغييره");
+  if (before.status === "rejected") throw new InvalidStateError("طلب الشحن مرفوض — لا يمكن تغييره");
+  if (input.status === "rejected" && !input.note?.trim()) {
+    throw new InvalidStateError("سبب الرفض إلزامي");
+  }
+  if (
+    typeof input.agreedAmount === "number" &&
+    (!Number.isInteger(input.agreedAmount) || input.agreedAmount < 10)
+  ) {
+    throw new InvalidStateError("المبلغ المتفق عليه غير صالح");
+  }
+
+  const note = input.note?.trim() || before.adminNote;
+  const agreed =
+    typeof input.agreedAmount === "number" ? input.agreedAmount : before.agreedAmount;
+
+  const [row] = await db
+    .update(topupRequests)
+    .set({
+      status: input.status,
+      adminNote: note,
+      agreedAmount: agreed,
+      handledByAdminId: input.adminId,
+      handledAt: input.status === "rejected" ? new Date() : before.handledAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(topupRequests.id, input.topupId))
+    .returning();
+
+  const copy = {
+    contacted: {
+      title: "الإدارة باشرت طلب شحنك",
+      body: note || "سنتواصل معك على واتساب لترتيب المبلغ والتحويل.",
+    },
+    awaiting_payment: {
+      title: "في انتظار تحويلك",
+      body: note || `اتّفقنا على ${agreed ?? "المبلغ"} — أرسل التحويل وسنؤكّد الشحن فور وصوله.`,
+    },
+    rejected: {
+      title: "رُفض طلب الشحن",
+      body: note || "تواصل مع الدعم لمعرفة السبب.",
+    },
+  }[input.status];
+  await db.insert(notifications).values({
+    userId: before.userId,
+    type: "topup",
+    title: copy.title,
+    body: copy.body,
+  });
+
+  await recordAdminAction({
+    adminId: input.adminId,
+    action: "UPDATE_TOPUP",
+    targetType: "topup",
+    targetId: input.topupId,
+    detail: `${input.status}${note ? ` — ${note}` : ""}`,
+  });
+  return row;
+}
+
+/**
+ * تأكيد استلام المبلغ **بعد التفاوض على واتساب** → يقيّد الرصيد فعلاً.
+ *
+ * الوحيد الذي يُنشئ قيد `topup` الآن: لا يمكن للحرّاف أن يشحن نفسه. المبلغ
+ * هو المُتفق عليه (قد يختلف عن المطلوب)، ويُمنع الشحن المزدوج بحالة `credited`.
+ */
+export async function adminConfirmTopup(input: {
+  topupId: string;
+  amount: number;
+  note?: string | null;
+  adminId: string;
+}) {
+  if (!Number.isInteger(input.amount) || input.amount <= 0) {
+    throw new InvalidStateError("المبلغ يجب أن يكون عدداً صحيحاً أكبر من صفر");
+  }
+  const [before] = await db
+    .select({
+      id: topupRequests.id,
+      userId: topupRequests.userId,
+      status: topupRequests.status,
+      adminNote: topupRequests.adminNote,
+    })
+    .from(topupRequests)
+    .where(eq(topupRequests.id, input.topupId))
+    .limit(1);
+  if (!before) throw new NotFoundError("طلب الشحن غير موجود");
+  if (before.status === "credited") throw new InvalidStateError("طلب الشحن مؤكَّد مسبقاً");
+  if (before.status === "rejected") throw new InvalidStateError("طلب الشحن مرفوض — لا يمكن تأكيده");
+
+  const note = input.note?.trim() || before.adminNote;
+  const [tx] = await db
+    .insert(walletTransactions)
+    .values({
+      userId: before.userId,
+      type: "topup",
+      amount: input.amount,
+      description: `شحن المحفظة عبر واتساب${note ? ` — ${note}` : ""}`,
+    })
+    .returning();
+
+  const [row] = await db
+    .update(topupRequests)
+    .set({
+      status: "credited",
+      agreedAmount: input.amount,
+      adminNote: note,
+      handledByAdminId: input.adminId,
+      handledAt: new Date(),
+      walletTransactionId: tx.id,
+      updatedAt: new Date(),
+    })
+    .where(eq(topupRequests.id, input.topupId))
+    .returning();
+
+  await db.insert(notifications).values({
+    userId: before.userId,
+    type: "topup",
+    title: "تم تأكيد شحن حسابك",
+    body: `أُضيف ${input.amount} درهم إلى رصيدك. يمكنك الآن إرسال العروض.`,
+  });
+
+  await recordAdminAction({
+    adminId: input.adminId,
+    action: "CREDIT_TOPUP",
+    targetType: "topup",
+    targetId: input.topupId,
+    detail: `${input.amount} درهم${note ? ` — ${note}` : ""}`,
   });
   return row;
 }
