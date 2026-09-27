@@ -49,6 +49,7 @@ type LeafletApi = {
   marker: (position: [number, number], options?: Record<string, unknown>) => LeafletLayer;
   divIcon: (options: Record<string, unknown>) => unknown;
   polyline: (positions: [number, number][], options?: Record<string, unknown>) => LeafletLayer;
+  control: { zoom: (options?: Record<string, unknown>) => { addTo: (map: LeafletMap) => void } };
 };
 
 declare global {
@@ -167,7 +168,17 @@ export function MapCanvas({
         const L = await loadLeaflet();
         if (cancelled || !containerRef.current) return;
 
-        const map = L.map(containerRef.current, { zoomControl: false }).setView(MAP_CENTER, 12);
+        // scrollWheelZoom: false مقصود — العجلة خاصها تسكرول الصفحة، ماشي تكبّر
+        // الخريطة (وإلا المستخدم كيحسّ أن التمرير "عالق" فوق الخريطة). التكبير
+        // كيبقى متاحاً بأزرار +/- (zoomControl) وباللمس بإصبعين على الجوال.
+        const map = L.map(containerRef.current, {
+          zoomControl: false,
+          scrollWheelZoom: false,
+          touchZoom: true,
+          dragging: true,
+          doubleClickZoom: true,
+        }).setView(MAP_CENTER, 12);
+        L.control.zoom({ position: "bottomright" }).addTo(map);
         L.tileLayer(LEAFLET_TILE_URL, {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 19,
