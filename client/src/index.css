@@ -184,14 +184,21 @@
   /* العمود الخارجي للتطبيق على الحاسوب — رمادي مثل خلفية inDrive التسويقية. */
   .app-stage {
     background: #dfe2e6;
+    /* حبس الصفحة على ارتفاع الشاشة: التمرير كيتمّ داخل <main> فقط. بلا هاد
+       السطر الإطار كيتمدّد مع المحتوى، وعجلة الفأرة كتحبس وما كتوصلش للـmain. */
+    height: 100dvh;
+    overflow: hidden;
   }
   /* إطار الهاتف: بعرض الجوال على الحاسوب، بكامل العرض على الجوال. */
   .app-frame {
     @apply relative mx-auto flex w-full max-w-[460px] flex-col bg-background;
     min-height: 100svh;
   }
+  /* dvh كيتبع ارتفاع المتصفح الفعلي (شريط العنوان كيتخبّى فالجوال). 100svh
+     fallback للمتصفحات القديمة. */
   .shell-frame {
     height: 100svh;
+    height: 100dvh;
     overflow: hidden;
   }
   .shell-frame > main > .grid {
