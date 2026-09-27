@@ -201,6 +201,60 @@ const reportsRouter = router({
     ),
 });
 
+const topupsRouter = router({
+  list: adminProcedure
+    .input(
+      z.object({
+        status: z.enum(["pending", "contacted", "awaiting_payment", "credited", "rejected"]).optional(),
+        search: z.string().max(80).optional(),
+        limit: z.number().int().min(1).max(300).optional(),
+      }),
+    )
+    .query(({ input }) => guarded(() => a.adminListTopupRequests(input))),
+
+  counts: adminProcedure.query(() => guarded(() => a.adminTopupCounts())),
+
+  update: adminProcedure
+    .input(
+      z.object({
+        topupId: z.uuid(),
+        status: z.enum(["contacted", "awaiting_payment", "rejected"]),
+        note: z.string().max(600).nullish(),
+        agreedAmount: z.number().int().min(10).max(100000).nullish(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        a.adminSetTopupStatus({
+          topupId: input.topupId,
+          status: input.status,
+          note: input.note ?? null,
+          agreedAmount: input.agreedAmount ?? null,
+          adminId: ctx.user.id,
+        }),
+      ),
+    ),
+
+  confirm: adminProcedure
+    .input(
+      z.object({
+        topupId: z.uuid(),
+        amount: z.number().int().min(10).max(100000),
+        note: z.string().max(600).nullish(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        a.adminConfirmTopup({
+          topupId: input.topupId,
+          amount: input.amount,
+          note: input.note ?? null,
+          adminId: ctx.user.id,
+        }),
+      ),
+    ),
+});
+
 export const adminRouter = router({
   overview: overviewRouter,
   users: usersRouter,
@@ -211,4 +265,5 @@ export const adminRouter = router({
   categories: categoriesRouter,
   audit: auditRouter,
   reports: reportsRouter,
+  topups: topupsRouter,
 });

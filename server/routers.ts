@@ -356,10 +356,22 @@ const reviewsRouter = router({
 const walletRouter = router({
   me: protectedProcedure.query(({ ctx }) => q.listWallet(ctx.user.id)),
 
-  /** شحن رصيد الحرّاف — يغطّي به عمولة المنصّة ويسمح له بإرسال العروض. */
-  topup: protectedProcedure
-    .input(z.object({ amount: z.number().int().min(10).max(100000) }))
-    .mutation(({ ctx, input }) => guarded(() => q.topupWallet(ctx.user.id, input.amount))),
+  /**
+   * طلب شحن — لا يُقيَّد رصيد فوراً. الطلب يذهب للإدارة التي تتفاوض على واتساب
+   * خارج المنصّة، ثم تؤكّد الشحن من لوحتها (admin.topups.confirm) فيُقيَّد الرصيد.
+   */
+  requestTopup: protectedProcedure
+    .input(
+      z.object({
+        amount: z.number().int().min(10).max(100000),
+        note: z.string().max(500).nullish(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() => q.requestTopup({ userId: ctx.user.id, amount: input.amount, note: input.note ?? null })),
+    ),
+
+  myTopups: protectedProcedure.query(({ ctx }) => q.listMyTopupRequests(ctx.user.id)),
 
   feePercent: publicProcedure.query(() => PLATFORM_FEE_PERCENT),
 });
