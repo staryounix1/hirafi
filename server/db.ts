@@ -19,6 +19,7 @@ import {
   walletTransactions,
   notifications,
   reports,
+  topupRequests,
 } from "../drizzle/schema";
 import { NotFoundError, ForbiddenError, ConflictError, InvalidStateError } from "./errors";
 import { PLATFORM_FEE_PERCENT, type AppRole, type RequestStatus } from "../shared/constants";
@@ -1232,34 +1233,77 @@ export async function providerCanOffer(providerUserId: string): Promise<boolean>
 }
 
 /**
- * شحن محفظة الحرّاف — نقطة إيداع رصيد تغطّي به عمولة المنصّة.
+ * الحرّاف يطلب شحن محفظته.
  *
- * المنصّة لا تحرّك مالاً حقيقياً هنا: هذا تسجيل داخلي يُستعمل لمحاكاة الشحن في
- * هذه النسخة. المعاملات الحقيقية (بطاقة/تحويل) تُضاف لاحقاً عند تفعيل بوابة دفع
- * خاصة بالعمولة؛ بقية الدورة تعتمد على هذا الرصيد كحاجز.
+ * **لا يُقيَّد رصيد هنا.** المنصّة لا تستقبل مالاً: الطلب يذهب للإدارة، التي
+ * تتفاوض مع الحرّاف **على واتساب** خارج المنصّة، وبعد وصول المبلغ المتفق عليه
+ * تؤكّد الإدارة الشحن من لوحتها فيُقيَّد الرصيد فعلاً (`adminConfirmTopup`).
+ *
+ * يُمنع تكرار الطلب الجاري: طلب واحد نشط لكل حرّاف حتى يُحسم، فلا تتراكم الطلبات
+ * المتشابهة في صندوق الإدارة.
  */
-export async function topupWallet(userId: string, amount: number) {
-  await assertNotBlocked(userId);
-  if (amount <= 0) throw new InvalidStateError("المبلغ يجب أن يكون أكبر من صفر");
+export async function requestTopup(input: { userId: string; amount: number; note?: string | null }) {
+  await assertNotBlocked(input.userId);
+  if (!Number.isInteger(input.amount) || input.amount < 10) {
+    throw new InvalidStateError("أقل مبلغ للشحن 10 درهم");
+  }
+  if (input.amount > 100000) throw new InvalidStateError("المبلغ كبير جداً");
+
+  const [active] = await db
+    .select({ id: topupRequests.id })
+    .from(topupRequests)
+    .where(
+      and(
+        eq(topupRequests.userId, input.userId),
+        inArray(topupRequests.status, ["pending", "contacted", "awaiting_payment"]),
+      ),
+    )
+    .limit(1);
+  if (active) {
+    throw new ConflictError("عندك طلب شحن جارٍ — انتظر تواصل الإدارة معك على واتساب");
+  }
+
   const [row] = await db
-    .insert(walletTransactions)
+    .insert(topupRequests)
     .values({
-      userId,
-      type: "topup",
-      amount,
-      description: "شحن المحفظة",
+      userId: input.userId,
+      requestedAmount: input.amount,
+      note: input.note?.trim() || null,
     })
     .returning();
-  const balance = await walletBalance(userId);
-  if (balance >= 0) {
-    await db.insert(notifications).values({
-      userId,
-      type: "topup",
-      title: "تم شحن حسابك",
-      body: `أُضيف ${amount} درهم إلى رصيدك. يمكنك الآن إرسال العروض.`,
-    });
+
+  const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin"));
+  if (admins.length > 0) {
+    await db.insert(notifications).values(
+      admins.map((a) => ({
+        userId: a.id,
+        type: "topup_request",
+        title: "طلب شحن جديد",
+        body: `طلب شحن بمبلغ ${input.amount} درهم${input.note ? ` — ${input.note.trim().slice(0, 80)}` : ""}`,
+      })),
+    );
   }
-  return { ...row, balance };
+
+  return row;
+}
+
+/** طلبات شحن الحرّاف الحالي — يرى حالتها والملاحظة والمبلغ المتفق عليه. */
+export async function listMyTopupRequests(userId: string, limit = 20) {
+  return db
+    .select({
+      id: topupRequests.id,
+      requestedAmount: topupRequests.requestedAmount,
+      agreedAmount: topupRequests.agreedAmount,
+      note: topupRequests.note,
+      status: topupRequests.status,
+      adminNote: topupRequests.adminNote,
+      handledAt: topupRequests.handledAt,
+      createdAt: topupRequests.createdAt,
+    })
+    .from(topupRequests)
+    .where(eq(topupRequests.userId, userId))
+    .orderBy(desc(topupRequests.createdAt))
+    .limit(limit);
 }
 
 // ── الإشعارات ────────────────────────────────────────────────────────────────
