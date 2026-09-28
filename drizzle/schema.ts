@@ -119,6 +119,12 @@ export const providerProfiles = pgTable(
     yearsExperience: integer("years_experience").notNull().default(0),
     hourlyNote: text("hourly_note"),
     isVerified: boolean("is_verified").notNull().default(false),
+    /**
+     * طلب التفعيل: 'none' (ما طلبش) | 'pending' | 'approved' | 'rejected'.
+     * `isVerified` هي الحقيقة النهائية، وهذا الحقل كيتتبّع مسار المراجعة.
+     */
+    verificationStatus: text("verification_status").notNull().default("none"),
+    verificationNote: text("verification_note"),
     ratingSum: integer("rating_sum").notNull().default(0),
     ratingCount: integer("rating_count").notNull().default(0),
     completedJobs: integer("completed_jobs").notNull().default(0),
@@ -130,6 +136,40 @@ export const providerProfiles = pgTable(
     index("provider_profiles_role_idx").on(t.role),
     index("provider_profiles_city_idx").on(t.city),
   ],
+);
+
+/**
+ * وثائق تفعيل حساب الحرّاف: البطاقة الوطنية (وجه/ظهر) + رخصة السياقة إلا كان سائق.
+ * `fileKey` كيأشير لـfiles.key (التخزين)، و`imageUrl` هو المسار القابل للعرض.
+ */
+export const providerVerifications = pgTable(
+  "provider_verifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** هل الحرّاف سائق؟ رخصة السياقة إلزامية إلا كان true. */
+    isDriver: boolean("is_driver").notNull().default(false),
+    idFrontKey: text("id_front_key"),
+    idFrontUrl: text("id_front_url"),
+    idBackKey: text("id_back_key"),
+    idBackUrl: text("id_back_url"),
+    licenseKey: text("license_key"),
+    licenseUrl: text("license_url"),
+    selfieKey: text("selfie_key"),
+    selfieUrl: text("selfie_url"),
+    status: text("status").notNull().default("pending"), // 'pending' | 'approved' | 'rejected'
+    adminNote: text("admin_note"),
+    reviewedByAdminId: uuid("reviewed_by_admin_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("provider_verifications_status_idx").on(t.status)],
 );
 
 /** مهارات الحرّاف (فئة ← حرّاف). */
