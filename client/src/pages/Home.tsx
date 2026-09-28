@@ -22,7 +22,7 @@ import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
 import { LiveDot, Spinner } from "@/components/hirfi/primitives";
 import { PROFESSIONAL_CRAFTS, SERVICE_MODES } from "@/components/hirfi/service-picker";
 import { KindMenu, type ServiceMenuKey } from "@/components/hirfi/kind-menu";
-import { SERVICE_CATALOG } from "@shared/catalog";
+import { CATALOG_BY_SLUG, SERVICE_CATALOG } from "@shared/catalog";
 import { useAuth } from "@/_core/useAuth";import { toast } from "@/lib/toast";
 import { errorMessage, categoryIcon } from "@/lib/format";
 
@@ -117,6 +117,23 @@ export default function Home() {
   const [kind, setKind] = useState<ServiceMenuKey>("field");
   const isField = kind === "field";
   const isCrafts = kind === "crafts";
+  const isSubgroup = kind.startsWith("field-");
+  const subgroupSlugs: Record<string, string[]> = {
+    "field-repair": [
+      "appliance-repair", "gas-heating", "cctv-security", "device-repair",
+      "pest-control", "cctv", "extermination", "handyman",
+    ],
+    "field-car": ["car-wash", "car-mechanic", "car-bodywork"],
+    "field-home": [
+      "gardening", "home-care", "babysitting", "catering", "beauty",
+      "health-care", "laundry", "cleaning", "post-construction-cleaning",
+      "insulation", "terrace-waterproof", "pool-cleaning",
+    ],
+  };
+  const subgroupCats = isSubgroup
+    ? (subgroupSlugs[kind] ?? []).map((slug) => CATALOG_BY_SLUG.get(slug)!)
+      .filter((c): c is NonNullable<typeof c> => Boolean(c))
+    : [];
   const kindCats = SERVICE_CATALOG.filter((c) => c.kind === kind);
 
   function selectKind(next: ServiceMenuKey) {
@@ -214,20 +231,32 @@ export default function Home() {
               <h2 className="text-[17px] font-black">
                 {isCrafts
                   ? "اختار الحرفة"
-                  : isField
-                    ? "شنو بغيتي اليوم؟"
-                    : kind === "digital"
-                      ? "خدمات رقمية"
-                      : "خدمات الشركات"}
+                  : isSubgroup
+                    ? kind === "field-repair"
+                      ? "إصلاح وصيانة"
+                      : kind === "field-car"
+                        ? "خدمات السيارات"
+                        : "منزل وعناية"
+                    : isField
+                      ? "شنو بغيتي اليوم؟"
+                      : kind === "digital"
+                        ? "خدمات رقمية"
+                        : "خدمات الشركات"}
               </h2>
               <p className="mt-1 text-[12px] text-muted-foreground">
                 {isCrafts
                   ? "اختار المجال اللي محتاج وبدأ طلبك."
-                  : isField
-                    ? "اختار نوع الخدمة وبدأ طلبك."
-                    : kind === "digital"
-                      ? "فريلانس وتسليم عن بُعد — بلا موقع."
-                      : "خدمات ومشاريع لفائدة المقاولات."}
+                  : isSubgroup
+                    ? kind === "field-repair"
+                      ? "أجهزة، كاميرات، مكافحة حشرات وأكثر."
+                      : kind === "field-car"
+                        ? "غسيل، ميكانيك وسمكرة فالمكان."
+                        : "بستنة، طبخ، جليسة، تنظيف وأكثر."
+                    : isField
+                      ? "اختار نوع الخدمة وبدأ طلبك."
+                      : kind === "digital"
+                        ? "فريلانس وتسليم عن بُعد — بلا موقع."
+                        : "خدمات ومشاريع لفائدة المقاولات."}
               </p>
             </div>
             <KindMenu value={kind} onChange={selectKind} />
@@ -258,9 +287,9 @@ export default function Home() {
                 ))}
               </div>
             </>
-          ) : !isField ? (
+          ) : isSubgroup || !isField ? (
             <div className="mt-3 grid grid-cols-2 gap-2.5">
-              {kindCats.map((cat) => {
+              {(isSubgroup ? subgroupCats : kindCats).map((cat) => {
                 const Icon = categoryIcon(cat.icon);
                 return (
                   <Link

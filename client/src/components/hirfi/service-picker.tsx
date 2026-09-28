@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Hammer, PaintRoller, Scissors, ShoppingBag, Truck, Wrench, Zap } from "lucide-react";
 import { DragHandle } from "@/components/hirfi/map";
 import { KindMenu, type ServiceMenuKey } from "@/components/hirfi/kind-menu";
-import { SERVICE_CATALOG } from "@shared/catalog";
+import { CATALOG_BY_SLUG, SERVICE_CATALOG } from "@shared/catalog";
 import { categoryIcon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +34,23 @@ export function ServicePickerSheet({ className }: { className?: string }) {
 
   const isField = kind === "field";
   const isCrafts = kind === "crafts";
+  const isSubgroup = kind.startsWith("field-");
+  // المجموعة الفرعية (إصلاح/سيارات/منزل) كتعرض مجموعات مسمّاة داخل نفس النوع الميداني.
+  const subgroupSlugs: Record<string, string[]> = {
+    "field-repair": [
+      "appliance-repair", "gas-heating", "cctv-security", "device-repair",
+      "pest-control", "cctv", "extermination", "handyman",
+    ],
+    "field-car": ["car-wash", "car-mechanic", "car-bodywork"],
+    "field-home": [
+      "gardening", "home-care", "babysitting", "catering", "beauty",
+      "health-care", "laundry", "cleaning", "post-construction-cleaning",
+      "insulation", "terrace-waterproof", "pool-cleaning",
+    ],
+  };
+  const subgroupCats = isSubgroup
+    ? (subgroupSlugs[kind] ?? []).map((slug) => CATALOG_BY_SLUG.get(slug)).filter(Boolean)
+    : [];
   const kindCats = SERVICE_CATALOG.filter((c) => c.kind === kind);
 
   function closeSheet() {
@@ -106,16 +123,34 @@ export function ServicePickerSheet({ className }: { className?: string }) {
       <div className="flex items-end justify-between gap-3 px-1">
         <div>
           <h2 className="text-[19px] font-black">
-            {isCrafts ? "اختار الحرفة" : isField ? "شنو بغيتي اليوم؟" : kind === "digital" ? "خدمات رقمية" : "خدمات الشركات"}
+            {isCrafts
+              ? "اختار الحرفة"
+              : isSubgroup
+                ? kind === "field-repair"
+                  ? "إصلاح وصيانة"
+                  : kind === "field-car"
+                    ? "خدمات السيارات"
+                    : "منزل وعناية"
+                : isField
+                  ? "شنو بغيتي اليوم؟"
+                  : kind === "digital"
+                    ? "خدمات رقمية"
+                    : "خدمات الشركات"}
           </h2>
           <p className="mt-1 text-[12px] text-muted-foreground">
             {isCrafts
               ? "اختار المجال اللي محتاج"
-              : isField
-                ? "اضغط هنا باش تشوف الخدمات"
-                : kind === "digital"
-                  ? "فريلانس وتسليم عن بُعد — بلا موقع"
-                  : "خدمات ومشاريع لفائدة المقاولات"}
+              : isSubgroup
+                ? kind === "field-repair"
+                  ? "أجهزة، كاميرات، مكافحة حشرات وأكثر"
+                  : kind === "field-car"
+                    ? "غسيل، ميكانيك وسمكرة فالمكان"
+                    : "بستنة، طبخ، جليسة، تنظيف وأكثر"
+                : isField
+                  ? "اضغط هنا باش تشوف الخدمات"
+                  : kind === "digital"
+                    ? "فريلانس وتسليم عن بُعد — بلا موقع"
+                    : "خدمات ومشاريع لفائدة المقاولات"}
           </p>
         </div>
         {isCrafts ? (
@@ -148,6 +183,23 @@ export function ServicePickerSheet({ className }: { className?: string }) {
                   <Icon className="size-5" />
                 </span>
                 <h3 className="mt-3 text-[13px] font-black">{craft.title}</h3>
+              </Link>
+            );
+          })
+        ) : isSubgroup ? (
+          subgroupCats.map((cat) => {
+            const Icon = categoryIcon(cat!.icon);
+            return (
+              <Link
+                key={cat!.slug}
+                href={`/requests/new?service=${cat!.slug}`}
+                className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
+              >
+                <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                  <Icon className="size-5" />
+                </span>
+                <h3 className="mt-3 text-[13px] font-black">{cat!.nameAr}</h3>
+                <p className="mt-1 text-[11px] text-muted-foreground">{cat!.description}</p>
               </Link>
             );
           })

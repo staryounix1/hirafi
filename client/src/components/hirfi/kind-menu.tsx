@@ -1,6 +1,6 @@
 // ── شريط منسدل لاختيار نوع الخدمة ─────────────────────────────────────────────
 // كيبان فوق لائحة الخدمات فالرئيسية وفلوحة الحرّاف: خدمات قريبة (حرف مهنية،
-// قضاء الأغراض، نقل أثاث) + رقمي + الشركات.
+// قضاء الأغراض، نقل أثاث) + رقمي + الشركات + إصلاح وصيانة + سيارات + منزل وعناية.
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,19 +10,27 @@ export const KIND_TABS = [
   { key: "crafts", labelAr: "حرف مهنية" },
   { key: "grocery", labelAr: "قضاء الأغراض" },
   { key: "moving", labelAr: "نقل أثاث" },
+  { key: "field-repair", labelAr: "إصلاح وصيانة" },
+  { key: "field-car", labelAr: "سيارات" },
+  { key: "field-home", labelAr: "منزل وعناية" },
   { key: "digital", labelAr: "رقمي" },
   { key: "b2b", labelAr: "الشركات" },
 ] as const;
 
 export type ServiceMenuKey = (typeof KIND_TABS)[number]["key"];
 
+const SEPARATOR_AFTER = new Set(["field", "moving", "field-home"]);
+
 export function KindMenu({
   value,
   onChange,
+  onOpen,
   className,
 }: {
   value: ServiceMenuKey;
   onChange: (key: ServiceMenuKey) => void;
+  /** ينبّه الأب باش يوسّع اللوحة قبل ما ينسدل الشريط (باش القائمة ما تتقطعش). */
+  onOpen?: () => void;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -46,7 +54,10 @@ export function KindMenu({
         aria-expanded={open}
         onClick={(event) => {
           event.stopPropagation();
-          setOpen((prev) => !prev);
+          setOpen((prev) => {
+            if (!prev) onOpen?.();
+            return !prev;
+          });
         }}
         className="inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink"
       >
@@ -60,9 +71,9 @@ export function KindMenu({
           className="absolute end-0 z-30 mt-1.5 w-44 overflow-hidden rounded-2xl border border-border bg-card p-1"
           style={{ boxShadow: "var(--shadow-card)" }}
         >
-          {KIND_TABS.map((tab, index) => (
+          {KIND_TABS.map((tab) => (
             <div key={tab.key}>
-              {index === 1 || index === 4 ? <div className="mx-2 my-1 h-px bg-border" /> : null}
+              {SEPARATOR_AFTER.has(tab.key) ? <div className="mx-2 my-1 h-px bg-border" /> : null}
               <button
                 type="button"
                 role="option"
