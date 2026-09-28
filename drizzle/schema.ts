@@ -31,6 +31,11 @@ export const users = pgTable("users", {
    */
   blockedAt: timestamp("blocked_at", { withTimezone: true }),
   blockedReason: text("blocked_reason"),
+  /**
+   * محفظة الزبون — معطّلة افتراضياً. الزبون كيقدر يفعّلها من حسابه، وما
+   * يقدرش يقبل عرضاً على خدمة رقمية قبل التفعيل + الشحن.
+   */
+  walletEnabled: boolean("wallet_enabled").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
