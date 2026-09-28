@@ -19,13 +19,15 @@ import {
 import { RequestCard } from "@/components/hirfi/cards";
 import { trpc } from "@/_core/trpc";
 import { useCategories, useMyProfile } from "@/lib/hooks";
-import { errorMessage } from "@/lib/format";
+import { errorMessage, kindIcon, kindMeta } from "@/lib/format";
 import {
   BUDGET_BANDS,
   DISTANCE_BANDS,
   MOROCCAN_CITIES,
   DISTRICTS_BY_CITY,
   URGENCIES,
+  SERVICE_KINDS,
+  type ServiceKind,
 } from "@shared/constants";
 
 const URGENCY_LABEL: Record<string, string> = {
@@ -48,6 +50,7 @@ export default function Browse() {
   const cats = useCategories();
 
   const [categoryId, setCategoryId] = useState("");
+  const [kind, setKind] = useState<ServiceKind | "">("");
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
   const [distance, setDistance] = useState<Distance>("all");
@@ -64,6 +67,7 @@ export default function Browse() {
 
   const q = trpc.requests.browse.useQuery({
     categoryId: categoryId || undefined,
+    kind: kind || undefined,
     city: city || undefined,
     district: district || undefined,
     distance,
@@ -79,6 +83,7 @@ export default function Browse() {
   const rows = q.data ?? [];
   const activeFilters =
     (categoryId ? 1 : 0) +
+    (kind ? 1 : 0) +
     (city ? 1 : 0) +
     (district ? 1 : 0) +
     (distance !== "all" ? 1 : 0) +
@@ -89,6 +94,7 @@ export default function Browse() {
 
   function reset() {
     setCategoryId("");
+    setKind("");
     setCity("");
     setDistrict("");
     setDistance("all");
@@ -154,18 +160,45 @@ export default function Browse() {
         </form>
       </div>
 
-      {/* شرائح سريعة: المسافة والاستعجال */}
+      {/* شرائح النوع: الكل / ميداني / رقمي / شركات */}
       <div className="scrollbar-none mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
-        {([...DISTANCE_BANDS, { key: "all", labelAr: "كل المسافات" }] as const).map((d) => (
-          <Chip
-            key={d.key}
-            active={distance === d.key}
-            icon={d.key === "all" ? undefined : MapPin}
-            onClick={() => setDistance(d.key as Distance)}
-          >
-            {d.labelAr}
-          </Chip>
-        ))}
+        <Chip active={kind === ""} onClick={() => { setKind(""); setCategoryId(""); }}>
+          كل الخدمات
+        </Chip>
+        {SERVICE_KINDS.map((k) => {
+          const meta = kindMeta(k);
+          const Icon = kindIcon(k);
+          return (
+            <Chip
+              key={k}
+              active={kind === k}
+              icon={Icon}
+              onClick={() => {
+                setKind(kind === k ? "" : k);
+                setCategoryId("");
+                if (k === "digital") setDistance("all");
+              }}
+            >
+              {meta.shortAr}
+            </Chip>
+          );
+        })}
+      </div>
+
+      {/* شرائح سريعة: المسافة والاستعجال — المسافة بلا معنى للخدمات الرقمية */}
+      <div className="scrollbar-none mt-2 flex gap-2 overflow-x-auto px-4 pb-1">
+        {kind !== "digital"
+          ? ([...DISTANCE_BANDS, { key: "all", labelAr: "كل المسافات" }] as const).map((d) => (
+              <Chip
+                key={d.key}
+                active={distance === d.key}
+                icon={d.key === "all" ? undefined : MapPin}
+                onClick={() => setDistance(d.key as Distance)}
+              >
+                {d.labelAr}
+              </Chip>
+            ))
+          : null}
         {URGENCIES.map((u) => (
           <Chip
             key={u}
