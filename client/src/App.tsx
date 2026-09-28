@@ -25,6 +25,7 @@ import AdminOffers from "./pages/admin/AdminOffers";
 import AdminWallets from "./pages/admin/AdminWallets";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminCategories from "./pages/admin/AdminCategories";
+import AdminHomeMenu from "./pages/admin/AdminHomeMenu";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminTopups from "./pages/admin/AdminTopups";
 import AdminAudit from "./pages/admin/AdminAudit";
@@ -127,6 +128,11 @@ export default function App() {
         <AdminOnly>
           <AdminReviews />
         </AdminOnly>
+      </Route>
+      <Route path="/admin/home-menu">
+        <Protected>
+          <AdminHomeMenu />
+        </Protected>
       </Route>
       <Route path="/admin/categories">
         <AdminOnly>

@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   LogOut,
   ShieldCheck,
+  LayoutGrid,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/_core/useAuth";
@@ -32,6 +33,7 @@ export type AdminSection =
   | "wallets"
   | "reviews"
   | "categories"
+  | "homeMenu"
   | "reports"
   | "topups"
   | "audit";
@@ -44,6 +46,7 @@ const NAV: { key: AdminSection; href: string; label: string; icon: LucideIcon }[
   { key: "wallets", href: "/admin/wallets", label: "المحافظ والعمولة", icon: Wallet },
   { key: "reviews", href: "/admin/reviews", label: "التقييمات", icon: Star },
   { key: "categories", href: "/admin/categories", label: "التصنيفات", icon: Tags },
+  { key: "homeMenu", href: "/admin/home-menu", label: "خدمات الواجهة", icon: LayoutGrid },
   { key: "reports", href: "/admin/reports", label: "البلاغات", icon: Flag },
   { key: "topups", href: "/admin/topups", label: "طلبات الشحن", icon: HandCoins },
   { key: "audit", href: "/admin/audit", label: "سجل الإدارة", icon: ScrollText },
