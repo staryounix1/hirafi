@@ -120,11 +120,12 @@ const profileRouter = router({
       displayName: ctx.user.name ?? ctx.user.email.split("@")[0],
       city: MOROCCAN_CITIES[0],
     });
-    const [skills, works, wallet, walletEnabled] = await Promise.all([
+    const [skills, works, wallet, walletEnabled, verification] = await Promise.all([
       q.listMySkills(ctx.user.id),
       q.listWorks(ctx.user.id),
       q.listWallet(ctx.user.id),
       q.getWalletEnabled(ctx.user.id),
+      q.getVerification(ctx.user.id),
     ]);
     return {
       profile,
@@ -132,6 +133,20 @@ const profileRouter = router({
       works,
       balance: wallet.balance,
       walletEnabled,
+      /** وثائق التفعيل — كيفما كانت (null إلا بدا الحرّاف العملية). */
+      verification: verification
+        ? {
+            status: verification.status,
+            isDriver: verification.isDriver,
+            idFrontUrl: verification.idFrontUrl,
+            idBackUrl: verification.idBackUrl,
+            licenseUrl: verification.licenseUrl,
+            selfieUrl: verification.selfieUrl,
+            adminNote: verification.adminNote,
+          }
+        : null,
+      /** واش خاص هاد الحرّاف يرفع رخصة السياقة (كاتحسب من مهاراتو). */
+      requiresLicense: await q.isDriverUser(ctx.user.id),
     };
   }),
 
@@ -139,6 +154,44 @@ const profileRouter = router({
   setWalletEnabled: protectedProcedure
     .input(z.object({ enabled: z.boolean() }))
     .mutation(({ ctx, input }) => q.setWalletEnabled(ctx.user.id, input.enabled)),
+
+  /**
+   * إرسال وثائق التفعيل: البطاقة الوطنية (وجه + ظهر)، ورخصة السياقة إلا كان سائق،
+   * وصورة سيلفي مع البطاقة. كيرمي الطلب فطابور مراجعة الإدارة.
+   */
+  submitVerification: protectedProcedure
+    .input(
+      z.object({
+        idFrontKey: z.string().min(1),
+        idFrontUrl: z.string().min(1),
+        idBackKey: z.string().min(1),
+        idBackUrl: z.string().min(1),
+        licenseKey: z.string().min(1).nullable().optional(),
+        licenseUrl: z.string().min(1).nullable().optional(),
+        selfieKey: z.string().min(1),
+        selfieUrl: z.string().min(1),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(async () => {
+        const isDriver = await q.isDriverUser(ctx.user.id);
+        if (isDriver && !input.licenseUrl) {
+          throw new q.InvalidStateError("رخصة السياقة إلزامية لأنك سائق — ارفعها أولاً");
+        }
+        return q.submitVerification({
+          userId: ctx.user.id,
+          isDriver,
+          idFrontKey: input.idFrontKey,
+          idFrontUrl: input.idFrontUrl,
+          idBackKey: input.idBackKey,
+          idBackUrl: input.idBackUrl,
+          licenseKey: input.licenseKey ?? null,
+          licenseUrl: input.licenseUrl ?? null,
+          selfieKey: input.selfieKey,
+          selfieUrl: input.selfieUrl,
+        });
+      }),
+    ),
 
   update: protectedProcedure
     .input(

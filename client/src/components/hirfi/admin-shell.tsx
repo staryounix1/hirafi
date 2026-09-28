@@ -18,6 +18,7 @@ import {
   LogOut,
   ShieldCheck,
   LayoutGrid,
+  BadgeCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/_core/useAuth";
@@ -27,6 +28,7 @@ import { ToastProvider } from "@/lib/toast";
 
 export type AdminSection =
   | "overview"
+  | "verifications"
   | "users"
   | "requests"
   | "offers"
@@ -40,6 +42,7 @@ export type AdminSection =
 
 const NAV: { key: AdminSection; href: string; label: string; icon: LucideIcon }[] = [
   { key: "overview", href: "/admin", label: "نظرة عامة", icon: LayoutDashboard },
+  { key: "verifications", href: "/admin/verifications", label: "طلبات التفعيل", icon: BadgeCheck },
   { key: "users", href: "/admin/users", label: "المستخدمون", icon: Users },
   { key: "requests", href: "/admin/requests", label: "الطلبات", icon: ClipboardList },
   { key: "offers", href: "/admin/offers", label: "العروض", icon: Briefcase },
@@ -68,6 +71,10 @@ export function AdminShell({
   const [path] = useLocation();
   const { user, logout } = useAuth();
   const utils = trpc.useUtils();
+  const { data: verifCounts } = trpc.admin.verifications.counts.useQuery(undefined, {
+    refetchInterval: 60_000,
+  });
+  const pendingVerifs = verifCounts?.pending ?? 0;
 
   async function handleLogout() {
     await logout();
@@ -119,6 +126,7 @@ export function AdminShell({
             <nav className="sticky top-20 flex flex-col gap-1">
               {NAV.map((item) => {
                 const active = item.key === section;
+                const badge = item.key === "verifications" ? pendingVerifs : 0;
                 return (
                   <Link
                     key={item.key}
@@ -132,6 +140,11 @@ export function AdminShell({
                   >
                     <item.icon className="size-4" />
                     {item.label}
+                    {badge > 0 ? (
+                      <span className="ms-auto grid min-w-5 place-items-center rounded-full bg-brand px-1 text-[10px] leading-5 font-black text-brand-ink">
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}

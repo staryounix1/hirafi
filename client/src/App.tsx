@@ -20,6 +20,7 @@ import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminVerifications from "./pages/admin/AdminVerifications";
 import AdminRequests from "./pages/admin/AdminRequests";
 import AdminOffers from "./pages/admin/AdminOffers";
 import AdminWallets from "./pages/admin/AdminWallets";
@@ -102,6 +103,11 @@ export default function App() {
       <Route path="/admin">
         <AdminOnly>
           <AdminOverview />
+        </AdminOnly>
+      </Route>
+      <Route path="/admin/verifications">
+        <AdminOnly>
+          <AdminVerifications />
         </AdminOnly>
       </Route>
       <Route path="/admin/users">

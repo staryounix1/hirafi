@@ -287,8 +287,35 @@ const topupsRouter = router({
     ),
 });
 
+/** طلبات تفعيل حساب الحرّاف: لائحة + موافقة/رفض. */
+const verificationsRouter = router({
+  list: adminProcedure
+    .input(
+      z.object({
+        status: z.enum(["pending", "approved", "rejected"]).optional(),
+        limit: z.number().int().min(1).max(200).optional(),
+      }),
+    )
+    .query(({ input }) => guarded(() => a.adminListVerifications(input))),
+
+  counts: adminProcedure.query(() => guarded(() => a.adminVerificationCounts())),
+
+  review: adminProcedure
+    .input(
+      z.object({
+        verificationId: z.uuid(),
+        approve: z.boolean(),
+        note: z.string().max(400).nullish(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() => a.adminReviewVerification({ ...input, adminId: ctx.user.id })),
+    ),
+});
+
 export const adminRouter = router({
   overview: overviewRouter,
+  verifications: verificationsRouter,
   users: usersRouter,
   requests: requestsRouter,
   offers: offersRouter,
