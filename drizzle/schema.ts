@@ -379,3 +379,25 @@ export const topupRequests = pgTable(
     index("topup_requests_user_idx").on(t.userId, t.createdAt),
   ],
 );
+
+/**
+ * عناصر شريط «شنو بغيتي اليوم؟» فالصفحة الرئيسية — قابلة للتحكم من الإدارة.
+ * كل عنصر إمّا مدخل جاهز (`slug` لفئة) أو يعرض فئات نوع (`kindFilter`)، مع
+ * قائمة اختيارية (`subSlugs` مفصولة بفواصل) لعرض مجموعة مسطّحة.
+ */
+export const homeMenuItems = pgTable(
+  "home_menu_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    labelAr: text("label_ar").notNull(),
+    slug: text("slug").notNull().unique(),
+    kindFilter: text("kind_filter"),
+    subSlugs: text("sub_slugs"),
+    icon: text("icon"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("home_menu_items_sort_idx").on(t.sortOrder)],
+);
