@@ -214,6 +214,9 @@ const requestListColumns = {
   categoryId: requests.categoryId,
   categoryName: serviceCategories.nameAr,
   categoryIcon: serviceCategories.icon,
+  categoryKind: serviceCategories.kind,
+  categoryCommissionPercent: serviceCategories.commissionPercent,
+  categoryRequiresVerification: serviceCategories.requiresVerification,
   title: requests.title,
   description: requests.description,
   budgetAmount: requests.budgetAmount,
@@ -260,6 +263,7 @@ export async function browseOpenRequests(input: {
   providerCity: string;
   providerDistrict?: string | null;
   categoryId?: string;
+  kind?: "field" | "digital" | "b2b";
   city?: string;
   district?: string;
   distance?: "near" | "medium" | "far" | "all";
@@ -273,6 +277,9 @@ export async function browseOpenRequests(input: {
 }) {
   const conds = [eq(requests.status, "open")];
   if (input.categoryId) conds.push(eq(requests.categoryId, input.categoryId));
+  if (input.kind) conds.push(eq(serviceCategories.kind, input.kind));
+  // الخدمات الرقمية عن بُعد: لا معنى للمسافة — نتجاهلها حتى لو أُرسلت.
+  if (input.kind === "digital") input = { ...input, distance: "all" };
   if (input.city) conds.push(eq(requests.city, input.city));
   if (input.district) conds.push(eq(requests.district, input.district));
   if (input.urgency) conds.push(eq(requests.urgency, input.urgency));
@@ -461,7 +468,7 @@ export async function getRequestDetail(requestId: string, viewerId: string) {
   const viewerBalance = viewerIsProvider ? await walletBalance(viewerId) : 0;
   const commissionDue =
     accepted && accepted.providerUserId === viewerId
-      ? commissionFor(row.agreedAmount ?? accepted.price)
+      ? commissionFor(row.agreedAmount ?? accepted.price, row.categoryCommissionPercent)
       : null;
 
   return {
@@ -647,6 +654,28 @@ export async function createOffer(input: {
     throw new InvalidStateError("اشحن حسابك لإرسال العرض");
   }
 
+  // خدمات حساسة (غاز، كهرباء خطيرة، صحة، حراسة): لا يعرض عليها إلا حرّاف موثّق.
+  const [cat] = await db
+    .select({
+      requiresVerification: serviceCategories.requiresVerification,
+      nameAr: serviceCategories.nameAr,
+    })
+    .from(serviceCategories)
+    .where(eq(serviceCategories.id, req.categoryId))
+    .limit(1);
+  if (cat?.requiresVerification) {
+    const [p] = await db
+      .select({ isVerified: providerProfiles.isVerified })
+      .from(providerProfiles)
+      .where(eq(providerProfiles.userId, input.providerUserId))
+      .limit(1);
+    if (!p?.isVerified) {
+      throw new InvalidStateError(
+        `خدمة «${cat.nameAr}» تتطلّب حساباً موثّقاً — وثّق ملفك أولاً من «حسابي»`,
+      );
+    }
+  }
+
   const [existing] = await db
     .select()
     .from(offers)
@@ -725,9 +754,11 @@ export async function acceptOffer(offerId: string, customerId: string) {
       customerId: requests.customerId,
       requestTitle: requests.title,
       requestStatus: requests.status,
+      categoryCommissionPercent: serviceCategories.commissionPercent,
     })
     .from(offers)
     .innerJoin(requests, eq(requests.id, offers.requestId))
+    .innerJoin(serviceCategories, eq(serviceCategories.id, requests.categoryId))
     .where(eq(offers.id, offerId))
     .limit(1);
   if (!row) throw new NotFoundError("العرض غير موجود");
@@ -765,6 +796,7 @@ export async function acceptOffer(offerId: string, customerId: string) {
     row.requestId,
     row.requestTitle,
     row.price,
+    row.categoryCommissionPercent,
   );
 
   await atomic((d) =>
@@ -930,6 +962,11 @@ export async function respondToCounter(input: {
   const [req] = await db.select().from(requests).where(eq(requests.id, counter.requestId)).limit(1);
   if (!req) throw new NotFoundError("الطلب غير موجود");
   if (req.customerId !== counter.providerUserId) throw new ForbiddenError("ليس عرضاً مضاداً لك");
+  const [cat] = await db
+    .select({ commissionPercent: serviceCategories.commissionPercent })
+    .from(serviceCategories)
+    .where(eq(serviceCategories.id, req.categoryId))
+    .limit(1);
 
   const parentId = counter.parentOfferId;
   const [original] = parentId
@@ -959,7 +996,7 @@ export async function respondToCounter(input: {
 
   const agreedPrice = input.price ?? counter.price;
   // العمولة تُخصم من محفظة الحرّاف لحظة قبول العرض المضاد — نفس منطق acceptOffer.
-  const commission = await chargeCommission(input.providerUserId, req.id, req.title, agreedPrice);
+  const commission = await chargeCommission(input.providerUserId, req.id, req.title, agreedPrice, cat?.commissionPercent);
   // `acceptedOfferId` يجب أن يشير دائماً إلى صفّ يملكه الحرّاف، لا إلى صفّ العرض المضاد
   // (فالعرض المضاد مُنشأ باسم الزبون providerUserId = customerId). ولو أشرنا إليه لذهب
   // الاستحقاق وعدّاد الأعمال المنجزة إلى الزبون بدل الحرّاف في updateRequestStatus.
@@ -1179,9 +1216,9 @@ export async function walletBalance(userId: string): Promise<number> {
   return Number(row?.total ?? 0);
 }
 
-/** عمولة المنصة المستحقّة على مبلغ اتفاق (بالدرهم، بلا كسور). */
-export function commissionFor(agreedAmount: number): number {
-  return Math.round((agreedAmount * PLATFORM_FEE_PERCENT) / 100);
+/** عمولة المنصة المستحقّة على مبلغ اتفاق (بالدرهم، بلا كسور) بنسبة الخدمة. */
+export function commissionFor(agreedAmount: number, percent: number = PLATFORM_FEE_PERCENT): number {
+  return Math.round((agreedAmount * percent) / 100);
 }
 
 /**
@@ -1198,8 +1235,9 @@ export async function chargeCommission(
   requestId: string,
   requestTitle: string,
   agreedAmount: number,
+  commissionPercent: number = PLATFORM_FEE_PERCENT,
 ): Promise<{ fee: number; balanceAfter: number; charged: boolean }> {
-  const fee = commissionFor(agreedAmount);
+  const fee = commissionFor(agreedAmount, commissionPercent);
   const before = await walletBalance(providerUserId);
   const balanceAfter = before - fee;
   const charged = balanceAfter >= 0;
@@ -1209,8 +1247,8 @@ export async function chargeCommission(
     type: "fee",
     amount: -fee,
     description: charged
-      ? `عمولة المنصّة ${PLATFORM_FEE_PERCENT}% على «${requestTitle}»`
-      : `عمولة المنصّة ${PLATFORM_FEE_PERCENT}% على «${requestTitle}» — الرصيد ناقص، اشحن حسابك`,
+      ? `عمولة المنصّة ${commissionPercent}% على «${requestTitle}»`
+      : `عمولة المنصّة ${commissionPercent}% على «${requestTitle}» — الرصيد ناقص، اشحن حسابك`,
   });
   return { fee, balanceAfter, charged };
 }
