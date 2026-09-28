@@ -70,6 +70,27 @@ export async function isUserBlocked(userId: string): Promise<boolean> {
   return !!row?.blockedAt;
 }
 
+/** حالة تفعيل محفظة الزبون (معطّلة افتراضياً). */
+export async function getWalletEnabled(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ walletEnabled: users.walletEnabled })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return !!row?.walletEnabled;
+}
+
+/** الزبون كيفعّل/كيوقف محفظتو من صفحته الشخصية. */
+export async function setWalletEnabled(userId: string, enabled: boolean) {
+  const [row] = await db
+    .update(users)
+    .set({ walletEnabled: enabled })
+    .where(eq(users.id, userId))
+    .returning({ walletEnabled: users.walletEnabled });
+  if (!row) throw new NotFoundError("المستخدم غير موجود");
+  return row.walletEnabled;
+}
+
 /** يمنع الفعل إن كان الحساب موقوفاً — رسالة مباشرة قابلة للعرض. */
 export async function assertNotBlocked(userId: string): Promise<void> {
   if (await isUserBlocked(userId)) {
@@ -755,6 +776,7 @@ export async function acceptOffer(offerId: string, customerId: string) {
       customerId: requests.customerId,
       requestTitle: requests.title,
       requestStatus: requests.status,
+      categoryKind: serviceCategories.kind,
       categoryCommissionPercent: serviceCategories.commissionPercent,
     })
     .from(offers)
@@ -766,6 +788,20 @@ export async function acceptOffer(offerId: string, customerId: string) {
   if (row.customerId !== customerId) throw new ForbiddenError("القبول من حق صاحب الطلب فقط");
   if (row.requestStatus !== "open") throw new InvalidStateError("الطلب لم يعد مفتوحاً");
   if (row.status !== "pending") throw new InvalidStateError("هذا العرض لم يعد معلّقاً");
+
+  // الخدمات الرقمية: القبول كيتطلّب محفظة زبون مفعّلة ومشحونة — النشر مسموح بلاها.
+  if (row.categoryKind === "digital") {
+    const walletOn = await getWalletEnabled(customerId);
+    if (!walletOn) {
+      throw new InvalidStateError(
+        "فعّل محفظتك أولاً من حسابك باش تقدر تقبل عروض الخدمات الرقمية.",
+      );
+    }
+    const balance = await walletBalance(customerId);
+    if (balance <= 0) {
+      throw new InvalidStateError("رصيد محفظتك 0 درهم — اطلب شحن المحفظة باش تقبل العرض.");
+    }
+  }
 
   const otherPending = await db
     .select({ id: offers.id, providerUserId: offers.providerUserId })
