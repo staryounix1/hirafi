@@ -14,6 +14,7 @@ import {
   Plus,
   Video,
   Wrench,
+  Laptop,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,8 +25,8 @@ import { useCategories, useMyProfile } from "@/lib/hooks";
 import { useMediaUpload, type UploadedImage } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { categoryIcon, errorMessage, madNumber } from "@/lib/format";
-import { MOROCCAN_CITIES } from "@shared/constants";
+import { categoryIcon, errorMessage, kindIcon, kindMeta, madNumber } from "@/lib/format";
+import { MOROCCAN_CITIES, SERVICE_KINDS, type ServiceKind } from "@shared/constants";
 
 const PROFESSIONAL_CRAFT_LABELS: Record<string, string> = {
   painting: "صباغة",
@@ -213,6 +214,11 @@ export default function RequestNew() {
   const [, navigate] = useLocation();
 
   const [categoryId, setCategoryId] = useState("");
+  const [kind, setKind] = useState<ServiceKind>(() => {
+    if (typeof window === "undefined") return "field";
+    const k = new URLSearchParams(window.location.search).get("kind");
+    return k === "digital" || k === "b2b" ? k : "field";
+  });
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [budget, setBudget] = useState("300");
@@ -282,14 +288,23 @@ export default function RequestNew() {
 
   const budgetNum = Number(budget);
   const selectedCat = (cats.data ?? []).find((c) => c.id === categoryId);
+  const effectiveKind: ServiceKind = selectedCat ? (selectedCat.kind as ServiceKind) : kind;
+  const filteredCats = (cats.data ?? []).filter((c) => c.kind === effectiveKind);
+  const isDigital = effectiveKind === "digital";
   const guidance =
     (isProfessionalCraft ? SERVICE_GUIDANCE[requestedService] : undefined) ??
     (selectedCat ? SERVICE_GUIDANCE[selectedCat.slug] : SERVICE_GUIDANCE[requestedService]) ?? {
-      heading: "اشرح مشكلتك",
-      description: requestedService ? "صف الخدمة بوضوح باش توصلك عروض مناسبة." : "اختر الفئة أولاً ثم اكتب التفاصيل.",
-      title: "مثال: تسريب ماء تحت حوض المطبخ",
-      details: "صف المطلوب، المواد المتوفرة، وما الأفضل تجنّبه.",
-      location: "المدينة والحي يكفيان لحساب المسافة",
+      heading: isDigital ? "اشرح مشروعك الرقمي" : "اشرح مشكلتك",
+      description: isDigital
+        ? "وضّح نوع العمل، المتطلبات، والمدة المطلوبة — وأرفق ملفات أو روابط إن وُجدت."
+        : requestedService
+          ? "صف الخدمة بوضوح باش توصلك عروض مناسبة."
+          : "اختر الفئة أولاً ثم اكتب التفاصيل.",
+      title: isDigital ? "مثال: تصميم هوية بصرية لمقهى" : "مثال: تسريب ماء تحت حوض المطبخ",
+      details: isDigital
+        ? "اكتب المطلوب بدقة: نوع التسليم (ملفات/رابط)، عدد المراجعات، والموعد."
+        : "صف المطلوب، المواد المتوفرة، وما الأفضل تجنّبه.",
+      location: isDigital ? "الخدمة عن بُعد — لا حاجة للحي" : "المدينة والحي يكفيان لحساب المسافة",
     };
 
   function validate(): boolean {
@@ -338,7 +353,7 @@ export default function RequestNew() {
         description: description.trim(),
         budgetAmount: isProfessionalCraft ? 0 : Math.round(budgetNum),
          city: city as (typeof MOROCCAN_CITIES)[number],
-         district: district || "الموقع الحالي",
+         district: isDigital ? "عن بُعد" : district || "الموقع الحالي",
          urgency: "flexible",
          scheduledFor: null,
         imageUrls: media.map((item) => item.url),
@@ -359,7 +374,9 @@ export default function RequestNew() {
         <p className="mt-1.5 text-[13px] text-muted-foreground">
           {isProfessionalCraft
             ? "شرح دقيق مع صور وفيديوهات يساعد الحرّاف على فهم المطلوب."
-            : "حدّد مشكلتك واقترح سعرك — الحرّافون سيتنافسون بعروضهم عليه."}
+            : isDigital
+              ? "مشروع رقمي: اقترح ميزانيتك ومدّتك — الفريلانسرز سيتنافسون بعروضهم."
+              : "حدّد مشكلتك واقترح سعرك — الحرّافون سيتنافسون بعروضهم عليه."}
         </p>
       </header>
 
@@ -384,6 +401,34 @@ export default function RequestNew() {
         ) : (
           <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
             <SectionHeading title="ما نوع الخدمة؟" />
+            {/* شرائح النوع: ميداني / رقمي / شركات */}
+            <div className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
+              {SERVICE_KINDS.map((k) => {
+                const meta = kindMeta(k);
+                const Icon = kindIcon(k);
+                const on = effectiveKind === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => {
+                      setKind(k);
+                      setCategoryId("");
+                      setErrors((p) => ({ ...p, categoryId: "" }));
+                    }}
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors",
+                      on ? "bg-brand text-brand-ink" : "bg-muted text-muted-foreground active:bg-muted/80",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {meta.shortAr}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11.5px] leading-snug text-muted-foreground">{kindMeta(effectiveKind).hintAr}</p>
+
             {cats.isLoading ? (
               <div className="grid grid-cols-3 gap-2">
                 {Array.from({ length: 9 }).map((_, i) => (
@@ -394,13 +439,14 @@ export default function RequestNew() {
               <ErrorState message={errorMessage(cats.error)} onRetry={() => void cats.refetch()} />
             ) : (
               <div className="grid grid-cols-3 gap-2">
-                {(cats.data ?? []).map((c) => {
+                {filteredCats.map((c) => {
                   const Icon = categoryIcon(c.icon);
                   const on = categoryId === c.id;
                   return (
                     <button
                       key={c.id}
                       type="button"
+                      title={c.description ?? undefined}
                       onClick={() => {
                         setCategoryId(c.id);
                         setErrors((p) => ({ ...p, categoryId: "" }));
@@ -592,7 +638,21 @@ export default function RequestNew() {
           </Field>
         </section>
 
-        {/* 4 — الموقع التلقائي */}
+        {/* 4 — الموقع: الرقمي عن بُعد، والميداني تلقائي */}
+        {isDigital ? (
+          <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+            <SectionHeading title="خدمة عن بُعد" description="الخدمات الرقمية تُنجَز وتُسلَّم عبر المنصّة، فلا حاجة للموقع." />
+            <div className="flex items-center gap-3 rounded-2xl bg-muted/70 px-3.5 py-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink">
+                <Laptop className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[12px] font-black">تُسلَّم الملفات والروابط داخل الطلب</div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">يراجعها الزبون قبل اعتبار العمل منتهياً.</div>
+              </div>
+            </div>
+          </section>
+        ) : (
         <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
           <SectionHeading title="الموقع" description="تم تحديد مكانك تلقائياً من بيانات الحساب أو GPS المتاح." />
           <div className="flex items-center gap-3 rounded-2xl bg-muted/70 px-3.5 py-3">
@@ -612,6 +672,7 @@ export default function RequestNew() {
             غادي يوصل الطلب للحرّافين القريبين منك.
           </p>
         </section>
+        )}
 
         {/* شريط النشر الثابت */}
         <div className="sticky bottom-2 z-20 flex items-center gap-3 rounded-3xl bg-card p-3" style={{ boxShadow: "var(--shadow-sheet)" }}>

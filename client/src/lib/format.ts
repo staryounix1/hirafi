@@ -23,7 +23,32 @@ import {
   AlertCircle,
   Send,
   XCircle,
+  Laptop,
+  Building2,
+  Palette,
+  Clapperboard,
+  Share2,
+  Image,
+  PenLine,
+  ImagePlus,
+  Languages,
+  ShoppingCart,
+  Code2,
+  Mic,
+  Server,
+  Flame,
+  Bug,
+  HeartHandshake,
+  ChefHat,
+  Car,
+  Trees,
+  ShieldCheck,
+  Sun,
+  Briefcase,
+  ClipboardList,
+  Stethoscope,
 } from "lucide-react";
+import { SERVICE_KIND_META, type ServiceKind } from "@shared/constants";
 
 /** خريطة أيقونات الفئات — المفتاح هو ما يُخزَّن في service_categories.icon. */
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
@@ -42,10 +67,46 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   ShoppingBasket,
   ListChecks,
   KeyRound,
+  Laptop,
+  Building2,
+  Palette,
+  Clapperboard,
+  Share2,
+  Image,
+  PenLine,
+  ImagePlus,
+  Languages,
+  ShoppingCart,
+  Code2,
+  Mic,
+  Server,
+  Flame,
+  Bug,
+  HeartHandshake,
+  ChefHat,
+  Car,
+  Trees,
+  ShieldCheck,
+  Sun,
+  Briefcase,
+  ClipboardList,
+  Stethoscope,
 };
 
 export function categoryIcon(name: string | null | undefined): LucideIcon {
   return (name && CATEGORY_ICONS[name]) || Settings;
+}
+
+/** أيقونة نوع الخدمة (ميداني/رقمي/شركات). */
+export function kindIcon(kind: string): LucideIcon {
+  if (kind === "digital") return Laptop;
+  if (kind === "b2b") return Building2;
+  return Wrench;
+}
+
+/** بيانات نوع الخدمة مع بديل آمن. */
+export function kindMeta(kind: string) {
+  return SERVICE_KIND_META[kind as ServiceKind] ?? SERVICE_KIND_META.field;
 }
 
 /** رقم بفواصل آلاف + كلمة العملة — `1 250 درهم`. */
