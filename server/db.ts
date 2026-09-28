@@ -20,6 +20,7 @@ import {
   notifications,
   reports,
   topupRequests,
+  homeMenuItems,
 } from "../drizzle/schema";
 import { NotFoundError, ForbiddenError, ConflictError, InvalidStateError } from "./errors";
 import { PLATFORM_FEE_PERCENT, type AppRole, type RequestStatus } from "../shared/constants";
@@ -1559,4 +1560,25 @@ export async function providerDashboard(userId: string) {
     fresh,
     jobs: jobs.slice(0, 5),
   };
+}
+
+// ── شريط «شنو بغيتي اليوم؟» — العناصر النشطة (تتحكم فيها الإدارة) ────────────
+
+export type HomeMenuItem = Awaited<ReturnType<typeof listHomeMenuItems>>[number];
+
+/** عناصر الشريط النشطة مرتّبة — تُستعمل فالرئيسية ولوحة الحرّاف. */
+export async function listHomeMenuItems() {
+  return db
+    .select({
+      id: homeMenuItems.id,
+      labelAr: homeMenuItems.labelAr,
+      slug: homeMenuItems.slug,
+      kindFilter: homeMenuItems.kindFilter,
+      subSlugs: homeMenuItems.subSlugs,
+      icon: homeMenuItems.icon,
+      sortOrder: homeMenuItems.sortOrder,
+    })
+    .from(homeMenuItems)
+    .where(eq(homeMenuItems.active, true))
+    .orderBy(homeMenuItems.sortOrder);
 }
