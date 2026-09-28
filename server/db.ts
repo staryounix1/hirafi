@@ -21,6 +21,7 @@ import {
   reports,
   topupRequests,
   homeMenuItems,
+  providerVerifications,
 } from "../drizzle/schema";
 import { NotFoundError, ForbiddenError, ConflictError, InvalidStateError } from "./errors";
 import { PLATFORM_FEE_PERCENT, type AppRole, type RequestStatus } from "../shared/constants";
@@ -30,6 +31,17 @@ import { PLATFORM_FEE_PERCENT, type AppRole, type RequestStatus } from "../share
 // الراوتر من مكان واحد. الفصل ضروري: routers.test.ts يستبدل ./db بالكامل، فلو
 // عُرِفت في هذا الملف لأصبحت `undefined` هناك وانهارت كل مطابقة.
 export { NotFoundError, ForbiddenError, ConflictError, InvalidStateError } from "./errors";
+
+/** الخدمات اللي كتعتبر سائق — رخصة السياقة إلزامية عليها. */
+export const DRIVER_CATEGORY_SLUGS = new Set([
+  "moving", // نقل أثاث
+  "movers-office", // نقل وتركيب المكاتب
+  "grocery", // قضاء الأغراض
+  "b2b-office-moving", // نقل وتركيب مكاتب الشركات
+  "b2b-corporate-delivery", // توصيل محلي للشركات
+  "b2b-transport", // النقل واللوجستيك
+  "b2b-sales-rep", // مناديب مبيعات وتوزيع
+]);
 export { isUniqueViolation };
 
 /**
@@ -140,6 +152,76 @@ export async function updateProfile(
     .where(eq(providerProfiles.userId, userId))
     .returning();
   if (!row) throw new NotFoundError("الملف غير موجود");
+  return row;
+}
+
+/** وثائق التفعيل الحالية للحرّاف (null إلا ما بداش العملية). */
+export async function getVerification(userId: string) {
+  const [row] = await db
+    .select()
+    .from(providerVerifications)
+    .where(eq(providerVerifications.userId, userId))
+    .limit(1);
+  return row ?? null;
+}
+
+/** هل المستخدم سائق؟ (رخصة السياقة إلزامية ليه). */
+export async function isDriverUser(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ role: providerProfiles.role })
+    .from(providerProfiles)
+    .where(eq(providerProfiles.userId, userId))
+    .limit(1);
+  if (row?.role !== "provider") return false;
+  const cats = await db
+    .select({ slug: serviceCategories.slug })
+    .from(providerCategories)
+    .innerJoin(serviceCategories, eq(serviceCategories.id, providerCategories.categoryId))
+    .where(eq(providerCategories.providerUserId, userId));
+  return cats.some((c) => DRIVER_CATEGORY_SLUGS.has(c.slug));
+}
+
+/** يسجّل/يحدّث وثائق التفعيل ويرمي الطلب فطابور مراجعة الإدارة. */
+export async function submitVerification(input: {
+  userId: string;
+  isDriver: boolean;
+  idFrontKey: string | null;
+  idFrontUrl: string | null;
+  idBackKey: string | null;
+  idBackUrl: string | null;
+  licenseKey: string | null;
+  licenseUrl: string | null;
+  selfieKey: string | null;
+  selfieUrl: string | null;
+}) {
+  const [row] = await db
+    .insert(providerVerifications)
+    .values({ ...input, status: "pending", updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: providerVerifications.userId,
+      set: {
+        isDriver: input.isDriver,
+        idFrontKey: input.idFrontKey,
+        idFrontUrl: input.idFrontUrl,
+        idBackKey: input.idBackKey,
+        idBackUrl: input.idBackUrl,
+        licenseKey: input.licenseKey,
+        licenseUrl: input.licenseUrl,
+        selfieKey: input.selfieKey,
+        selfieUrl: input.selfieUrl,
+        status: "pending",
+        adminNote: null,
+        reviewedByAdminId: null,
+        reviewedAt: null,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+  if (!row) throw new InvalidStateError("تعذّر تسجيل الوثائق");
+  await db
+    .update(providerProfiles)
+    .set({ verificationStatus: "pending", verificationNote: null, updatedAt: new Date() })
+    .where(eq(providerProfiles.userId, input.userId));
   return row;
 }
 
