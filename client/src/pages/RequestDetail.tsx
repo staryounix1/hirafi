@@ -218,7 +218,7 @@ export default function RequestDetail() {
                 الموقع
               </dt>
               <dd className="mt-0.5 truncate text-[12.5px] font-bold">
-                {r.city} — {r.district}
+                {r.categoryKind === "digital" ? "عن بُعد — تنفيذ رقمي" : `${r.city} — ${r.district}`}
               </dd>
             </div>
             <div>
