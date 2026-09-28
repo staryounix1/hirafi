@@ -21,10 +21,9 @@ import { Button } from "@/components/ui/button";
 import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
 import { LiveDot, Spinner } from "@/components/hirfi/primitives";
 import { PROFESSIONAL_CRAFTS, SERVICE_MODES } from "@/components/hirfi/service-picker";
-import { KindMenu, type ServiceKindTab } from "@/components/hirfi/kind-menu";
+import { KindMenu, type ServiceMenuKey } from "@/components/hirfi/kind-menu";
 import { SERVICE_CATALOG } from "@shared/catalog";
-import { useAuth } from "@/_core/useAuth";
-import { toast } from "@/lib/toast";
+import { useAuth } from "@/_core/useAuth";import { toast } from "@/lib/toast";
 import { errorMessage, categoryIcon } from "@/lib/format";
 
 const DEMO_PASSWORD = "demo1234";
@@ -114,10 +113,17 @@ function DemoLogin({
 
 export default function Home() {
   const { user } = useAuth();
-  const [craftsOpen, setCraftsOpen] = useState(false);
-  const [kind, setKind] = useState<ServiceKindTab>("field");
+  const [, navigate] = useLocation();
+  const [kind, setKind] = useState<ServiceMenuKey>("field");
   const isField = kind === "field";
+  const isCrafts = kind === "crafts";
   const kindCats = SERVICE_CATALOG.filter((c) => c.kind === kind);
+
+  function selectKind(next: ServiceMenuKey) {
+    if (next === "grocery") return void navigate("/requests/new?service=grocery");
+    if (next === "moving") return void navigate("/requests/new?service=moving");
+    setKind(next);
+  }
 
   return (
     <div className="app-stage min-h-svh">
@@ -206,30 +212,32 @@ export default function Home() {
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="text-[17px] font-black">
-                {isField ? "شنو بغيتي اليوم؟" : kind === "digital" ? "خدمات رقمية" : "خدمات الشركات"}
+                {isCrafts
+                  ? "اختار الحرفة"
+                  : isField
+                    ? "شنو بغيتي اليوم؟"
+                    : kind === "digital"
+                      ? "خدمات رقمية"
+                      : "خدمات الشركات"}
               </h2>
               <p className="mt-1 text-[12px] text-muted-foreground">
-                {isField
-                  ? "اختار نوع الخدمة وبدأ طلبك."
-                  : kind === "digital"
-                    ? "فريلانس وتسليم عن بُعد — بلا موقع."
-                    : "خدمات ومشاريع لفائدة المقاولات."}
+                {isCrafts
+                  ? "اختار المجال اللي محتاج وبدأ طلبك."
+                  : isField
+                    ? "اختار نوع الخدمة وبدأ طلبك."
+                    : kind === "digital"
+                      ? "فريلانس وتسليم عن بُعد — بلا موقع."
+                      : "خدمات ومشاريع لفائدة المقاولات."}
               </p>
             </div>
-            <KindMenu
-              value={kind}
-              onChange={(next) => {
-                setKind(next);
-                setCraftsOpen(false);
-              }}
-            />
+            <KindMenu value={kind} onChange={selectKind} />
           </div>
 
-          {craftsOpen ? (
+          {isCrafts ? (
             <>
               <button
                 type="button"
-                onClick={() => setCraftsOpen(false)}
+                onClick={() => setKind("field")}
                 className="mt-3 rounded-full bg-muted px-3 py-1.5 text-[11px] font-black"
               >
                 رجوع للخدمات
@@ -277,7 +285,7 @@ export default function Home() {
                   <button
                     key={service.slug}
                     type="button"
-                    onClick={() => setCraftsOpen(true)}
+                    onClick={() => setKind("crafts")}
                     className="group rounded-3xl bg-card p-3.5 text-start transition-transform active:scale-[0.98]"
                     style={{ boxShadow: "var(--shadow-card)" }}
                   >

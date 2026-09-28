@@ -1,8 +1,8 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Hammer, PaintRoller, Scissors, ShoppingBag, Truck, Wrench, Zap } from "lucide-react";
 import { DragHandle } from "@/components/hirfi/map";
-import { KindMenu, type ServiceKindTab } from "@/components/hirfi/kind-menu";
+import { KindMenu, type ServiceMenuKey } from "@/components/hirfi/kind-menu";
 import { SERVICE_CATALOG } from "@shared/catalog";
 import { categoryIcon } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -28,16 +28,23 @@ export const PROFESSIONAL_CRAFTS = [
 
 export function ServicePickerSheet({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
-  const [craftsOpen, setCraftsOpen] = useState(false);
-  const [kind, setKind] = useState<ServiceKindTab>("field");
+  const [kind, setKind] = useState<ServiceMenuKey>("field");
   const startY = useRef<number | null>(null);
+  const [, navigate] = useLocation();
 
-  const kindCats = SERVICE_CATALOG.filter((c) => c.kind === kind);
   const isField = kind === "field";
+  const isCrafts = kind === "crafts";
+  const kindCats = SERVICE_CATALOG.filter((c) => c.kind === kind);
 
   function closeSheet() {
     setOpen(false);
-    setCraftsOpen(false);
+    setKind("field");
+  }
+
+  function selectKind(next: ServiceMenuKey) {
+    if (next === "grocery") return void navigate("/requests/new?service=grocery");
+    if (next === "moving") return void navigate("/requests/new?service=moving");
+    setKind(next);
   }
 
   function startDrag(event: ReactPointerEvent<HTMLButtonElement>) {
@@ -99,10 +106,10 @@ export function ServicePickerSheet({ className }: { className?: string }) {
       <div className="flex items-end justify-between gap-3 px-1">
         <div>
           <h2 className="text-[19px] font-black">
-            {craftsOpen ? "اختار الحرفة" : isField ? "شنو بغيتي اليوم؟" : kind === "digital" ? "خدمات رقمية" : "خدمات الشركات"}
+            {isCrafts ? "اختار الحرفة" : isField ? "شنو بغيتي اليوم؟" : kind === "digital" ? "خدمات رقمية" : "خدمات الشركات"}
           </h2>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            {craftsOpen
+            {isCrafts
               ? "اختار المجال اللي محتاج"
               : isField
                 ? "اضغط هنا باش تشوف الخدمات"
@@ -111,30 +118,77 @@ export function ServicePickerSheet({ className }: { className?: string }) {
                   : "خدمات ومشاريع لفائدة المقاولات"}
           </p>
         </div>
-        {craftsOpen ? (
+        {isCrafts ? (
           <button
             type="button"
             onClick={(event) => {
               event.stopPropagation();
-              setCraftsOpen(false);
+              setKind("field");
             }}
             className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-black text-foreground"
           >
             رجوع
           </button>
         ) : (
-          <KindMenu
-            value={kind}
-            onChange={(next) => {
-              setKind(next);
-              setCraftsOpen(false);
-            }}
-          />
+          <KindMenu value={kind} onChange={selectKind} />
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 pt-3">
-        {!isField ? (
+        {isCrafts ? (
+          PROFESSIONAL_CRAFTS.map((craft) => {
+            const Icon = craft.icon;
+            return (
+              <Link
+                key={craft.slug}
+                href={`/requests/new?service=${craft.slug}`}
+                className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
+              >
+                <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                  <Icon className="size-5" />
+                </span>
+                <h3 className="mt-3 text-[13px] font-black">{craft.title}</h3>
+              </Link>
+            );
+          })
+        ) : isField ? (
+          SERVICE_MODES.map((service) => {
+            const Icon = service.icon;
+            if (service.slug === "professional-crafts") {
+              return (
+                <button
+                  key={service.slug}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpen(true);
+                    setKind("crafts");
+                  }}
+                  className="group rounded-3xl bg-muted/65 p-3.5 text-start transition-transform active:scale-[0.98]"
+                >
+                  <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                    <Icon className="size-5" />
+                  </span>
+                  <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={service.slug}
+                href={`/requests/new?service=${service.slug}`}
+                className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
+              >
+                <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                  <Icon className="size-5" />
+                </span>
+                <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
+                <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
+              </Link>
+            );
+          })
+        ) : (
           kindCats.map((cat) => {
             const Icon = categoryIcon(cat.icon);
             return (
@@ -151,60 +205,7 @@ export function ServicePickerSheet({ className }: { className?: string }) {
               </Link>
             );
           })
-        ) : craftsOpen ? (
-          PROFESSIONAL_CRAFTS.map((craft) => {
-              const Icon = craft.icon;
-              return (
-                <Link
-                  key={craft.slug}
-                  href={`/requests/new?service=${craft.slug}`}
-                  className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
-                >
-                  <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
-                    <Icon className="size-5" />
-                  </span>
-                  <h3 className="mt-3 text-[13px] font-black">{craft.title}</h3>
-                </Link>
-              );
-            })
-          ) : (
-            SERVICE_MODES.map((service) => {
-              const Icon = service.icon;
-              if (service.slug === "professional-crafts") {
-                return (
-                  <button
-                    key={service.slug}
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setOpen(true);
-                      setCraftsOpen(true);
-                    }}
-                    className="group rounded-3xl bg-muted/65 p-3.5 text-start transition-transform active:scale-[0.98]"
-                  >
-                    <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
-                      <Icon className="size-5" />
-                    </span>
-                    <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
-                  </button>
-                );
-              }
-              return (
-                <Link
-                  key={service.slug}
-                  href={`/requests/new?service=${service.slug}`}
-                  className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
-                >
-                  <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
-                    <Icon className="size-5" />
-                  </span>
-                  <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
-                </Link>
-              );
-            })
-          )}
+        )}
       </div>
     </div>
   );
