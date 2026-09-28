@@ -106,6 +106,11 @@ const categoriesRouter = router({
   list: publicProcedure.query(() => q.listCategories()),
 });
 
+// ── شريط «شنو بغيتي اليوم؟» ──────────────────────────────────────────────────
+const homeMenuRouter = router({
+  list: publicProcedure.query(() => q.listHomeMenuItems()),
+});
+
 // ── الملف الشخصي ─────────────────────────────────────────────────────────────
 const profileRouter = router({
   /** ملفي + مهاراتي + أعمالي (يُنشَأ الملف تلقائياً إن لم يوجد). */
@@ -494,6 +499,7 @@ const filesRouter = router({
 export const appRouter = router({
   auth: authRouter,
   categories: categoriesRouter,
+  homeMenu: homeMenuRouter,
   profile: profileRouter,
   requests: requestsRouter,
   offers: offersRouter,

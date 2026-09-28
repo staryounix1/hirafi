@@ -19,6 +19,11 @@ export function useCategories() {
   return trpc.categories.list.useQuery(undefined, { staleTime: 5 * 60_000 });
 }
 
+/** عناصر شريط «شنو بغيتي اليوم؟» كما ضبطها الأدمن (نشطة ومرتّبة). */
+export function useHomeMenu() {
+  return trpc.homeMenu.list.useQuery(undefined, { staleTime: 60_000 });
+}
+
 /** خريطة id ← فئة لقراءة الأسماء والأيقونات في القوائم. */
 export function useCategoryMap() {
   const q = useCategories();

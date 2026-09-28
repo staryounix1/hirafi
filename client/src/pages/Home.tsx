@@ -20,9 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
 import { LiveDot, Spinner } from "@/components/hirfi/primitives";
-import { PROFESSIONAL_CRAFTS, SERVICE_MODES } from "@/components/hirfi/service-picker";
-import { KindMenu, type ServiceMenuKey } from "@/components/hirfi/kind-menu";
-import { CATALOG_BY_SLUG, SERVICE_CATALOG } from "@shared/catalog";
+import { resolveItemCats } from "@/components/hirfi/service-picker";
+import { KindMenu, type MenuItem } from "@/components/hirfi/kind-menu";
+import { useHomeMenu } from "@/lib/hooks";
 import { useAuth } from "@/_core/useAuth";import { toast } from "@/lib/toast";
 import { errorMessage, categoryIcon } from "@/lib/format";
 
@@ -114,32 +114,20 @@ function DemoLogin({
 export default function Home() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
-  const [kind, setKind] = useState<ServiceMenuKey>("field");
-  const isField = kind === "field";
-  const isCrafts = kind === "crafts";
-  const isSubgroup = kind.startsWith("field-");
-  const subgroupSlugs: Record<string, string[]> = {
-    "field-repair": [
-      "appliance-repair", "gas-heating", "cctv-security", "device-repair",
-      "pest-control", "cctv", "extermination", "handyman",
-    ],
-    "field-car": ["car-wash", "car-mechanic", "car-bodywork"],
-    "field-home": [
-      "gardening", "home-care", "babysitting", "catering", "beauty",
-      "health-care", "laundry", "cleaning", "post-construction-cleaning",
-      "insulation", "terrace-waterproof", "pool-cleaning",
-    ],
-  };
-  const subgroupCats = isSubgroup
-    ? (subgroupSlugs[kind] ?? []).map((slug) => CATALOG_BY_SLUG.get(slug)!)
-      .filter((c): c is NonNullable<typeof c> => Boolean(c))
-    : [];
-  const kindCats = SERVICE_CATALOG.filter((c) => c.kind === kind);
+  const homeMenu = useHomeMenu();
+  const items = (homeMenu.data ?? []) as MenuItem[];
+  const [key, setKey] = useState<string>("");
+  const current = items.find((i) => i.slug === key) ?? items[0];
+  const cats = resolveItemCats(current);
+  const isDirect = Boolean(current && !current.kindFilter && !current.subSlugs);
 
-  function selectKind(next: ServiceMenuKey) {
-    if (next === "grocery") return void navigate("/requests/new?service=grocery");
-    if (next === "moving") return void navigate("/requests/new?service=moving");
-    setKind(next);
+  function selectKind(next: MenuItem) {
+    if (!next.kindFilter && !next.subSlugs) {
+      if (cats) navigate(`/requests/new?service=${next.slug}`);
+      else navigate("/requests/new");
+      return;
+    }
+    setKey(next.slug);
   }
 
   return (
@@ -224,72 +212,28 @@ export default function Home() {
           </div>
         </section>
 
-        {/* One app, many services — the service picker is the app's first real action. */}
+        {/* One app, many services — خيارات الشريط تجي من إدارة «خدمات الواجهة» */}
         <section className="px-5 pt-2 pb-4">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <h2 className="text-[17px] font-black">
-                {isCrafts
-                  ? "اختار الحرفة"
-                  : isSubgroup
-                    ? kind === "field-repair"
-                      ? "إصلاح وصيانة"
-                      : kind === "field-car"
-                        ? "خدمات السيارات"
-                        : "منزل وعناية"
-                    : isField
-                      ? "شنو بغيتي اليوم؟"
-                      : kind === "digital"
-                        ? "خدمات رقمية"
-                        : "خدمات الشركات"}
-              </h2>
+              <h2 className="text-[17px] font-black">{current?.labelAr ?? "شنو بغيتي اليوم؟"}</h2>
               <p className="mt-1 text-[12px] text-muted-foreground">
-                {isCrafts
-                  ? "اختار المجال اللي محتاج وبدأ طلبك."
-                  : isSubgroup
-                    ? kind === "field-repair"
-                      ? "أجهزة، كاميرات، مكافحة حشرات وأكثر."
-                      : kind === "field-car"
-                        ? "غسيل، ميكانيك وسمكرة فالمكان."
-                        : "بستنة، طبخ، جليسة، تنظيف وأكثر."
-                    : isField
-                      ? "اختار نوع الخدمة وبدأ طلبك."
-                      : kind === "digital"
-                        ? "فريلانس وتسليم عن بُعد — بلا موقع."
-                        : "خدمات ومشاريع لفائدة المقاولات."}
+                {isDirect ? "اضغط باش تبدا طلبك." : "اختار الخدمة اللي محتاج وبدأ طلبك."}
               </p>
             </div>
-            <KindMenu value={kind} onChange={selectKind} />
+            <KindMenu value={current?.slug ?? ""} onChange={selectKind} />
           </div>
 
-          {isCrafts ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setKind("field")}
-                className="mt-3 rounded-full bg-muted px-3 py-1.5 text-[11px] font-black"
-              >
-                رجوع للخدمات
-              </button>
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
-                {PROFESSIONAL_CRAFTS.map((craft) => (
-                  <Link
-                    key={craft.slug}
-                    href={`/requests/new?service=${craft.slug}`}
-                    className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
-                    style={{ boxShadow: "var(--shadow-card)" }}
-                  >
-                    <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
-                      <craft.icon className="size-5" />
-                    </span>
-                    <h3 className="mt-3 text-[13px] font-black">{craft.title}</h3>
-                  </Link>
-                ))}
-              </div>
-            </>
-          ) : isSubgroup || !isField ? (
+          {cats.length === 0 ? (
+            <p
+              className="mt-3 rounded-2xl bg-card p-4 text-center text-[12px] text-muted-foreground"
+              style={{ boxShadow: "var(--shadow-card)" }}
+            >
+              لا خدمات فهاد الخيار دابا — اختار خياراً آخر من الشريط.
+            </p>
+          ) : (
             <div className="mt-3 grid grid-cols-2 gap-2.5">
-              {(isSubgroup ? subgroupCats : kindCats).map((cat) => {
+              {cats.map((cat) => {
                 const Icon = categoryIcon(cat.icon);
                 return (
                   <Link
@@ -306,39 +250,6 @@ export default function Home() {
                   </Link>
                 );
               })}
-            </div>
-          ) : (
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
-              {SERVICE_MODES.map((service) =>
-                service.slug === "professional-crafts" ? (
-                  <button
-                    key={service.slug}
-                    type="button"
-                    onClick={() => setKind("crafts")}
-                    className="group rounded-3xl bg-card p-3.5 text-start transition-transform active:scale-[0.98]"
-                    style={{ boxShadow: "var(--shadow-card)" }}
-                  >
-                    <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
-                      <service.icon className="size-5" />
-                    </span>
-                    <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
-                  </button>
-                ) : (
-                  <Link
-                    key={service.slug}
-                    href={`/requests/new?service=${service.slug}`}
-                    className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
-                    style={{ boxShadow: "var(--shadow-card)" }}
-                  >
-                    <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
-                      <service.icon className="size-5" />
-                    </span>
-                    <h3 className="mt-3 text-[13px] font-black">{service.title}</h3>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
-                  </Link>
-                ),
-              )}
             </div>
           )}
         </section>
