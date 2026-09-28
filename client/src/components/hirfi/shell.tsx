@@ -19,6 +19,7 @@ import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/_core/useAuth";
 import { trpc } from "@/_core/trpc";
 import { useAppRole, useUnreadCount, useWalletEnabled } from "@/lib/hooks";
+import { VerificationGate } from "@/components/hirfi/verification-gate";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/hirfi/primitives";
 
@@ -68,6 +69,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-stage min-h-svh">
+      {/* حاجز التفعيل: **أي** حرّاف غير موثّق ما كيشوفش المنصة حتى توافق الإدارة. */}
+      <VerificationGate />
       <div className="app-frame shell-frame">
         {/* الشريط العلوي — رمز الحرف في مربّع ليموني، وبدونه لا يُقرأ كهوية inDrive. */}
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur-md">
