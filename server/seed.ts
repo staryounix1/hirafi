@@ -10,6 +10,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./_core/db";
+import { SERVICE_CATALOG } from "../shared/catalog";
 import {
   users,
   serviceCategories,
@@ -35,24 +36,8 @@ const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
 const hoursAgo = (n: number) => new Date(NOW.getTime() - n * 3_600_000);
 const daysAhead = (n: number) => new Date(NOW.getTime() + n * 86_400_000);
 
-// ── الفئات الخمس عشرة ─────────────────────────────────────────────────────────
-const CATEGORIES = [
-  { slug: "plumbing", nameAr: "سباكة", icon: "Wrench" },
-  { slug: "electrical", nameAr: "كهرباء", icon: "Zap" },
-  { slug: "carpentry", nameAr: "نجارة", icon: "Hammer" },
-  { slug: "painting", nameAr: "صباغة", icon: "PaintRoller" },
-  { slug: "hvac", nameAr: "تكييف وتبريد", icon: "Snowflake" },
-  { slug: "cleaning", nameAr: "تنظيف", icon: "Sparkles" },
-  { slug: "moving", nameAr: "نقل أثاث", icon: "Truck" },
-  { slug: "electronics", nameAr: "إصلاح إلكترونيات", icon: "Smartphone" },
-  { slug: "tailoring", nameAr: "خياطة", icon: "Scissors" },
-  { slug: "photography", nameAr: "تصوير", icon: "Camera" },
-  { slug: "tutoring", nameAr: "دروس خصوصية", icon: "GraduationCap" },
-  { slug: "handyman", nameAr: "خدمات عامة", icon: "Settings" },
-  { slug: "grocery", nameAr: "قضاء الأغراض", icon: "ShoppingBasket" },
-  { slug: "queue", nameAr: "الوقوف فالطابور", icon: "ListChecks" },
-  { slug: "rental", nameAr: "الكراء", icon: "KeyRound" },
-];
+// ── كتالوج الخدمات: ميداني + رقمي + شركات (المصدر: shared/catalog.ts) ────────
+const CATEGORIES = SERVICE_CATALOG;
 
 // ── صور واقعية مطابقة لكل فئة ────────────────────────────────────────────────
 // قبلها كانت صور picsum عشوائية، فيظهر «تسريب في المطبخ» صورة رصيف خشبي — تناقض يضرب
@@ -798,7 +783,18 @@ async function main() {
   // ── الفئات ──
   const catRows = await db
     .insert(serviceCategories)
-    .values(CATEGORIES.map((c, i) => ({ slug: c.slug, nameAr: c.nameAr, icon: c.icon, sortOrder: i })))
+    .values(
+      CATEGORIES.map((c, i) => ({
+        slug: c.slug,
+        nameAr: c.nameAr,
+        icon: c.icon,
+        kind: c.kind,
+        commissionPercent: c.commissionPercent,
+        requiresVerification: c.requiresVerification ?? false,
+        description: c.description,
+        sortOrder: i,
+      })),
+    )
     .returning();
   const catBySlug = new Map(catRows.map((c) => [c.slug, c.id]));
   console.log(`  ✓ ${catRows.length} فئة خدمة`);

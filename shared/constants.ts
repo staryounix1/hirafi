@@ -68,11 +68,58 @@ export type TopupRequestStatus = (typeof TOPUP_REQUEST_STATUSES)[number];
 export const SUPPORT_WHATSAPP = "";
 
 /**
- * عمولة المنصة `حِرْفي` (نسبة مئوية) — يدفعها **الحرّاف** من محفظته لحظة قبول
- * الزبون لعرضه. الزبون لا يدفع شيئاً عبر المنصة: يدفع الحرّاف مباشرة بعد إتمام
- * الخدمة، والمنصة تكتفي بتحصيل عمولتها من رصيد الحرّاف.
+ * عمولة المنصة `حِرْفي` (النسبة الافتراضية) — يدفعها **الحرّاف** من محفظته لحظة
+ * قبول الزبون لعرضه. النسبة الفعلية لكل خدمة تُقرأ من `service_categories.commission_percent`
+ * (ميداني 15%، رقمي 12%، شركات 10% افتراضياً). هذا الثابت هو الاحتياطي.
  */
 export const PLATFORM_FEE_PERCENT = 15;
+
+/**
+ * أنواع الخدمات الثلاثة — تفصل الحرف الميدانية عن الفريلانس عن عقود الشركات،
+ * فلكل نوع تجربة وعمولة ومسار مختلف (خاصة الرقمي: بلا مسافة، وتسليم عن بُعد).
+ */
+export const SERVICE_KINDS = ["field", "digital", "b2b"] as const;
+export type ServiceKind = (typeof SERVICE_KINDS)[number];
+
+export const SERVICE_KIND_META: Record<
+  ServiceKind,
+  { key: ServiceKind; labelAr: string; shortAr: string; hintAr: string; icon: string; commission: number }
+> = {
+  field: {
+    key: "field",
+    labelAr: "خدمات ميدانية",
+    shortAr: "ميداني",
+    hintAr: "حرف وخدمات فالمكان — يتم التقييم بالمسافة",
+    icon: "Wrench",
+    commission: 15,
+  },
+  digital: {
+    key: "digital",
+    labelAr: "خدمات رقمية",
+    shortAr: "رقمي",
+    hintAr: "فريلانس وتسليم عن بُعد — ملفات ومراجعة قبل القبول",
+    icon: "Laptop",
+    commission: 12,
+  },
+  b2b: {
+    key: "b2b",
+    labelAr: "خدمات الشركات",
+    shortAr: "شركات",
+    hintAr: "عقود وخدمات دورية — أثمنة بالتفاوض",
+    icon: "Building2",
+    commission: 10,
+  },
+};
+
+/** وصف نوع الخدمة مع بديل آمن. */
+export function kindMeta(kind: string) {
+  return SERVICE_KIND_META[kind as ServiceKind] ?? SERVICE_KIND_META.field;
+}
+
+/** العمولة الافتراضية لنوع الخدمة (تُستعمل إن لم تُضبط عمولة خاصة بالفئة). */
+export function kindCommission(kind: string): number {
+  return kindMeta(kind).commission;
+}
 
 /** مدن مغربية + أحياء مبسّطة (لا خرائط — القرار الافتراضي في المواصفة). */
 export const MOROCCAN_CITIES = [
