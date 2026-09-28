@@ -21,9 +21,11 @@ import { Button } from "@/components/ui/button";
 import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
 import { LiveDot, Spinner } from "@/components/hirfi/primitives";
 import { PROFESSIONAL_CRAFTS, SERVICE_MODES } from "@/components/hirfi/service-picker";
+import { KindMenu, type ServiceKindTab } from "@/components/hirfi/kind-menu";
+import { SERVICE_CATALOG } from "@shared/catalog";
 import { useAuth } from "@/_core/useAuth";
 import { toast } from "@/lib/toast";
-import { errorMessage } from "@/lib/format";
+import { errorMessage, categoryIcon } from "@/lib/format";
 
 const DEMO_PASSWORD = "demo1234";
 
@@ -113,6 +115,9 @@ function DemoLogin({
 export default function Home() {
   const { user } = useAuth();
   const [craftsOpen, setCraftsOpen] = useState(false);
+  const [kind, setKind] = useState<ServiceKindTab>("field");
+  const isField = kind === "field";
+  const kindCats = SERVICE_CATALOG.filter((c) => c.kind === kind);
 
   return (
     <div className="app-stage min-h-svh">
@@ -200,10 +205,24 @@ export default function Home() {
         <section className="px-5 pt-2 pb-4">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <h2 className="text-[17px] font-black">شنو بغيتي اليوم؟</h2>
-              <p className="mt-1 text-[12px] text-muted-foreground">اختار نوع الخدمة وبدأ طلبك.</p>
+              <h2 className="text-[17px] font-black">
+                {isField ? "شنو بغيتي اليوم؟" : kind === "digital" ? "خدمات رقمية" : "خدمات الشركات"}
+              </h2>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                {isField
+                  ? "اختار نوع الخدمة وبدأ طلبك."
+                  : kind === "digital"
+                    ? "فريلانس وتسليم عن بُعد — بلا موقع."
+                    : "خدمات ومشاريع لفائدة المقاولات."}
+              </p>
             </div>
-            <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">خدمات قريبة</span>
+            <KindMenu
+              value={kind}
+              onChange={(next) => {
+                setKind(next);
+                setCraftsOpen(false);
+              }}
+            />
           </div>
 
           {craftsOpen ? (
@@ -231,6 +250,26 @@ export default function Home() {
                 ))}
               </div>
             </>
+          ) : !isField ? (
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {kindCats.map((cat) => {
+                const Icon = categoryIcon(cat.icon);
+                return (
+                  <Link
+                    key={cat.slug}
+                    href={`/requests/new?service=${cat.slug}`}
+                    className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  >
+                    <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                      <Icon className="size-5" />
+                    </span>
+                    <h3 className="mt-3 text-[13px] font-black">{cat.nameAr}</h3>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{cat.description}</p>
+                  </Link>
+                );
+              })}
+            </div>
           ) : (
             <div className="mt-3 grid grid-cols-2 gap-2.5">
               {SERVICE_MODES.map((service) =>

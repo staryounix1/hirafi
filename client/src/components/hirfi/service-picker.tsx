@@ -2,6 +2,9 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointer
 import { Link } from "wouter";
 import { Hammer, PaintRoller, Scissors, ShoppingBag, Truck, Wrench, Zap } from "lucide-react";
 import { DragHandle } from "@/components/hirfi/map";
+import { KindMenu, type ServiceKindTab } from "@/components/hirfi/kind-menu";
+import { SERVICE_CATALOG } from "@shared/catalog";
+import { categoryIcon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const SERVICE_MODES = [
@@ -26,7 +29,11 @@ export const PROFESSIONAL_CRAFTS = [
 export function ServicePickerSheet({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [craftsOpen, setCraftsOpen] = useState(false);
+  const [kind, setKind] = useState<ServiceKindTab>("field");
   const startY = useRef<number | null>(null);
+
+  const kindCats = SERVICE_CATALOG.filter((c) => c.kind === kind);
+  const isField = kind === "field";
 
   function closeSheet() {
     setOpen(false);
@@ -91,9 +98,17 @@ export function ServicePickerSheet({ className }: { className?: string }) {
 
       <div className="flex items-end justify-between gap-3 px-1">
         <div>
-          <h2 className="text-[19px] font-black">{craftsOpen ? "اختار الحرفة" : "شنو بغيتي اليوم؟"}</h2>
+          <h2 className="text-[19px] font-black">
+            {craftsOpen ? "اختار الحرفة" : isField ? "شنو بغيتي اليوم؟" : kind === "digital" ? "خدمات رقمية" : "خدمات الشركات"}
+          </h2>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            {craftsOpen ? "اختار المجال اللي محتاج" : "اضغط هنا باش تشوف الخدمات"}
+            {craftsOpen
+              ? "اختار المجال اللي محتاج"
+              : isField
+                ? "اضغط هنا باش تشوف الخدمات"
+                : kind === "digital"
+                  ? "فريلانس وتسليم عن بُعد — بلا موقع"
+                  : "خدمات ومشاريع لفائدة المقاولات"}
           </p>
         </div>
         {craftsOpen ? (
@@ -108,13 +123,36 @@ export function ServicePickerSheet({ className }: { className?: string }) {
             رجوع
           </button>
         ) : (
-          <span className="rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-brand-ink">خدمات قريبة</span>
+          <KindMenu
+            value={kind}
+            onChange={(next) => {
+              setKind(next);
+              setCraftsOpen(false);
+            }}
+          />
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 pt-3">
-        {craftsOpen
-          ? PROFESSIONAL_CRAFTS.map((craft) => {
+        {!isField ? (
+          kindCats.map((cat) => {
+            const Icon = categoryIcon(cat.icon);
+            return (
+              <Link
+                key={cat.slug}
+                href={`/requests/new?service=${cat.slug}`}
+                className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
+              >
+                <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                  <Icon className="size-5" />
+                </span>
+                <h3 className="mt-3 text-[13px] font-black">{cat.nameAr}</h3>
+                <p className="mt-1 text-[11px] text-muted-foreground">{cat.description}</p>
+              </Link>
+            );
+          })
+        ) : craftsOpen ? (
+          PROFESSIONAL_CRAFTS.map((craft) => {
               const Icon = craft.icon;
               return (
                 <Link
@@ -129,7 +167,8 @@ export function ServicePickerSheet({ className }: { className?: string }) {
                 </Link>
               );
             })
-          : SERVICE_MODES.map((service) => {
+          ) : (
+            SERVICE_MODES.map((service) => {
               const Icon = service.icon;
               if (service.slug === "professional-crafts") {
                 return (
@@ -164,7 +203,8 @@ export function ServicePickerSheet({ className }: { className?: string }) {
                   <p className="mt-1 text-[11px] text-muted-foreground">{service.description}</p>
                 </Link>
               );
-            })}
+            })
+          )}
       </div>
     </div>
   );
