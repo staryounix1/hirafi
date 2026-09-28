@@ -42,7 +42,7 @@ import { LifecycleBar, OfferCard, RefCode, type OfferRow } from "@/components/hi
 import { ReportButton } from "@/components/hirfi/report";
 import { trpc } from "@/_core/trpc";
 import { useAuth } from "@/_core/useAuth";
-import { POLL_INTERVAL_MS } from "@/lib/hooks";
+import { POLL_INTERVAL_MS, useMyProfile, useWalletEnabled } from "@/lib/hooks";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -129,6 +129,11 @@ export default function RequestDetail() {
   const urg = urgencyMeta(r.urgency);
   const displayedAmount = r.agreedAmount ?? r.budgetAmount;
   const hasBudget = displayedAmount > 0;
+
+  // الخدمات الرقمية: القبول مشروط بمحفظة مفعّلة ورصيد > 0 (الخادم كيفرض نفس الشرط).
+  const walletEnabled = useWalletEnabled();
+  const walletBalance = useMyProfile().data?.balance ?? 0;
+  const walletReady = walletEnabled && walletBalance > 0;
 
   const customerAvg = r.customerRatingCount
     ? Math.round((r.customerRatingSum / r.customerRatingCount) * 10) / 10
@@ -282,6 +287,33 @@ export default function RequestDetail() {
 
       {/* العروض المقدَّمة */}
       <section className="grid gap-3 px-4 pt-4">
+        {/* الخدمات الرقمية: الزبون كيقدر ينشر، ولكن ما يقدرش يقبل حتى يفعّل محفظتو ويشحنها */}
+        {d.isOwner && r.categoryKind === "digital" && r.status === "open" && !walletReady ? (
+          <div className="card-flat flex items-start gap-3 border border-warn/30 bg-warn-soft p-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-warn/15 text-warn">
+              <Wallet className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[13.5px] font-black">خاصك تفعّل محفظتك باش تقبل عرضاً</h3>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                {!walletEnabled
+                  ? "هاد خدمة رقمية: النشر مسموح، ولكن القبول كيتطلّب محفظة مفعّلة ومشحونة."
+                  : "محفظتك مفعّلة ولكن الرصيد 0 درهم — اطلب شحن المحفظة باش تقدر تقبل العرض."}
+              </p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {!walletEnabled ? (
+                  <Link href="/profile" className="rounded-full bg-brand px-3 py-1.5 text-[11.5px] font-black text-brand-ink">
+                    فعّل المحفظة من حسابي
+                  </Link>
+                ) : null}
+                <Link href="/wallet" className="rounded-full bg-muted px-3 py-1.5 text-[11.5px] font-black">
+                  اطلب شحن المحفظة
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-[17px] font-black">
             <MessageSquare className="size-4.5 text-brand-dark" />
@@ -311,6 +343,7 @@ export default function RequestDetail() {
                 isOwner={d.isOwner}
                 requestOpen={r.status === "open"}
                 budget={r.budgetAmount}
+                canDecide={r.categoryKind === "digital" ? walletReady : true}
                 onDone={() => void q.refetch()}
               />
             ))}
@@ -623,6 +656,7 @@ function OfferCardRow({
   requestOpen,
   budget,
   isCounter,
+  canDecide = true,
   onDone,
 }: {
   offer: OfferRow;
@@ -630,6 +664,7 @@ function OfferCardRow({
   requestOpen: boolean;
   budget: number;
   isCounter?: boolean;
+  canDecide?: boolean;
   onDone: () => void;
 }) {
   const accept = trpc.offers.accept.useMutation();
@@ -683,20 +718,34 @@ function OfferCardRow({
   const ownerActions =
     isOwner && requestOpen && offer.status === "pending" ? (
       <>
-        <Button
-          size="sm"
-          className="gap-1.5 rounded-full"
-          disabled={busy}
-          onClick={() =>
-            run(
-              () => accept.mutateAsync({ id: offer.id }),
-              "تم قبول العرض وتثبيت السعر — بقية العروض رُفضت تلقائياً",
-            )
-          }
-        >
-          {accept.isPending ? <Spinner /> : <Check className="size-3.5" />}
-          اقبل هذا العرض
-        </Button>
+        {canDecide ? (
+          <Button
+            size="sm"
+            className="gap-1.5 rounded-full"
+            disabled={busy}
+            onClick={() =>
+              run(
+                () => accept.mutateAsync({ id: offer.id }),
+                "تم قبول العرض وتثبيت السعر — بقية العروض رُفضت تلقائياً",
+              )
+            }
+          >
+            {accept.isPending ? <Spinner /> : <Check className="size-3.5" />}
+            اقبل هذا العرض
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            className="gap-1.5 rounded-full"
+            onClick={() => toast.error("فعّل محفظتك واشحنها أولاً باش تقبل عرضاً على خدمة رقمية")}
+            asChild
+          >
+            <Link href="/profile">
+              <Wallet className="size-3.5" />
+              اقبل هذا العرض
+            </Link>
+          </Button>
+        )}
         <Button
           size="sm"
           variant="outline"
