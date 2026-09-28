@@ -18,28 +18,34 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/_core/useAuth";
 import { trpc } from "@/_core/trpc";
-import { useAppRole, useUnreadCount } from "@/lib/hooks";
+import { useAppRole, useUnreadCount, useWalletEnabled } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/hirfi/primitives";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
-/** شرائح التنقّل السفلي — المحفظة خاصة بحساب الحرّاف. */
-function navFor(isProvider: boolean): NavItem[] {
-  return isProvider
-    ? [
-        { href: "/dashboard", label: "الرئيسية", icon: HomeIcon },
-        { href: "/browse", label: "الطلبات", icon: Search },
-        { href: "/offers", label: "عروضي", icon: Briefcase },
-        { href: "/wallet", label: "المحفظة", icon: Wallet },
-        { href: "/profile", label: "حسابي", icon: UserCircle },
-      ]
-    : [
-        { href: "/dashboard", label: "الرئيسية", icon: HomeIcon },
-        { href: "/requests", label: "طلباتي", icon: ClipboardList },
-        { href: "/requests/new", label: "اطلب", icon: Plus },
-        { href: "/profile", label: "حسابي", icon: UserCircle },
-      ];
+/**
+ * شرائح التنقّل السفلي.
+ * الحرّاف: محفظته دائماً ظاهرة (كيقبض منها).
+ * الزبون: «المحفظة» كاتبان **غير** ملي كيفعّلها من حسابه — وإلا كاتبقى مخفية.
+ */
+function navFor(isProvider: boolean, walletEnabled: boolean): NavItem[] {
+  if (isProvider) {
+    return [
+      { href: "/dashboard", label: "الرئيسية", icon: HomeIcon },
+      { href: "/browse", label: "الطلبات", icon: Search },
+      { href: "/offers", label: "عروضي", icon: Briefcase },
+      { href: "/wallet", label: "المحفظة", icon: Wallet },
+      { href: "/profile", label: "حسابي", icon: UserCircle },
+    ];
+  }
+  return [
+    { href: "/dashboard", label: "الرئيسية", icon: HomeIcon },
+    { href: "/requests", label: "طلباتي", icon: ClipboardList },
+    { href: "/requests/new", label: "اطلب", icon: Plus },
+    ...(walletEnabled ? [{ href: "/wallet", label: "المحفظة", icon: Wallet }] : []),
+    { href: "/profile", label: "حسابي", icon: UserCircle },
+  ];
 }
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -50,7 +56,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const unread = useUnreadCount();
   const utils = trpc.useUtils();
   const isProvider = role === "provider";
-  const nav = navFor(isProvider);
+  const walletEnabled = useWalletEnabled();
+  const nav = navFor(isProvider, walletEnabled);
 
   const isActive = (href: string) => path === href || path.startsWith(`${href}/`);
 

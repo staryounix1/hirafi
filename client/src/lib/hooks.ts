@@ -8,6 +8,12 @@ export function useMyProfile() {
   return trpc.profile.me.useQuery(undefined, { staleTime: 15_000 });
 }
 
+/** حالة تفعيل محفظة الزبون — معطّلة افتراضياً، الزبون كيفعّلها من حسابه. */
+export function useWalletEnabled(): boolean {
+  const q = useMyProfile();
+  return q.data?.walletEnabled ?? false;
+}
+
 /** الدور التجاري للمستخدم الحالي — `customer` | `provider`، مع بديل آمن أثناء التحميل. */
 export function useAppRole(): { role: AppRole; isLoading: boolean } {
   const q = useMyProfile();

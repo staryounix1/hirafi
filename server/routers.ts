@@ -120,18 +120,25 @@ const profileRouter = router({
       displayName: ctx.user.name ?? ctx.user.email.split("@")[0],
       city: MOROCCAN_CITIES[0],
     });
-    const [skills, works, wallet] = await Promise.all([
+    const [skills, works, wallet, walletEnabled] = await Promise.all([
       q.listMySkills(ctx.user.id),
       q.listWorks(ctx.user.id),
       q.listWallet(ctx.user.id),
+      q.getWalletEnabled(ctx.user.id),
     ]);
     return {
       profile,
       skillIds: skills.map((s) => s.categoryId),
       works,
       balance: wallet.balance,
+      walletEnabled,
     };
   }),
+
+  /** تفعيل/إلغاء محفظة الزبون — معطّلة افتراضياً. */
+  setWalletEnabled: protectedProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(({ ctx, input }) => q.setWalletEnabled(ctx.user.id, input.enabled)),
 
   update: protectedProcedure
     .input(
