@@ -46,6 +46,7 @@ export default function Profile() {
   const update = trpc.profile.update.useMutation();
   const setRoleM = trpc.profile.setRole.useMutation();
   const setSkills = trpc.profile.setSkills.useMutation();
+  const setWallet = trpc.profile.setWalletEnabled.useMutation();
   const addWork = trpc.profile.addWork.useMutation();
   const removeWork = trpc.profile.removeWork.useMutation();
 
@@ -97,6 +98,7 @@ export default function Profile() {
   const isProvider = role === "provider";
   const districts = DISTRICTS_BY_CITY[city] ?? [];
   const avg = ratingAvg(p.ratingSum, p.ratingCount);
+  const walletOn = Boolean(q.data.walletEnabled);
 
   function toggleSkill(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -244,6 +246,63 @@ export default function Profile() {
       </section>
 
       {/* تبديل الدور */}
+      {/* محفظة الزبون — معطّلة افتراضياً، وكتظهر فالشريط السفلي ملي كيفعّلها */}
+      {!isProvider ? (
+        <section className="px-4 pt-3">
+          <div className="card-flat p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="flex items-center gap-1.5 text-[15px] font-black">
+                  <Wallet className="size-4 text-brand-dark" />
+                  محفظتي
+                </h2>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                  {walletOn
+                    ? "المحفظة مفعّلة — كتبان فالشريط السفلي، وكتحتاج رصيداً باش تقبل عروض الخدمات الرقمية."
+                    : "المحفظة معطّلة. فعّلها باش تقدر تقبل عروض الخدمات الرقمية وتشحن رصيدك."}
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={walletOn}
+                aria-label="تفعيل المحفظة"
+                disabled={setWallet.isPending}
+                onClick={() =>
+                  setWallet.mutate(
+                    { enabled: !walletOn },
+                    {
+                      onSuccess: (v) => {
+                        void utils.profile.me.invalidate();
+                        toast.success(v ? "فُعّلت المحفظة" : "أُلغي تفعيل المحفظة");
+                      },
+                      onError: (e) => toast.error(errorMessage(e)),
+                    },
+                  )
+                }
+                className={cn(
+                  "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60",
+                  walletOn ? "bg-brand" : "bg-muted",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 size-6 rounded-full bg-card shadow-sm transition-all",
+                    walletOn ? "start-0.5" : "start-[1.375rem]",
+                  )}
+                />
+              </button>
+            </div>
+            {walletOn ? (
+              <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl bg-muted/70 px-3 py-2.5">
+                <span className="text-[12px] font-bold text-muted-foreground">رصيد المحفظة</span>
+                <span className="text-price text-[18px]">{madNumber(q.data?.balance ?? 0)} درهم</span>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       <section className="px-4 pt-3">
         <div className="card-flat p-4">
           <h2 className="text-[15px] font-black">دوري في التطبيق</h2>
