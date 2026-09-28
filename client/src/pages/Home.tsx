@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { DragHandle, MapCanvas, type MapPinSpec } from "@/components/hirfi/map";
 import { LiveDot, Spinner } from "@/components/hirfi/primitives";
 import { resolveItemCats } from "@/components/hirfi/service-picker";
-import { KindMenu, type MenuItem } from "@/components/hirfi/kind-menu";
+import type { MenuItem } from "@/components/hirfi/kind-menu";
 import { useHomeMenu } from "@/lib/hooks";
 import { useAuth } from "@/_core/useAuth";import { toast } from "@/lib/toast";
 import { errorMessage, categoryIcon } from "@/lib/format";
@@ -116,18 +116,19 @@ export default function Home() {
   const [, navigate] = useLocation();
   const homeMenu = useHomeMenu();
   const items = (homeMenu.data ?? []) as MenuItem[];
+  /** "" = عرض التصنيفات؛ وإلا slug التصنيف المفتوح لعرض مهنه. */
   const [key, setKey] = useState<string>("");
-  const current = items.find((i) => i.slug === key) ?? items[0];
+  const current = key ? items.find((i) => i.slug === key) : undefined;
   const cats = resolveItemCats(current);
   const isDirect = Boolean(current && !current.kindFilter && !current.subSlugs);
 
-  function selectKind(next: MenuItem) {
-    if (!next.kindFilter && !next.subSlugs) {
-      if (cats) navigate(`/requests/new?service=${next.slug}`);
-      else navigate("/requests/new");
+  /** فئة واحدة بلا مجموعة → توجيه مباشر لصفحة الطلب؛ تصنيف → عرض مهنه. */
+  function openItem(item: MenuItem) {
+    if (!item.kindFilter && !item.subSlugs) {
+      navigate(`/requests/new?service=${item.slug}`);
       return;
     }
-    setKey(next.slug);
+    setKey(item.slug);
   }
 
   return (
@@ -212,44 +213,92 @@ export default function Home() {
           </div>
         </section>
 
-        {/* One app, many services — خيارات الشريط تجي من إدارة «خدمات الواجهة» */}
+        {/* One app, many services — التصنيفات أولاً، وكل تصنيف كيكشف مهنه */}
         <section className="px-5 pt-2 pb-4">
           <div className="flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-[17px] font-black">{current?.labelAr ?? "شنو بغيتي اليوم؟"}</h2>
+            <div className="min-w-0">
+              <h2 className="truncate text-[17px] font-black">
+                {current ? current.labelAr : "شنو بغيتي اليوم؟"}
+              </h2>
               <p className="mt-1 text-[12px] text-muted-foreground">
-                {isDirect ? "اضغط باش تبدا طلبك." : "اختار الخدمة اللي محتاج وبدأ طلبك."}
+                {current
+                  ? isDirect
+                    ? "اضغط باش تبدا طلبك."
+                    : "اختار المهنة اللي محتاج."
+                  : "اختار التصنيف اللي محتاج وبدأ طلبك."}
               </p>
             </div>
-            <KindMenu value={current?.slug ?? ""} onChange={selectKind} />
+            {current ? (
+              <button
+                type="button"
+                onClick={() => setKey("")}
+                className="shrink-0 rounded-full bg-muted px-3 py-1.5 text-[11px] font-black"
+              >
+                كل التصنيفات
+              </button>
+            ) : null}
           </div>
 
-          {cats.length === 0 ? (
-            <p
-              className="mt-3 rounded-2xl bg-card p-4 text-center text-[12px] text-muted-foreground"
-              style={{ boxShadow: "var(--shadow-card)" }}
-            >
-              لا خدمات فهاد الخيار دابا — اختار خياراً آخر من الشريط.
-            </p>
-          ) : (
+          {!current ? (
             <div className="mt-3 grid grid-cols-2 gap-2.5">
-              {cats.map((cat) => {
-                const Icon = categoryIcon(cat.icon);
+              {items.map((item) => {
+                const Icon = categoryIcon(item.icon ?? "");
+                const count = resolveItemCats(item).length;
                 return (
-                  <Link
-                    key={cat.slug}
-                    href={`/requests/new?service=${cat.slug}`}
-                    className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => openItem(item)}
+                    className="group rounded-3xl bg-card p-3.5 text-start transition-transform active:scale-[0.98]"
                     style={{ boxShadow: "var(--shadow-card)" }}
                   >
                     <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
                       <Icon className="size-5" />
                     </span>
-                    <h3 className="mt-3 text-[13px] font-black">{cat.nameAr}</h3>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{cat.description}</p>
-                  </Link>
+                    <h3 className="mt-3 text-[13px] font-black">{item.labelAr}</h3>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {count > 0 ? `${count} مهنة` : "خدمة مباشرة"}
+                    </p>
+                  </button>
                 );
               })}
+              {items.length === 0 ? (
+                <p
+                  className="col-span-2 rounded-2xl bg-card p-4 text-center text-[12px] text-muted-foreground"
+                  style={{ boxShadow: "var(--shadow-card)" }}
+                >
+                  لا تصنيفات بعد — زيدها من لوحة الإدارة ← خدمات الواجهة.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {cats.length === 0 ? (
+                <p
+                  className="col-span-2 rounded-2xl bg-card p-4 text-center text-[12px] text-muted-foreground"
+                  style={{ boxShadow: "var(--shadow-card)" }}
+                >
+                  لا مهن فهاد التصنيف دابا — رجع واختار تصنيفاً آخر.
+                </p>
+              ) : (
+                cats.map((cat) => {
+                  const Icon = categoryIcon(cat.icon);
+                  return (
+                    <Link
+                      key={cat.slug}
+                      href={`/requests/new?service=${cat.slug}`}
+                      className="group rounded-3xl bg-card p-3.5 transition-transform active:scale-[0.98]"
+                      style={{ boxShadow: "var(--shadow-card)" }}
+                    >
+                      <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                        <Icon className="size-5" />
+                      </span>
+                      <h3 className="mt-3 text-[13px] font-black">{cat.nameAr}</h3>
+                      <p className="mt-1 text-[11px] text-muted-foreground">{cat.description}</p>
+                    </Link>
+                  );
+                })
+              )}
             </div>
           )}
         </section>

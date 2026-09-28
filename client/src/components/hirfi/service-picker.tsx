@@ -43,28 +43,38 @@ export function resolveItemCats(item: MenuItem | undefined) {
 
 export function ServicePickerSheet({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
+  /** "" = شبكة التصنيفات؛ وإلا slug التصنيف المفتوح. */
   const [key, setKey] = useState<string>("");
   const startY = useRef<number | null>(null);
   const [, navigate] = useLocation();
   const q = useHomeMenu();
 
   const items = (q.data ?? []) as MenuItem[];
-  const current = items.find((i) => i.slug === key) ?? items[0];
+  const current = key ? items.find((i) => i.slug === key) : undefined;
   const cats = resolveItemCats(current);
-  // عنصر بلا مجموعة ولا نوع = فئة واحدة → كليك كيودّي مباشرة لصفحة الطلب.
   const isDirect = Boolean(current && !current.kindFilter && !current.subSlugs);
 
   function closeSheet() {
     setOpen(false);
+    setKey("");
+  }
+
+  /** كليك على بطاقة تصنيف: فئة واحدة → توجيه مباشر؛ تصنيف → فتح مهنه. */
+  function openItem(item: MenuItem) {
+    if (!item.kindFilter && !item.subSlugs) {
+      if (CATALOG_BY_SLUG.get(item.slug)) return void navigate(`/requests/new?service=${item.slug}`);
+      return void navigate("/requests/new");
+    }
+    setKey(item.slug);
+    setOpen(true);
+  }
+
+  function goBackToCategories() {
+    setKey("");
   }
 
   function selectKind(next: MenuItem) {
-    if (!next.kindFilter && !next.subSlugs) {
-      if (CATALOG_BY_SLUG.get(next.slug)) return void navigate(`/requests/new?service=${next.slug}`);
-      return void navigate("/requests/new");
-    }
-    setKey(next.slug);
-    setOpen(true);
+    openItem(next);
   }
 
   function startDrag(event: ReactPointerEvent<HTMLButtonElement>) {
@@ -124,39 +134,88 @@ export function ServicePickerSheet({ className }: { className?: string }) {
       </button>
 
       <div className="flex items-end justify-between gap-3 px-1">
-        <div>
-          <h2 className="text-[19px] font-black">{current?.labelAr ?? "شنو بغيتي اليوم؟"}</h2>
+        <div className="min-w-0">
+          <h2 className="truncate text-[19px] font-black">
+            {current ? current.labelAr : "شنو بغيتي اليوم؟"}
+          </h2>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            {isDirect ? "اضغط باش تبدا طلبك" : "اختار الخدمة اللي محتاج"}
+            {current ? (isDirect ? "اضغط باش تبدا طلبك" : "اختار المهنة اللي محتاج") : "اختار التصنيف اللي محتاج"}
           </p>
         </div>
-        <KindMenu value={current?.slug ?? ""} onChange={selectKind} onOpen={() => setOpen(true)} />
+        {current ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              goBackToCategories();
+            }}
+            className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[10px] font-black text-foreground"
+          >
+            كل التصنيفات
+          </button>
+        ) : (
+          <KindMenu value="" onChange={selectKind} onOpen={() => setOpen(true)} className="hidden" />
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 pt-3">
-        {cats.length === 0 ? (
-          <p className="col-span-2 rounded-2xl bg-muted/60 p-4 text-center text-[12px] text-muted-foreground">
-            لا خدمات فهاد الخيار دابا — اختار خياراً آخر من الشريط.
-          </p>
-        ) : (
-          cats.map((cat) => {
-            const Icon = categoryIcon(cat.icon);
+      {/* الشبكة: التصنيفات أولاً، ثم مهن التصنيف المفتوح */}
+      {!current ? (
+        <div className="grid grid-cols-2 gap-2.5 pt-3">
+          {items.map((item) => {
+            const Icon = categoryIcon(item.icon ?? "");
+            const count = resolveItemCats(item).length;
             return (
-              <Link
-                key={cat.slug}
-                href={`/requests/new?service=${cat.slug}`}
-                className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
+              <button
+                key={item.id}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openItem(item);
+                }}
+                className="group rounded-3xl bg-muted/65 p-3.5 text-start transition-transform active:scale-[0.98]"
               >
                 <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
                   <Icon className="size-5" />
                 </span>
-                <h3 className="mt-3 text-[13px] font-black">{cat.nameAr}</h3>
-                <p className="mt-1 text-[11px] text-muted-foreground">{cat.description}</p>
-              </Link>
+                <h3 className="mt-3 text-[13px] font-black">{item.labelAr}</h3>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {count > 0 ? `${count} مهنة` : "خدمة مباشرة"}
+                </p>
+              </button>
             );
-          })
-        )}
-      </div>
+          })}
+          {items.length === 0 ? (
+            <p className="col-span-2 rounded-2xl bg-muted/60 p-4 text-center text-[12px] text-muted-foreground">
+              لا تصنيفات بعد — زيدها من لوحة الإدارة ← خدمات الواجهة.
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2.5 pt-3">
+          {cats.length === 0 ? (
+            <p className="col-span-2 rounded-2xl bg-muted/60 p-4 text-center text-[12px] text-muted-foreground">
+              لا مهن فهاد التصنيف دابا — رجع واختار تصنيفاً آخر.
+            </p>
+          ) : (
+            cats.map((cat) => {
+              const Icon = categoryIcon(cat.icon);
+              return (
+                <Link
+                  key={cat.slug}
+                  href={`/requests/new?service=${cat.slug}`}
+                  className="group rounded-3xl bg-muted/65 p-3.5 transition-transform active:scale-[0.98]"
+                >
+                  <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-ink transition-transform group-hover:scale-105">
+                    <Icon className="size-5" />
+                  </span>
+                  <h3 className="mt-3 text-[13px] font-black">{cat.nameAr}</h3>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{cat.description}</p>
+                </Link>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 }
