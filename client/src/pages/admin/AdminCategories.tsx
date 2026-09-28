@@ -9,11 +9,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/_core/trpc";
 import { toast } from "@/lib/toast";
-import { errorMessage, categoryIcon } from "@/lib/format";
+import { errorMessage, categoryIcon, kindMeta, kindIcon } from "@/lib/format";
+import { SERVICE_KINDS, type ServiceKind } from "@shared/constants";
 
-type Draft = { id?: string; slug: string; nameAr: string; icon: string; sortOrder: string };
+type Draft = {
+  id?: string;
+  slug: string;
+  nameAr: string;
+  icon: string;
+  kind: ServiceKind;
+  commissionPercent: string;
+  requiresVerification: boolean;
+  description: string;
+  sortOrder: string;
+};
 
-const EMPTY: Draft = { slug: "", nameAr: "", icon: "Wrench", sortOrder: "0" };
+const EMPTY: Draft = {
+  slug: "",
+  nameAr: "",
+  icon: "Wrench",
+  kind: "field",
+  commissionPercent: "15",
+  requiresVerification: false,
+  description: "",
+  sortOrder: "0",
+};
 
 export default function AdminCategories() {
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -109,6 +129,57 @@ export default function AdminCategories() {
               />
             </label>
           </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="block">
+              <span className="text-[11px] font-bold text-muted-foreground">نوع الخدمة</span>
+              <select
+                value={draft.kind}
+                onChange={(e) =>
+                  setDraft({ ...draft, kind: e.target.value as ServiceKind })
+                }
+                className="mt-1.5 h-10 w-full rounded-xl border border-input bg-card px-3 text-[13px]"
+              >
+                {SERVICE_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {kindMeta(k).labelAr} — عمولة {kindMeta(k).commission}%
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-bold text-muted-foreground">نسبة العمولة %</span>
+              <Input
+                type="number"
+                min={0}
+                max={50}
+                value={draft.commissionPercent}
+                onChange={(e) => setDraft({ ...draft, commissionPercent: e.target.value })}
+                className="mt-1.5 h-10 rounded-xl text-[13px]"
+              />
+            </label>
+            <label className="flex items-center gap-2 pt-5">
+              <input
+                type="checkbox"
+                checked={draft.requiresVerification}
+                onChange={(e) => setDraft({ ...draft, requiresVerification: e.target.checked })}
+                className="size-4 accent-brand"
+              />
+              <span className="text-[12px] font-bold text-muted-foreground">
+                تتطلّب حرّافاً موثّقاً
+              </span>
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-bold text-muted-foreground">وصف مختصر</span>
+              <Input
+                value={draft.description}
+                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                placeholder="سطر يظهر للزبون"
+                className="mt-1.5 h-10 rounded-xl text-[13px]"
+              />
+            </label>
+          </div>
+
           <div className="mt-3 flex items-center gap-2">
             <Button
               className="gap-1.5 rounded-xl"
@@ -120,6 +191,10 @@ export default function AdminCategories() {
                   slug: draft.slug.trim(),
                   nameAr: draft.nameAr.trim(),
                   icon: draft.icon.trim(),
+                  kind: draft.kind,
+                  commissionPercent: Math.max(0, Math.min(50, Number(draft.commissionPercent) || 0)),
+                  requiresVerification: draft.requiresVerification,
+                  description: draft.description.trim() || null,
                   sortOrder: Math.max(0, Math.min(999, Number(draft.sortOrder) || 0)),
                 })
               }
@@ -127,7 +202,7 @@ export default function AdminCategories() {
               <Save className="size-4" /> حفظ
             </Button>
             <span className="text-[11.5px] text-muted-foreground">
-              الأيقونة اسم أيقونة Lucide (Zap، Wrench، PaintRoller…) — تُعرض في التطبيق.
+              icône Lucide (Zap، Wrench، PaintRoller…) — تُعرض في التطبيق.
             </span>
           </div>
         </div>
@@ -138,10 +213,12 @@ export default function AdminCategories() {
       ) : q.error ? (
         <ErrorState message={errorMessage(q.error)} onRetry={() => q.refetch()} />
       ) : (
-        <DataTable columns={["الأيقونة", "الاسم", "المعرّف", "الترتيب", "طلبات", "حرّافون", "إجراءات"]} empty={rows.length === 0}>
+        <DataTable columns={["الأيقونة", "الاسم", "النوع", "العمولة", "المعرّف", "الترتيب", "طلبات", "حرّافون", "إجراءات"]} empty={rows.length === 0}>
           {rows.map((c) => {
             const Icon = categoryIcon(c.icon);
             const used = c.requestsCount + c.providersCount > 0;
+            const kMeta = kindMeta(c.kind);
+            const KIcon = kindIcon(c.kind);
             return (
               <Tr key={c.id}>
                 <Td>
@@ -149,7 +226,16 @@ export default function AdminCategories() {
                     <Icon className="size-4.5" />
                   </span>
                 </Td>
-                <Td className="font-bold">{c.nameAr}</Td>
+                <Td className="font-bold">
+                  {c.nameAr}
+                  {c.requiresVerification ? (
+                    <Badge tone="warn" className="ms-1.5">توثيق</Badge>
+                  ) : null}
+                </Td>
+                <Td>
+                  <Badge tone="info" icon={KIcon}>{kMeta.shortAr}</Badge>
+                </Td>
+                <Td className="font-black">{c.commissionPercent}%</Td>
                 <Td className="font-mono text-[11.5px] text-muted-foreground">
                   <span style={{ direction: "ltr" }}>{c.slug}</span>
                 </Td>
@@ -172,6 +258,10 @@ export default function AdminCategories() {
                           slug: c.slug,
                           nameAr: c.nameAr,
                           icon: c.icon,
+                          kind: c.kind as ServiceKind,
+                          commissionPercent: String(c.commissionPercent),
+                          requiresVerification: c.requiresVerification,
+                          description: c.description ?? "",
                           sortOrder: String(c.sortOrder),
                         })
                       }

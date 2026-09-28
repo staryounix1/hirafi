@@ -37,6 +37,7 @@ export interface RequestCardData {
   description: string;
   categoryName: string;
   categoryIcon: string;
+  categoryKind?: string;
   budgetAmount: number;
   city: string;
   district: string;
@@ -72,8 +73,9 @@ export function RequestCard({
   const offers = request.offerCount ?? 0;
   const amount = request.agreedAmount ?? request.budgetAmount;
   const hasAmount = amount > 0;
+  const isDigital = request.categoryKind === "digital";
   const band =
-    showDistance && viewerCity
+    showDistance && viewerCity && !isDigital
       ? distanceBand(
           { city: viewerCity, district: viewerDistrict },
           { city: request.city, district: request.district },
@@ -97,8 +99,7 @@ export function RequestCard({
               </span>
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3.5" />
-                {request.city}
-                {request.district ? ` — ${request.district}` : ""}
+                {isDigital ? "عن بُعد" : `${request.city}${request.district ? ` — ${request.district}` : ""}`}
               </span>
             </div>
           </div>
@@ -133,6 +134,7 @@ export function RequestCard({
             <Badge tone={urg.tone}>{urg.label}</Badge>
           )}
           {band ? <Badge tone={DISTANCE_LABELS[band].tone}>{DISTANCE_LABELS[band].label}</Badge> : null}
+          {isDigital ? <Badge tone="info">رقمي</Badge> : null}
           <span className="ms-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <Clock className="size-3" />
             {timeAgoAr(request.createdAt)}
