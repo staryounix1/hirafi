@@ -24,6 +24,75 @@ type Draft = {
   sortOrder: string;
 };
 
+/** اقتراح أيقونة حسب اسم المهنة/الخدمة — باش الأدمن ما يحتاجش يحفظ أسماء Lucide. */
+function suggestIcon(nameAr: string, kind: ServiceKind): string {
+  const k = kind;
+  const keys: [RegExp, string][] = [
+    [/سباك|ماء|تسريب/, "Wrench"],
+    [/كهرب|إنارة|طريسيان/, "Zap"],
+    [/نجار|خشب|خزائن|مطبخ/, "Hammer"],
+    [/صباغ|طلاء|تشطيب/, "PaintRoller"],
+    [/تكييف|تبريد|مكيف|ثلاج/, "Snowflake"],
+    [/تنظيف|تعقيم/, "Sparkles"],
+    [/نقل|أثاث/, "Truck"],
+    [/هاتف|حاسوب|إلكترون|جهاز|إصلاح/, "Smartphone"],
+    [/خياط|كي|ملابس/, "Scissors"],
+    [/تصوير/, "Camera"],
+    [/درس|تعليم|تكوين/, "GraduationCap"],
+    [/بنّاء|بناء|تشييد|أشغال|جبص/, "Hammer"],
+    [/حداد|لحام|معدن/, "Flame"],
+    [/ألمنيوم|زجاج|نوافذ/, "Square"],
+    [/شمس|طاقة/, "Sun"],
+    [/سيار|ميكانيك|غسيل/, "Car"],
+    [/بستن|حديق|نبات/, "Trees"],
+    [/طبخ|تموين|مناسبات|مأكول/, "UtensilsCrossed"],
+    [/كوافير|حلاق|تجميل/, "Scissors"],
+    [/صحة|طبي|حجام/, "Stethoscope"],
+    [/حراس|أمن|كاميرا|مراقب/, "ShieldCheck"],
+    [/حشر|قوارض|مبيد/, "Bug"],
+    [/مساعد|جليس|طفل/, "Baby"],
+    [/لوغو|هوية|ديكور|منشور|تصميم/, "Palette"],
+    [/فيديو|مونتاج|موشن|ريل/, "Clapperboard"],
+    [/سوشل|صفح|تواصل/, "Share2"],
+    [/صور/, "ImagePlus"],
+    [/كتاب|مقال|محتوى|إعلان|إشهار/, "PenLine"],
+    [/ترجم|تعريب/, "Languages"],
+    [/متجر|بيع/, "ShoppingCart"],
+    [/موقع|ويب|هبوط|باك|API|API/, "Code2"],
+    [/صوت|بودكاست|تعليق/, "Mic"],
+    [/تطبيق|جوال/, "Smartphone"],
+    [/SEO|ظهور|تحسين/, "Search"],
+    [/إعلان|ممول|تسويق/, "Megaphone"],
+    [/بريد|إيميل/, "Mail"],
+    [/محاسب|جرد|عدّ|بيانات|جدول/, "Table"],
+    [/دعم|معلوماتي|شبكات/, "MonitorCog"],
+    [/توظيف|انتقاء/, "UserPlus"],
+    [/طباع|تجليد/, "Printer"],
+    [/تغليف|طلبات/, "Package"],
+    [/لوجست|توزيع|توصيل|مندوب/, "Truck"],
+    [/عزل|رطوب/, "Droplets"],
+    [/مسبح|ماء/, "Waves"],
+    [/حديد|باب|قفل/, "KeyRound"],
+    [/لافتة|إشهار|واجهة/, "Signpost"],
+    [/رخام|غرانيت|زليج|تبليط/, "Gem"],
+    [/مساعد|افتراضي|إداري/, "UserCog"],
+  ];
+  for (const [re, icon] of keys) if (re.test(nameAr)) return icon;
+  return k === "digital" ? "Laptop" : k === "b2b" ? "Building2" : "Wrench";
+}
+
+/** اقتراح slug لاتيني بسيط من الاسم العربي حسب النوع. */
+function slugFromName(nameAr: string, kind: ServiceKind): string {
+  const map: [RegExp, string][] = [
+    [/سباك/, "plumbing"], [/كهرب/, "electrical"], [/نجار/, "carpentry"],
+    [/بناء|بنّاء/, "construction"], [/حداد|لحام/, "welding"], [/صباغ/, "painting"],
+    [/تنظيف/, "cleaning"], [/نقل/, "moving"], [/تكييف/, "hvac"],
+  ];
+  for (const [re, slug] of map) if (re.test(nameAr)) return `${slug}-${kind}`;
+  const base = nameAr.trim().toLowerCase().replace(/\s+/g, "-");
+  return `${base || "cat"}-${kind}`;
+}
+
 const EMPTY: Draft = {
   slug: "",
   nameAr: "",
@@ -37,6 +106,11 @@ const EMPTY: Draft = {
 
 export default function AdminCategories() {
   const [draft, setDraft] = useState<Draft | null>(null);
+
+  /** إضافة سريعة: الأدمن كيكتب غير الاسم، والأيقونة والـslug كيتقترحو أوتوماتيكياً. */
+  const [quickName, setQuickName] = useState("");
+  const [quickKind, setQuickKind] = useState<ServiceKind>("field");
+  const quickValid = quickName.trim().length >= 2;
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
 
   const utils = trpc.useUtils();
@@ -81,6 +155,64 @@ export default function AdminCategories() {
         </div>
       }
     >
+      <div className="mb-4 rounded-2xl border border-dashed border-brand/60 bg-brand/5 p-4">
+        <h2 className="text-[14px] font-black">إضافة سريعة لخدمة جديدة</h2>
+        <p className="mt-1 text-[11.5px] text-muted-foreground">
+          كتب غير اسم الخدمة واختار النوع — الأيقونة والـ slug كيتقترحو بوحدهم، ومن بعد تقدر تعدّل التفاصيل.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="min-w-[220px] flex-1">
+            <span className="text-[11px] font-bold text-muted-foreground">اسم الخدمة</span>
+            <Input
+              value={quickName}
+              onChange={(e) => setQuickName(e.target.value)}
+              placeholder="مثال: تركيب المصاعد"
+              className="mt-1.5 h-10 rounded-xl text-[13px]"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[11px] font-bold text-muted-foreground">النوع</span>
+            <select
+              value={quickKind}
+              onChange={(e) => setQuickKind(e.target.value as ServiceKind)}
+              className="mt-1.5 h-10 rounded-xl border border-input bg-card px-3 text-[13px]"
+            >
+              {SERVICE_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {kindMeta(k).labelAr}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            className="h-10 gap-1.5 rounded-xl"
+            disabled={!quickValid || saveM.isPending}
+            onClick={() => {
+              const name = quickName.trim();
+              const next = rows.length ? Math.max(...rows.map((r) => r.sortOrder)) + 1 : 0;
+              saveM.mutate(
+                {
+                  slug: slugFromName(name, quickKind),
+                  nameAr: name,
+                  icon: suggestIcon(name, quickKind),
+                  kind: quickKind,
+                  commissionPercent: kindMeta(quickKind).commission,
+                  requiresVerification: false,
+                  description: null,
+                  sortOrder: next,
+                },
+                { onSuccess: () => setQuickName("") },
+              );
+            }}
+          >
+            <Plus className="size-4" /> أضف الخدمة
+          </Button>
+        </div>
+        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          الأيقونة المقترحة: <b className="text-foreground">{suggestIcon(quickName, quickKind)}</b>
+        </p>
+      </div>
+
       {draft ? (
         <div className="mb-4 rounded-2xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center justify-between">
@@ -94,7 +226,20 @@ export default function AdminCategories() {
               <span className="text-[11px] font-bold text-muted-foreground">الاسم بالعربية</span>
               <Input
                 value={draft.nameAr}
-                onChange={(e) => setDraft({ ...draft, nameAr: e.target.value, slug: draft.id ? draft.slug : slugify(e.target.value) })}
+                onChange={(e) => {
+                  const nameAr = e.target.value;
+                  setDraft((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          nameAr,
+                          // الاسم العربي ماشي كيعطي slug لاتيني مقروء — نستعملو اقتراحاً حسب المهنة.
+                          slug: prev.id ? prev.slug : slugFromName(nameAr, prev.kind),
+                          icon: suggestIcon(nameAr, prev.kind),
+                        }
+                      : prev,
+                  );
+                }}
                 placeholder="مثال: كهرباء"
                 className="mt-1.5 h-10 rounded-xl text-[13px]"
               />
@@ -304,10 +449,3 @@ export default function AdminCategories() {
   );
 }
 
-function slugify(v: string): string {
-  return v
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
