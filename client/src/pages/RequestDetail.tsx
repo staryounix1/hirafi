@@ -72,6 +72,10 @@ export default function RequestDetail() {
   const [newOfferIds, setNewOfferIds] = useState<string[]>([]);
   const knownOfferIdsRef = useRef<Set<string> | null>(null);
 
+  // ⚠️ الهوكس خاصها تبقى قبل أي return مبكّر — وإلا React #310 (ترتيب الهوكس كيتبدّل).
+  const walletEnabled = useWalletEnabled();
+  const walletBalance = useMyProfile().data?.balance ?? 0;
+
   useEffect(() => {
     const data = q.data;
     if (!data) return;
@@ -131,8 +135,6 @@ export default function RequestDetail() {
   const hasBudget = displayedAmount > 0;
 
   // الخدمات الرقمية: القبول مشروط بمحفظة مفعّلة ورصيد > 0 (الخادم كيفرض نفس الشرط).
-  const walletEnabled = useWalletEnabled();
-  const walletBalance = useMyProfile().data?.balance ?? 0;
   const walletReady = walletEnabled && walletBalance > 0;
 
   const customerAvg = r.customerRatingCount
