@@ -216,6 +216,7 @@ const requestsRouter = router({
     .input(
       z.object({
         categoryId: z.uuid().optional(),
+        kind: z.enum(["field", "digital", "b2b"]).optional(),
         city: z.string().optional(),
         district: z.string().optional(),
         distance: z.enum(["near", "medium", "far", "all"]).default("all"),

@@ -151,6 +151,10 @@ const categoriesRouter = router({
         slug: z.string().min(2).max(60),
         nameAr: z.string().min(2).max(60),
         icon: z.string().min(2).max(60),
+        kind: z.enum(["field", "digital", "b2b"]).default("field"),
+        commissionPercent: z.number().int().min(0).max(50).default(15),
+        requiresVerification: z.boolean().default(false),
+        description: z.string().max(200).nullish(),
         sortOrder: z.number().int().min(0).max(999),
       }),
     )

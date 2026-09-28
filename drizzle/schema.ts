@@ -80,6 +80,17 @@ export const serviceCategories = pgTable(
     slug: text("slug").notNull().unique(),
     nameAr: text("name_ar").notNull(),
     icon: text("icon").notNull(), // اسم أيقونة lucide
+    /**
+     * نوع الخدمة: `field` ميدانية | `digital` رقمية | `b2b` للشركات.
+     * يفصل التجربة والعمولة: الرقمي بلا مسافة وبمسار تسليم مختلف.
+     */
+    kind: text("kind").notNull().default("field"),
+    /** نسبة عمولة المنصّة على هذه الخدمة (15 ميداني، 12 رقمي، 10 شركات افتراضياً). */
+    commissionPercent: integer("commission_percent").notNull().default(15),
+    /** خدمات حساسة (غاز، كهرباء، صحة، حراسة) لا يعرض عليها إلا حرّاف موثّق. */
+    requiresVerification: boolean("requires_verification").notNull().default(false),
+    /** وصف مختصر يظهر للمستخدم عند اختيار الخدمة. */
+    description: text("description"),
     sortOrder: integer("sort_order").notNull().default(0),
   },
   (t) => [index("service_categories_sort_idx").on(t.sortOrder)],
