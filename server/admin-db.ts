@@ -16,6 +16,7 @@ import {
   reviews,
   serviceCategories,
   topupRequests,
+  homeMenuItems,
   users,
   walletTransactions,
 } from "../drizzle/schema";
@@ -1092,4 +1093,66 @@ export async function adminConfirmTopup(input: {
     detail: `${input.amount} درهم${note ? ` — ${note}` : ""}`,
   });
   return row;
+}
+
+// ── شريط «شنو بغيتي اليوم؟» — إدارة الخيارات ────────────────────────────────
+
+/** كل العناصر (حتى المعطّلة) للإدارة، مرتّبة. */
+export async function adminListHomeMenuItems() {
+  return db.select().from(homeMenuItems).orderBy(homeMenuItems.sortOrder);
+}
+
+export async function adminSaveHomeMenuItem(input: {
+  id?: string;
+  labelAr: string;
+  slug?: string;
+  kindFilter?: string | null;
+  subSlugs?: string | null;
+  icon?: string | null;
+  sortOrder?: number;
+  active?: boolean;
+  adminId: string;
+}) {
+  const labelAr = input.labelAr.trim();
+  if (labelAr.length < 2) throw new InvalidStateError("اسم الخيار مطلوب");
+
+  const rawSlug = (input.slug ?? labelAr).trim();
+  const slug = rawSlug
+    .toLowerCase()
+    .replace(/[^a-z0-9\-\u0600-\u06FF]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const values = {
+    labelAr,
+    slug: slug || `item-${Date.now()}`,
+    kindFilter: input.kindFilter?.trim() || null,
+    subSlugs: input.subSlugs?.trim() || null,
+    icon: input.icon?.trim() || null,
+    sortOrder: input.sortOrder ?? 0,
+    active: input.active ?? true,
+    updatedAt: new Date(),
+  };
+
+  if (input.id) {
+    const [row] = await db.update(homeMenuItems).set(values).where(eq(homeMenuItems.id, input.id)).returning();
+    if (!row) throw new NotFoundError("الخيار غير موجود");
+    return row;
+  }
+  const [created] = await db.insert(homeMenuItems).values(values).returning();
+  return created;
+}
+
+export async function adminDeleteHomeMenuItem(id: string) {
+  const [row] = await db.delete(homeMenuItems).where(eq(homeMenuItems.id, id)).returning();
+  if (!row) throw new NotFoundError("الخيار غير موجود");
+  return row;
+}
+
+export async function adminReorderHomeMenuItems(ids: string[]) {
+  await Promise.all(
+    ids.map((id, index) =>
+      db.update(homeMenuItems).set({ sortOrder: index, updatedAt: new Date() }).where(eq(homeMenuItems.id, id)),
+    ),
+  );
+  return adminListHomeMenuItems();
 }

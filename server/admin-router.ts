@@ -165,6 +165,34 @@ const categoriesRouter = router({
     .mutation(({ ctx, input }) => guarded(() => a.adminDeleteCategory({ id: input.id, adminId: ctx.user.id }))),
 });
 
+// ── شريط «شنو بغيتي اليوم؟» — تزيد/تمسح/ترتّب خيارات الرئيسية ──
+const homeMenuRouter = router({
+  list: adminProcedure.query(() => guarded(() => a.adminListHomeMenuItems())),
+
+  save: adminProcedure
+    .input(
+      z.object({
+        id: z.uuid().optional(),
+        labelAr: z.string().min(2).max(60),
+        slug: z.string().max(80).optional(),
+        kindFilter: z.enum(["field", "digital", "b2b"]).nullish(),
+        subSlugs: z.string().max(2000).nullish(),
+        icon: z.string().max(60).nullish(),
+        sortOrder: z.number().int().min(0).max(999).default(0),
+        active: z.boolean().default(true),
+      }),
+    )
+    .mutation(({ ctx, input }) => guarded(() => a.adminSaveHomeMenuItem({ ...input, adminId: ctx.user.id }))),
+
+  remove: adminProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(({ input }) => guarded(() => a.adminDeleteHomeMenuItem(input.id))),
+
+  reorder: adminProcedure
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(60) }))
+    .mutation(({ input }) => guarded(() => a.adminReorderHomeMenuItems(input.ids))),
+});
+
 const auditRouter = router({
   list: adminProcedure
     .input(z.object({ limit: z.number().int().min(1).max(300).optional() }).optional())
@@ -267,6 +295,7 @@ export const adminRouter = router({
   wallets: walletsRouter,
   reviews: reviewsRouter,
   categories: categoriesRouter,
+  homeMenu: homeMenuRouter,
   audit: auditRouter,
   reports: reportsRouter,
   topups: topupsRouter,
