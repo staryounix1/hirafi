@@ -17,6 +17,7 @@ import {
   serviceCategories,
   topupRequests,
   homeMenuItems,
+  providerVerifications,
   users,
   walletTransactions,
 } from "../drizzle/schema";
@@ -31,7 +32,16 @@ export { isUniqueViolation };
 export async function recordAdminAction(input: {
   adminId: string;
   action: string;
-  targetType: "user" | "request" | "offer" | "review" | "category" | "wallet" | "report" | "topup";
+  targetType:
+    | "user"
+    | "request"
+    | "offer"
+    | "review"
+    | "category"
+    | "wallet"
+    | "report"
+    | "topup"
+    | "verification";
   targetId?: string | null;
   detail?: string | null;
 }) {
@@ -1155,4 +1165,109 @@ export async function adminReorderHomeMenuItems(ids: string[]) {
     ),
   );
   return adminListHomeMenuItems();
+}
+
+
+// ── طلبات تفعيل حساب الحرّاف ──────────────────────────────────────────────────
+/** لائحة طلبات التفعيل (افتراضياً المعلّقة) مع اسم الحساب ورقم هاتفه ووثائقه. */
+export async function adminListVerifications(input: { status?: string; limit?: number }) {
+  const conds: SQL[] = [];
+  conds.push(eq(providerVerifications.status, input.status || "pending"));
+  const rows = await db
+    .select({
+      id: providerVerifications.id,
+      userId: providerVerifications.userId,
+      isDriver: providerVerifications.isDriver,
+      idFrontUrl: providerVerifications.idFrontUrl,
+      idBackUrl: providerVerifications.idBackUrl,
+      licenseUrl: providerVerifications.licenseUrl,
+      selfieUrl: providerVerifications.selfieUrl,
+      status: providerVerifications.status,
+      adminNote: providerVerifications.adminNote,
+      reviewedAt: providerVerifications.reviewedAt,
+      createdAt: providerVerifications.createdAt,
+      email: users.email,
+      displayName: providerProfiles.displayName,
+      phone: providerProfiles.phone,
+      city: providerProfiles.city,
+      district: providerProfiles.district,
+      bio: providerProfiles.bio,
+      yearsExperience: providerProfiles.yearsExperience,
+      isVerified: providerProfiles.isVerified,
+    })
+    .from(providerVerifications)
+    .innerJoin(users, eq(users.id, providerVerifications.userId))
+    .leftJoin(providerProfiles, eq(providerProfiles.userId, providerVerifications.userId))
+    .where(and(...conds))
+    .orderBy(desc(providerVerifications.createdAt))
+    .limit(Math.min(input.limit ?? 100, 200));
+  return rows;
+}
+
+/** عدد الطلبات المعلّقة — للشارة فلوحة الإدارة. */
+export async function adminVerificationCounts() {
+  const [row] = await db
+    .select({
+      pending: sql<number>`count(*) filter (where ${providerVerifications.status} = 'pending')::int`,
+      approved: sql<number>`count(*) filter (where ${providerVerifications.status} = 'approved')::int`,
+      rejected: sql<number>`count(*) filter (where ${providerVerifications.status} = 'rejected')::int`,
+    })
+    .from(providerVerifications);
+  return row ?? { pending: 0, approved: 0, rejected: 0 };
+}
+
+/** موافقة/رفض طلب تفعيل. الموافقة كتقلب isVerified=true وكتحيّد الحاجز. */
+export async function adminReviewVerification(input: {
+  verificationId: string;
+  approve: boolean;
+  note?: string | null;
+  adminId: string;
+}) {
+  const [v] = await db
+    .select()
+    .from(providerVerifications)
+    .where(eq(providerVerifications.id, input.verificationId))
+    .limit(1);
+  if (!v) throw new NotFoundError("طلب التفعيل غير موجود");
+
+  const status = input.approve ? "approved" : "rejected";
+  await db
+    .update(providerVerifications)
+    .set({
+      status,
+      adminNote: input.note?.trim() || null,
+      reviewedByAdminId: input.adminId,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(providerVerifications.id, input.verificationId));
+
+  await db
+    .update(providerProfiles)
+    .set({
+      isVerified: input.approve,
+      verificationStatus: status,
+      verificationNote: input.note?.trim() || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(providerProfiles.userId, v.userId));
+
+  await db.insert(notifications).values({
+    userId: v.userId,
+    type: "verification",
+    title: input.approve ? "تم تفعيل حسابك ✓" : "طلب التفعيل مرفوض",
+    body: input.approve
+      ? "راجعت الإدارة وثائقك وتم تفعيل حسابك. دابا تقدر تستعمل المنصة كاملة."
+      : `رُفض طلب التفعيل${input.note ? `: ${input.note}` : ""}. صحّح الوثائق وأعد الإرسال.`,
+  });
+
+  await recordAdminAction({
+    adminId: input.adminId,
+    action: input.approve ? "APPROVE_VERIFICATION" : "REJECT_VERIFICATION",
+    targetType: "verification",
+    targetId: input.verificationId,
+    detail: input.note ?? null,
+  });
+
+  return { userId: v.userId, status };
 }
