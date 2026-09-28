@@ -576,6 +576,10 @@ export async function adminListCategories() {
       slug: serviceCategories.slug,
       nameAr: serviceCategories.nameAr,
       icon: serviceCategories.icon,
+      kind: serviceCategories.kind,
+      commissionPercent: serviceCategories.commissionPercent,
+      requiresVerification: serviceCategories.requiresVerification,
+      description: serviceCategories.description,
       sortOrder: serviceCategories.sortOrder,
       // مهم: نستعمل اسم الجدول المؤهَّل صراحةً. داخل قالب sql()، Drizzle كيصدر
       // ${serviceCategories.id} كـ"id" غير مؤهَّل، والاستعلام الفرعي كيحلّو على
@@ -592,6 +596,10 @@ export async function adminSaveCategory(input: {
   slug: string;
   nameAr: string;
   icon: string;
+  kind: "field" | "digital" | "b2b";
+  commissionPercent: number;
+  requiresVerification: boolean;
+  description?: string | null;
   sortOrder: number;
   adminId: string;
 }) {
@@ -599,6 +607,10 @@ export async function adminSaveCategory(input: {
     slug: input.slug.trim(),
     nameAr: input.nameAr.trim(),
     icon: input.icon.trim(),
+    kind: input.kind,
+    commissionPercent: input.commissionPercent,
+    requiresVerification: input.requiresVerification,
+    description: input.description?.trim() || null,
     sortOrder: input.sortOrder,
   };
   if (!values.slug || !values.nameAr || !values.icon) {
