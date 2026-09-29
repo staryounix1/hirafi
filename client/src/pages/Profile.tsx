@@ -34,7 +34,7 @@ import { useImageUpload, validateImage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { categoryIcon, countAr, errorMessage, formatDateAr, formatMAD, madNumber, ratingAvg } from "@/lib/format";
-import { MOROCCAN_CITIES, DISTRICTS_BY_CITY, type AppRole } from "@shared/constants";
+import { MOROCCAN_CITIES, DISTRICTS_BY_CITY, kindMeta, type AppRole, type ServiceKind } from "@shared/constants";
 import { isValidMoroccanPhone } from "@shared/types";
 
 export default function Profile() {
@@ -99,6 +99,10 @@ export default function Profile() {
   const districts = DISTRICTS_BY_CITY[city] ?? [];
   const avg = ratingAvg(p.ratingSum, p.ratingCount);
   const walletOn = Boolean(q.data.walletEnabled);
+  // المهنة المحبوسة: الحرّاف كيشوف غير فئات نوعو.
+  const lockedKind = (q.data.primaryKind as ServiceKind | null) ?? null;
+  const allCats = cats.data ?? [];
+  const visibleCats = lockedKind ? allCats.filter((c) => c.kind === lockedKind) : allCats;
 
   function toggleSkill(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -258,8 +262,8 @@ export default function Profile() {
                 </h2>
                 <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
                   {walletOn
-                    ? "المحفظة مفعّلة — كتبان فالشريط السفلي، وكتحتاج رصيداً باش تقبل عروض الخدمات الرقمية."
-                    : "المحفظة معطّلة. فعّلها باش تقدر تقبل عروض الخدمات الرقمية وتشحن رصيدك."}
+                    ? "المحفظة مفعّلة — كتبان فالشريط السفلي، وكتحتاج رصيداً باش تقبل عروض مهام الإنترنت."
+                    : "المحفظة معطّلة. فعّلها باش تقدر تقبل عروض مهام الإنترنت وتشحن رصيدك."}
                 </p>
               </div>
               <button
@@ -440,11 +444,13 @@ export default function Profile() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[15px] font-black">مهاراتي وفئات خدمتي</h2>
               <Badge tone="teal" icon={Check}>
-                {selected.length} من {(cats.data ?? []).length || 12}
+                {selected.length} من {visibleCats.length || 12}
               </Badge>
             </div>
             <p className="mt-1 text-[12px] text-muted-foreground">
-              تُستعمل لترجيح الطلبات المناسبة لك في صفحة التصفّح.
+              {lockedKind
+                ? `مهنتك: ${kindMeta(lockedKind).labelAr} — هادو غير الخدمات المتوفرة ف نوعك.`
+                : "تُستعمل لترجيح الطلبات المناسبة لك في صفحة التصفّح."}
             </p>
             {cats.isLoading ? (
               <div className="mt-4 grid grid-cols-3 gap-2">
@@ -454,7 +460,7 @@ export default function Profile() {
               </div>
             ) : (
               <div className="mt-4 grid grid-cols-3 gap-2">
-                {(cats.data ?? []).map((c) => {
+                {visibleCats.map((c) => {
                   const Icon = categoryIcon(c.icon);
                   const on = selected.includes(c.id);
                   return (
