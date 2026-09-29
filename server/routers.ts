@@ -474,6 +474,44 @@ const notificationsRouter = router({
     .mutation(({ ctx, input }) => guarded(() => q.markNotificationRead(input.id, ctx.user.id))),
 
   markAllRead: protectedProcedure.mutation(({ ctx }) => q.markAllNotificationsRead(ctx.user.id)),
+
+  /** تسجيل جهاز باش يوصلوه الإشعارات (Web Push). */
+  pushSubscribe: protectedProcedure
+    .input(
+      z.object({
+        endpoint: z.string().url().max(600),
+        p256dh: z.string().min(20).max(300),
+        auth: z.string().min(8).max(120),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        q.savePushSubscription({
+          userId: ctx.user.id,
+          endpoint: input.endpoint,
+          p256dh: input.p256dh,
+          auth: input.auth,
+          userAgent: ctx.c.req.header("user-agent") ?? null,
+        }),
+      ),
+    ),
+
+  /** إلغاء تفعيل الإشعارات من الجهاز. */
+  pushUnsubscribe: protectedProcedure
+    .input(z.object({ endpoint: z.string().max(600) }))
+    .mutation(({ ctx, input }) => guarded(() => q.removePushSubscription(ctx.user.id, input.endpoint))),
+
+  /** عيّنة اختبارية — كترسل إشعاراً للجهاز باش المستخدم يتأكد أنها خدامة. */
+  pushTest: protectedProcedure.mutation(({ ctx }) =>
+    guarded(() =>
+      q.pushToUser(ctx.user.id, {
+        title: "حِرْفي",
+        body: "الإشعارات خدّامين — غادي توصلك أخبار العروض والطلبات هنا.",
+        url: "/notifications",
+        tag: "test",
+      }),
+    ),
+  ),
 });
 
 // ── البلاغات (من المستخدم) ────────────────────────────────────────────────────
@@ -577,7 +615,16 @@ const filesRouter = router({
     }),
 });
 
+/** إعدادات عامة للعميل — ماشي فيها أسرار (غير مفاتيح عامة). */
+const configRouter = router({
+  public: publicProcedure.query(() => ({
+    vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
+    pushEnabled: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
+  })),
+});
+
 export const appRouter = router({
+  config: configRouter,
   auth: authRouter,
   categories: categoriesRouter,
   homeMenu: homeMenuRouter,
