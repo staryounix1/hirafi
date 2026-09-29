@@ -1,7 +1,7 @@
 // ── AGENT-OWNED: business data-access ──────────────────────────────────────────
 // All Drizzle/raw SQL lives here so routers stay thin. Every user-scoped query
 // is filtered by an owner column — no procedure ever reads another user's rows.
-import { and, desc, eq, ne, or, sql, inArray, gte, lte, notInArray } from "drizzle-orm";
+import { and, desc, eq, ne, or, sql, inArray, gte, lte, notInArray, isNull } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import type { AppDB } from "./_core/db";
 import { db, atomic as atomicRaw, isUniqueViolation } from "./_core/db";
@@ -153,6 +153,41 @@ export async function updateProfile(
     .returning();
   if (!row) throw new NotFoundError("الملف غير موجود");
   return row;
+}
+
+/**
+ * يثبّت نوع خدمة الحرّاف **مرة واحدة**. أول نداء كيكتب `primary_kind`، وأي نداء
+ * من بعد بنوع مختلف كيترفض. هادا القفل ما كيتفكّش — هوية الحرّاف المهنية.
+ */
+export async function lockProfessionKind(
+  userId: string,
+  kind: "field" | "digital" | "b2b",
+): Promise<{ primaryKind: string; locked: boolean }> {
+  const [row] = await db
+    .select({ primaryKind: providerProfiles.primaryKind })
+    .from(providerProfiles)
+    .where(eq(providerProfiles.userId, userId))
+    .limit(1);
+  if (!row) throw new NotFoundError("الملف غير موجود");
+  if (row.primaryKind) {
+    if (row.primaryKind === kind) return { primaryKind: row.primaryKind, locked: true };
+    throw new InvalidStateError("اخترت مهنتك من قبل — المهنة ما كتتبدّلش. تواصل مع الدعم إلا كان خطأ.");
+  }
+  const [updated] = await db
+    .update(providerProfiles)
+    .set({ primaryKind: kind, professionLockedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(providerProfiles.userId, userId), isNull(providerProfiles.primaryKind)))
+    .returning({ primaryKind: providerProfiles.primaryKind });
+  if (!updated) {
+    const [again] = await db
+      .select({ primaryKind: providerProfiles.primaryKind })
+      .from(providerProfiles)
+      .where(eq(providerProfiles.userId, userId))
+      .limit(1);
+    if (again?.primaryKind === kind) return { primaryKind: again.primaryKind, locked: true };
+    throw new InvalidStateError("اخترت مهنتك من قبل — المهنة ما كتتبدّلش.");
+  }
+  return { primaryKind: kind, locked: true };
 }
 
 /** وثائق التفعيل الحالية للحرّاف (null إلا ما بداش العملية). */
@@ -380,10 +415,21 @@ export async function browseOpenRequests(input: {
   limit?: number;
 }) {
   const conds = [eq(requests.status, "open")];
-  if (input.categoryId) conds.push(eq(requests.categoryId, input.categoryId));
-  if (input.kind) conds.push(eq(serviceCategories.kind, input.kind));
-  // الخدمات الرقمية عن بُعد: لا معنى للمسافة — نتجاهلها حتى لو أُرسلت.
-  if (input.kind === "digital") input = { ...input, distance: "all" };
+
+  // المهنة المحبوسة: إلا كان الحرّاف حبس نوعاً، كنفرضوه وكنتجاهلو أي نوع آخر.
+  // هادا هو مصدر الحقيقة — الواجهة كتخبّي، ولكن الخادم هو اللي كيفرض.
+  const [locked] = await db
+    .select({ primaryKind: providerProfiles.primaryKind })
+    .from(providerProfiles)
+    .where(eq(providerProfiles.userId, input.providerUserId))
+    .limit(1);
+  const lockedKind = (locked?.primaryKind ?? null) as "field" | "digital" | "b2b" | null;
+  const kind = lockedKind ?? input.kind;
+  if (kind) conds.push(eq(serviceCategories.kind, kind));
+  // مهام الإنترنت عن بُعد: لا معنى للمسافة — نتجاهلها حتى لو أُرسلت.
+  if (kind === "digital") input = { ...input, distance: "all" };
+  // إلا كان النوع محبوساً، كنحيّدو فلترة المدينة إلا كان النوع رقمي (عن بُعد).
+  if (lockedKind === "digital") input = { ...input, distance: "all", city: undefined, district: undefined };
   if (input.city) conds.push(eq(requests.city, input.city));
   if (input.district) conds.push(eq(requests.district, input.district));
   if (input.urgency) conds.push(eq(requests.urgency, input.urgency));
