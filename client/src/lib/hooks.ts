@@ -1,7 +1,7 @@
 // ── خطّافات مشتركة: الجلسة (الملف + الدور)، الفئات، عدّاد الإشعارات ─────────
 import { useMemo } from "react";
 import { trpc } from "@/_core/trpc";
-import type { AppRole } from "@shared/constants";
+import type { AppRole, ServiceKind } from "@shared/constants";
 
 /** ملفي + مهاراتي + أعمالي — المصدر الوحيد للدور التجاري الحالي. */
 export function useMyProfile() {
@@ -12,6 +12,16 @@ export function useMyProfile() {
 export function useWalletEnabled(): boolean {
   const q = useMyProfile();
   return q.data?.walletEnabled ?? false;
+}
+
+/**
+ * نوع خدمة الحرّاف المحبوس — `null` مازال ما اختارش.
+ * ملي كيتثبّت، الحرّاف كيشوف غير خدمات نوعو والواجهة كتتبدّل عليها.
+ */
+export function usePrimaryKind(): { kind: ServiceKind | null; locked: boolean; isLoading: boolean } {
+  const q = useMyProfile();
+  const kind = (q.data?.primaryKind as ServiceKind | null | undefined) ?? null;
+  return { kind, locked: Boolean(q.data?.professionLocked), isLoading: q.isLoading };
 }
 
 /** الدور التجاري للمستخدم الحالي — `customer` | `provider`، مع بديل آمن أثناء التحميل. */

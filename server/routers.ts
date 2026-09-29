@@ -20,6 +20,7 @@ import {
   URGENCIES,
   MOROCCAN_CITIES,
   PLATFORM_FEE_PERCENT,
+  SERVICE_KINDS,
 } from "../shared/constants";
 
 /** كل خطأ مجال مُصنَّف يُترجَم هنا إلى رمز مفهوم ورسالة عربية قابلة للتنفيذ. */
@@ -133,6 +134,9 @@ const profileRouter = router({
       works,
       balance: wallet.balance,
       walletEnabled,
+      /** نوع الخدمة المحبوس (null = مازال ما اختارش). */
+      primaryKind: profile.primaryKind ?? null,
+      professionLocked: Boolean(profile.primaryKind),
       /** وثائق التفعيل — كيفما كانت (null إلا بدا الحرّاف العملية). */
       verification: verification
         ? {
@@ -149,6 +153,23 @@ const profileRouter = router({
       requiresLicense: await q.isDriverUser(ctx.user.id),
     };
   }),
+
+  /**
+   * يثبّت مهنة الحرّاف (نوع الخدمة) — أول اختيار فقط، وما بقى ما يتبدّلش.
+   * منو كيتحدّد شنو كيشوف الحرّاف: غير خدمات نوعو.
+   */
+  lockProfession: protectedProcedure
+    .input(z.object({ kind: z.enum(SERVICE_KINDS) }))
+    .mutation(({ ctx, input }) =>
+      guarded(async () => {
+        const profile = await q.getProfile(ctx.user.id);
+        if (!profile) throw new q.NotFoundError("الملف غير موجود");
+        if (profile.role !== "provider") {
+          throw new q.InvalidStateError("هاد الاختيار خاص بحساب الحرّاف — بدّل دورك أولاً.");
+        }
+        return q.lockProfessionKind(ctx.user.id, input.kind);
+      }),
+    ),
 
   /** تفعيل/إلغاء محفظة الزبون — معطّلة افتراضياً. */
   setWalletEnabled: protectedProcedure

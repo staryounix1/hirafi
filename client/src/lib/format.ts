@@ -161,7 +161,7 @@ export function categoryIcon(name: string | null | undefined): LucideIcon {
   return (name && CATEGORY_ICONS[name]) || Settings;
 }
 
-/** أيقونة نوع الخدمة (ميداني/رقمي/شركات). */
+/** أيقونة نوع الخدمة (ميداني/مهام إنترنت/شركات). */
 export function kindIcon(kind: string): LucideIcon {
   if (kind === "digital") return Laptop;
   if (kind === "b2b") return Building2;

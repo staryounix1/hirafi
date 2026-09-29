@@ -95,9 +95,9 @@ export const SERVICE_KIND_META: Record<
   },
   digital: {
     key: "digital",
-    labelAr: "خدمات رقمية",
-    shortAr: "رقمي",
-    hintAr: "فريلانس وتسليم عن بُعد — ملفات ومراجعة قبل القبول",
+    labelAr: "مهام إنترنت",
+    shortAr: "مهام إنترنت",
+    hintAr: "مهام تُنجَز وتُسلَّم عبر الإنترنت — ملفات ومراجعة قبل القبول",
     icon: "Laptop",
     commission: 12,
   },
