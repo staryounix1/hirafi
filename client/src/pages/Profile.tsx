@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Wallet,
   Bell,
+  BellRing,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ import {
 import { trpc } from "@/_core/trpc";
 import { useCategories, useMyProfile } from "@/lib/hooks";
 import { useImageUpload, validateImage } from "@/lib/upload";
+import { disablePush, enablePush, getPushState, type PushState } from "@/lib/push";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { categoryIcon, countAr, errorMessage, formatDateAr, formatMAD, madNumber, ratingAvg } from "@/lib/format";
@@ -306,6 +308,11 @@ export default function Profile() {
           </div>
         </section>
       ) : null}
+
+      {/* إشعارات الهاتف — Web Push */}
+      <section className="px-4 pt-3">
+        <NotificationCard />
+      </section>
 
       <section className="px-4 pt-3">
         <div className="card-flat p-4">
@@ -583,6 +590,115 @@ export default function Profile() {
 
         <ReviewsReceived />
       </div>
+    </div>
+  );
+}
+
+// ── إشعارات الهاتف (Web Push) — تفعيل بضغطة ────────────────────────────────────
+function NotificationCard() {
+  const [state, setState] = useState<PushState>("off");
+  const [busy, setBusy] = useState(false);
+  const testPush = trpc.notifications.pushTest.useMutation();
+
+  useEffect(() => {
+    void getPushState().then(setState);
+  }, []);
+
+  const label: Record<PushState, { title: string; body: string }> = {
+    unsupported: {
+      title: "المتصفح ما كيدعمش الإشعارات",
+      body: "استعمل Chrome ولا Safari فنسخة حديثة باش توصلك أخبار العروض.",
+    },
+    "needs-install": {
+      title: "زيد التطبيق للشاشة الرئيسية",
+      body: "على iPhone: اضغط زر المشاركة ↗ ومن بعد «إضافة إلى الشاشة الرئيسية»، من بعد رجع هنا وفعّل الإشعارات.",
+    },
+    denied: {
+      title: "الإشعارات مرفوضة",
+      body: "فتح إعدادات المتصفح ديال هاد الموقع وسمح بالإشعارات، من بعد رجع هنا.",
+    },
+    off: {
+      title: "إشعارات الهاتف",
+      body: "فعّلها باش توصلك العروض الجديدة والرسائل فوراً — حتى إلا كان التطبيق مسدود.",
+    },
+    on: {
+      title: "الإشعارات مفعّلة ✓",
+      body: "غادي توصلك أخبار العروض والطلبات والرسائل فوراً.",
+    },
+  };
+
+  const canToggle = state === "on" || state === "off";
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      if (state === "on") {
+        await disablePush();
+        setState(await getPushState());
+        toast.success("أُلغي تفعيل الإشعارات");
+      } else {
+        const r = await enablePush();
+        if (!r.ok) {
+          toast.error(r.error ?? "تعذّر تفعيل الإشعارات");
+          setState(await getPushState());
+          return;
+        }
+        setState("on");
+        toast.success("فُعّلت الإشعارات");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const on = state === "on";
+  return (
+    <div className="card-flat p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-1.5 text-[15px] font-black">
+            <BellRing className="size-4 text-brand-dark" />
+            {label[state].title}
+          </h2>
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{label[state].body}</p>
+        </div>
+        {canToggle ? (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={on}
+            aria-label="تفعيل الإشعارات"
+            disabled={busy}
+            onClick={() => void toggle()}
+            className={cn(
+              "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60",
+              on ? "bg-brand" : "bg-muted",
+            )}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 size-6 rounded-full bg-card shadow-sm transition-all",
+                on ? "start-0.5" : "start-[1.375rem]",
+              )}
+            />
+          </button>
+        ) : null}
+      </div>
+      {on ? (
+        <button
+          type="button"
+          disabled={testPush.isPending}
+          onClick={() =>
+            testPush.mutate(undefined, {
+              onSuccess: () => toast.success("صيفطنا إشعاراً تجريبياً لهاتفك"),
+              onError: (e) => toast.error(errorMessage(e)),
+            })
+          }
+          className="mt-3 w-full rounded-2xl bg-muted px-3 py-2.5 text-[12px] font-bold text-muted-foreground"
+        >
+          جرّب إشعاراً تجريبياً
+        </button>
+      ) : null}
     </div>
   );
 }
