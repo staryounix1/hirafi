@@ -134,7 +134,7 @@ export default function RequestDetail() {
   const displayedAmount = r.agreedAmount ?? r.budgetAmount;
   const hasBudget = displayedAmount > 0;
 
-  // الخدمات الرقمية: القبول مشروط بمحفظة مفعّلة ورصيد > 0 (الخادم كيفرض نفس الشرط).
+  // مهام إنترنت: القبول مشروط بمحفظة مفعّلة ورصيد > 0 (الخادم كيفرض نفس الشرط).
   const walletReady = walletEnabled && walletBalance > 0;
 
   const customerAvg = r.customerRatingCount
@@ -225,7 +225,7 @@ export default function RequestDetail() {
                 الموقع
               </dt>
               <dd className="mt-0.5 truncate text-[12.5px] font-bold">
-                {r.categoryKind === "digital" ? "عن بُعد — تنفيذ رقمي" : `${r.city} — ${r.district}`}
+                {r.categoryKind === "digital" ? "عن بُعد — خدمة إنترنت" : `${r.city} — ${r.district}`}
               </dd>
             </div>
             <div>
@@ -289,7 +289,7 @@ export default function RequestDetail() {
 
       {/* العروض المقدَّمة */}
       <section className="grid gap-3 px-4 pt-4">
-        {/* الخدمات الرقمية: الزبون كيقدر ينشر، ولكن ما يقدرش يقبل حتى يفعّل محفظتو ويشحنها */}
+        {/* مهام إنترنت: الزبون كيقدر ينشر، ولكن ما يقدرش يقبل حتى يفعّل محفظتو ويشحنها */}
         {d.isOwner && r.categoryKind === "digital" && r.status === "open" && !walletReady ? (
           <div className="card-flat flex items-start gap-3 border border-warn/30 bg-warn-soft p-4">
             <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-warn/15 text-warn">
@@ -299,7 +299,7 @@ export default function RequestDetail() {
               <h3 className="text-[13.5px] font-black">خاصك تفعّل محفظتك باش تقبل عرضاً</h3>
               <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
                 {!walletEnabled
-                  ? "هاد خدمة رقمية: النشر مسموح، ولكن القبول كيتطلّب محفظة مفعّلة ومشحونة."
+                  ? "هاد مهمة إنترنت: النشر مسموح، ولكن القبول كيتطلّب محفظة مفعّلة ومشحونة."
                   : "محفظتك مفعّلة ولكن الرصيد 0 درهم — اطلب شحن المحفظة باش تقدر تقبل العرض."}
               </p>
               <div className="mt-2.5 flex flex-wrap gap-2">
@@ -739,7 +739,7 @@ function OfferCardRow({
           <Button
             size="sm"
             className="gap-1.5 rounded-full"
-            onClick={() => toast.error("فعّل محفظتك واشحنها أولاً باش تقبل عرضاً على خدمة رقمية")}
+            onClick={() => toast.error("فعّل محفظتك واشحنها أولاً باش تقبل عرضاً على مهمة إنترنت")}
             asChild
           >
             <Link href="/profile">
