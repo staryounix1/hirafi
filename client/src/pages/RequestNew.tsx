@@ -294,7 +294,7 @@ export default function RequestNew() {
   const guidance =
     (isProfessionalCraft ? SERVICE_GUIDANCE[requestedService] : undefined) ??
     (selectedCat ? SERVICE_GUIDANCE[selectedCat.slug] : SERVICE_GUIDANCE[requestedService]) ?? {
-      heading: isDigital ? "اشرح مشروعك الرقمي" : "اشرح مشكلتك",
+      heading: isDigital ? "اشرح مهمتك على الإنترنت" : "اشرح مشكلتك",
       description: isDigital
         ? "وضّح نوع العمل، المتطلبات، والمدة المطلوبة — وأرفق ملفات أو روابط إن وُجدت."
         : requestedService
@@ -375,7 +375,7 @@ export default function RequestNew() {
           {isProfessionalCraft
             ? "شرح دقيق مع صور وفيديوهات يساعد الحرّاف على فهم المطلوب."
             : isDigital
-              ? "مشروع رقمي: اقترح ميزانيتك ومدّتك — الفريلانسرز سيتنافسون بعروضهم."
+              ? "مهمة إنترنت: اقترح ميزانيتك ومدّتك — الفريلانسرز سيتنافسون بعروضهم."
               : "حدّد مشكلتك واقترح سعرك — الحرّافون سيتنافسون بعروضهم عليه."}
         </p>
       </header>
@@ -401,7 +401,7 @@ export default function RequestNew() {
         ) : (
           <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
             <SectionHeading title="ما نوع الخدمة؟" />
-            {/* شرائح النوع: ميداني / رقمي / شركات */}
+            {/* شرائح النوع: ميداني / مهام إنترنت / شركات */}
             <div className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
               {SERVICE_KINDS.map((k) => {
                 const meta = kindMeta(k);
@@ -641,7 +641,7 @@ export default function RequestNew() {
         {/* 4 — الموقع: الرقمي عن بُعد، والميداني تلقائي */}
         {isDigital ? (
           <section className="grid gap-3 rounded-3xl bg-card p-4" style={{ boxShadow: "var(--shadow-card)" }}>
-            <SectionHeading title="خدمة عن بُعد" description="الخدمات الرقمية تُنجَز وتُسلَّم عبر المنصّة، فلا حاجة للموقع." />
+            <SectionHeading title="خدمة عن بُعد" description="مهام الإنترنت تُنجَز وتُسلَّم عبر المنصّة، فلا حاجة للموقع." />
             <div className="flex items-center gap-3 rounded-2xl bg-muted/70 px-3.5 py-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink">
                 <Laptop className="size-5" />
