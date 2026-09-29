@@ -120,6 +120,12 @@ export const providerProfiles = pgTable(
     hourlyNote: text("hourly_note"),
     isVerified: boolean("is_verified").notNull().default(false),
     /**
+     * نوع الخدمة اللي اختارو الحرّاف فأول مرة: 'field' | 'digital' | 'b2b'.
+     * كيتقفل ما بقى ما يتبدّلش (قرار المنتج) — ومنو كيتحدّد شنو كيشوف.
+     */
+    primaryKind: text("primary_kind"),
+    professionLockedAt: timestamp("profession_locked_at", { withTimezone: true }),
+    /**
      * طلب التفعيل: 'none' (ما طلبش) | 'pending' | 'approved' | 'rejected'.
      * `isVerified` هي الحقيقة النهائية، وهذا الحقل كيتتبّع مسار المراجعة.
      */
