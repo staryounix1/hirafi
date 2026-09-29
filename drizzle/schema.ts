@@ -178,6 +178,24 @@ export const providerVerifications = pgTable(
   (t) => [index("provider_verifications_status_idx").on(t.status)],
 );
 
+/** اشتراكات إشعارات الويب (Web Push) — جهاز واحد لكل صفّ. */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)],
+);
+
 /** مهارات الحرّاف (فئة ← حرّاف). */
 export const providerCategories = pgTable(
   "provider_categories",
@@ -354,6 +372,8 @@ export const notifications = pgTable(
     body: text("body").notNull(),
     requestId: uuid("request_id").references(() => requests.id, { onDelete: "set null" }),
     isRead: boolean("is_read").notNull().default(false),
+    /** وقت ما تُرسل الإشعار للجهاز (push) — null = مازال. */
+    pushedAt: timestamp("pushed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)],
