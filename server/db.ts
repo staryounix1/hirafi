@@ -22,8 +22,10 @@ import {
   topupRequests,
   homeMenuItems,
   providerVerifications,
+  pushSubscriptions,
 } from "../drizzle/schema";
 import { NotFoundError, ForbiddenError, ConflictError, InvalidStateError } from "./errors";
+import { sendPush } from "./_core/push";
 import { PLATFORM_FEE_PERCENT, type AppRole, type RequestStatus } from "../shared/constants";
 
 // ── أخطاء مُصنَّفة (يترجمها الراوتر إلى TRPCError مفهومة) ─────────────────────
@@ -188,6 +190,159 @@ export async function lockProfessionKind(
     throw new InvalidStateError("اخترت مهنتك من قبل — المهنة ما كتتبدّلش.");
   }
   return { primaryKind: kind, locked: true };
+}
+
+/**
+ * كيرسل push لكل الإشعارات الجديدة (بلا push) ديال هاد المستخدم.
+ * هادا كيتنادى **من بعد** أي فعل كينشئ إشعاراً — بلا ما نلمسو كل نقطة إنشاء.
+ * كيرجّع عدد اللي تصيفط. فشل الإرسال ما كيرفعش خطأ (الإشعار باقي فالجرس).
+ */
+export async function flushPushes(userId: string, limit = 5) {
+  const rows = await db
+    .select({
+      id: notifications.id,
+      title: notifications.title,
+      body: notifications.body,
+      requestId: notifications.requestId,
+    })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), isNull(notifications.pushedAt)))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+  if (rows.length === 0) return 0;
+  const ids = rows.map((r) => r.id);
+  await db
+    .update(notifications)
+    .set({ pushedAt: new Date() })
+    .where(inArray(notifications.id, ids));
+  let sent = 0;
+  for (const r of rows) {
+    const res = await pushToUser(userId, {
+      title: r.title,
+      body: r.body,
+      url: r.requestId ? `/requests/${r.requestId}` : "/notifications",
+      tag: `n-${r.id}`,
+    }).catch(() => ({ sent: 0, gone: 0 }));
+    sent += res.sent;
+  }
+  return sent;
+}
+
+/** كيجمّع نداءات الإرسال فأقل عدد ممكن — دفعة واحدة فآخر الطلب. */
+export function scheduleFlushPushes(...userIds: (string | null | undefined)[]) {
+  const uniq = [...new Set(userIds.filter((x): x is string => Boolean(x)))];
+  if (uniq.length === 0) return;
+  void Promise.all(uniq.map((id) => flushPushes(id).catch(() => 0))).catch(() => {});
+}
+
+/**
+ * كينشئ إشعاراً **وكيرسلو push** لكل أجهزة المستخدم — بلا ما يوقف الطلب إلا فشل.
+ * هادا المسار الوحيد اللي خاص أي كود جديد يستعملو باش الإشعارات توصل للهاتف.
+ */
+export async function notify(input: {
+  userId: string;
+  type: string;
+  title: string;
+  body: string;
+  requestId?: string | null;
+  url?: string;
+}) {
+  const [row] = await db
+    .insert(notifications)
+    .values({
+      userId: input.userId,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      requestId: input.requestId ?? null,
+    })
+    .returning({ id: notifications.id });
+  if (!row) return null;
+  // الإرسال ما كيعطّلش: كيمشي فالخلفية، وفشلو ما كيرجّعش خطأ.
+  void pushToUser(input.userId, {
+    title: input.title,
+    body: input.body,
+    url: input.url ?? (input.requestId ? `/requests/${input.requestId}` : "/notifications"),
+    tag: `n-${row.id}`,
+  }).catch(() => {});
+  return row.id;
+}
+
+/** كيرسل push لكل أجهزة المستخدم وكينضّف الاشتراكات الميّتة. */
+export async function pushToUser(
+  userId: string,
+  payload: { title: string; body: string; url?: string; tag?: string },
+) {
+  const targets = await listPushTargets(userId);
+  if (targets.length === 0) return { sent: 0, gone: 0 };
+  const dead: string[] = [];
+  let sent = 0;
+  await Promise.all(
+    targets.map(async (t) => {
+      const r = await sendPush(t, payload);
+      if (r === "ok") sent += 1;
+      else if (r === "gone") dead.push(t.endpoint);
+    }),
+  );
+  if (dead.length) await deletePushEndpoints(dead).catch(() => {});
+  return { sent, gone: dead.length };
+}
+
+// ── اشتراكات إشعارات الويب ────────────────────────────────────────────────────
+
+/** يسجّل اشتراك جهاز (upsert على endpoint — الجهاز الواحد ما يتكرّرش). */
+export async function savePushSubscription(input: {
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  userAgent?: string | null;
+}) {
+  const [row] = await db
+    .insert(pushSubscriptions)
+    .values({
+      userId: input.userId,
+      endpoint: input.endpoint,
+      p256dh: input.p256dh,
+      auth: input.auth,
+      userAgent: input.userAgent ?? null,
+    })
+    .onConflictDoUpdate({
+      target: pushSubscriptions.endpoint,
+      set: {
+        userId: input.userId,
+        p256dh: input.p256dh,
+        auth: input.auth,
+        lastSeenAt: new Date(),
+      },
+    })
+    .returning({ id: pushSubscriptions.id });
+  return row?.id ?? null;
+}
+
+/** كيحيد اشتراكاً (إلغاء تفعيل الإشعارات من الجهاز). */
+export async function removePushSubscription(userId: string, endpoint: string) {
+  await db
+    .delete(pushSubscriptions)
+    .where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.endpoint, endpoint)));
+}
+
+/** كل أجهزة مستخدم — للإرسال. */
+export async function listPushTargets(userId: string) {
+  return db
+    .select({
+      endpoint: pushSubscriptions.endpoint,
+      p256dh: pushSubscriptions.p256dh,
+      auth: pushSubscriptions.auth,
+    })
+    .from(pushSubscriptions)
+    .where(eq(pushSubscriptions.userId, userId));
+}
+
+/** كيحيد الاشتراكات الميّتة (410/404 من خدمة الدفع). */
+export async function deletePushEndpoints(endpoints: string[]) {
+  if (endpoints.length === 0) return;
+  await db.delete(pushSubscriptions).where(inArray(pushSubscriptions.endpoint, endpoints));
 }
 
 /** وثائق التفعيل الحالية للحرّاف (null إلا ما بداش العملية). */
@@ -717,6 +872,11 @@ export async function updateRequestStatus(input: {
     });
   }
 
+  scheduleFlushPushes(
+    request.customerId,
+    acceptedOffer?.providerUserId ?? null,
+  );
+
   const fresh = await getRequestDetail(input.requestId, input.viewerId);
   if (!fresh) throw new NotFoundError("الطلب غير موجود");
   return fresh;
@@ -874,7 +1034,8 @@ export async function createOffer(input: {
       title: "وصل عرض جديد على طلبك",
       body: `«${req.title}»: عرض بـ ${input.price} درهم.`,
     });
-    return row;
+  scheduleFlushPushes(req.customerId);
+  return row;
   } catch (e) {
     if (isUniqueViolation(e)) throw new ConflictError("قدّمت عرضاً على هذا الطلب بالفعل");
     throw e;
@@ -1018,6 +1179,8 @@ export async function acceptOffer(offerId: string, customerId: string) {
         : []),
     ]),
   );
+
+  scheduleFlushPushes(row.providerUserId, row.customerId, ...otherPending.map((o) => o.providerUserId));
 
   return {
     ok: true,
@@ -1267,6 +1430,7 @@ export async function sendMessage(input: { requestId: string; senderId: string; 
       body: `رسالة على «${detail.request.title}».`,
       requestId: input.requestId,
     });
+    scheduleFlushPushes(recipientId);
   }
   return row;
 }
