@@ -134,7 +134,7 @@ export function RequestCard({
             <Badge tone={urg.tone}>{urg.label}</Badge>
           )}
           {band ? <Badge tone={DISTANCE_LABELS[band].tone}>{DISTANCE_LABELS[band].label}</Badge> : null}
-          {isDigital ? <Badge tone="info">رقمي</Badge> : null}
+          {isDigital ? <Badge tone="info">مهام إنترنت</Badge> : null}
           <span className="ms-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <Clock className="size-3" />
             {timeAgoAr(request.createdAt)}

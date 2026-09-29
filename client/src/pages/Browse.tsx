@@ -18,7 +18,7 @@ import {
 } from "@/components/hirfi/primitives";
 import { RequestCard } from "@/components/hirfi/cards";
 import { trpc } from "@/_core/trpc";
-import { useCategories, useMyProfile } from "@/lib/hooks";
+import { useCategories, useMyProfile, usePrimaryKind } from "@/lib/hooks";
 import { errorMessage, kindIcon, kindMeta } from "@/lib/format";
 import {
   BUDGET_BANDS,
@@ -65,12 +65,15 @@ export default function Browse() {
   const band = BUDGET_BANDS.find((b) => b.key === budgetBand);
   const districts = city ? (DISTRICTS_BY_CITY[city] ?? []) : [];
 
+  const { kind: lockedKind } = usePrimaryKind();
+  const effectiveKind = lockedKind ?? (kind || undefined);
+
   const q = trpc.requests.browse.useQuery({
     categoryId: categoryId || undefined,
-    kind: kind || undefined,
+    kind: effectiveKind,
     city: city || undefined,
     district: district || undefined,
-    distance,
+    distance: lockedKind === "digital" ? "all" : distance,
     budgetMin: band ? band.min : undefined,
     budgetMax: band ? band.max : undefined,
     urgency: (urgency || undefined) as "flexible" | "today" | "urgent" | undefined,
@@ -160,32 +163,47 @@ export default function Browse() {
         </form>
       </div>
 
-      {/* شرائح النوع: الكل / ميداني / رقمي / شركات */}
-      <div className="scrollbar-none mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
-        <Chip active={kind === ""} onClick={() => { setKind(""); setCategoryId(""); }}>
-          كل الخدمات
-        </Chip>
-        {SERVICE_KINDS.map((k) => {
-          const meta = kindMeta(k);
-          const Icon = kindIcon(k);
-          return (
-            <Chip
-              key={k}
-              active={kind === k}
-              icon={Icon}
-              onClick={() => {
-                setKind(kind === k ? "" : k);
-                setCategoryId("");
-                if (k === "digital") setDistance("all");
-              }}
-            >
-              {meta.shortAr}
-            </Chip>
-          );
-        })}
-      </div>
+      {/* النوع: الحرّاف المحبوس كيشوف غير نوعو (بانر)، وغيرو كيختار بحرية */}
+      {lockedKind ? (
+        <div className="mt-3 flex items-center gap-2.5 rounded-2xl bg-brand/12 px-3.5 py-2.5">
+          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink">
+            {(() => {
+              const Icon = kindIcon(lockedKind);
+              return <Icon className="size-4" />;
+            })()}
+          </span>
+          <div className="min-w-0">
+            <b className="block text-[12.5px]">{kindMeta(lockedKind).labelAr}</b>
+            <span className="block text-[10.5px] text-muted-foreground">مهنتك — كتشوف غير هاد النوع</span>
+          </div>
+        </div>
+      ) : (
+        <div className="scrollbar-none mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
+          <Chip active={kind === ""} onClick={() => { setKind(""); setCategoryId(""); }}>
+            كل الخدمات
+          </Chip>
+          {SERVICE_KINDS.map((k) => {
+            const meta = kindMeta(k);
+            const Icon = kindIcon(k);
+            return (
+              <Chip
+                key={k}
+                active={kind === k}
+                icon={Icon}
+                onClick={() => {
+                  setKind(kind === k ? "" : k);
+                  setCategoryId("");
+                  if (k === "digital") setDistance("all");
+                }}
+              >
+                {meta.shortAr}
+              </Chip>
+            );
+          })}
+        </div>
+      )}
 
-      {/* شرائح سريعة: المسافة والاستعجال — المسافة بلا معنى للخدمات الرقمية */}
+      {/* شرائح سريعة: المسافة والاستعجال — المسافة بلا معنى لمهام الإنترنت */}
       <div className="scrollbar-none mt-2 flex gap-2 overflow-x-auto px-4 pb-1">
         {kind !== "digital"
           ? ([...DISTANCE_BANDS, { key: "all", labelAr: "كل المسافات" }] as const).map((d) => (

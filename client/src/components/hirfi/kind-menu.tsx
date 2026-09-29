@@ -20,7 +20,7 @@ export interface MenuItem {
 /** عناصر افتراضية إلا ما تحمّلتش قائمة الإدارة — التطبيق يبقى صالحاً. */
 export const FALLBACK_MENU: MenuItem[] = [
   { id: "f1", labelAr: "خدمات قريبة", slug: "field", kindFilter: "field", subSlugs: null, icon: "Wrench", sortOrder: 0 },
-  { id: "f2", labelAr: "رقمي", slug: "digital", kindFilter: "digital", subSlugs: null, icon: "Laptop", sortOrder: 1 },
+  { id: "f2", labelAr: "مهام إنترنت", slug: "digital", kindFilter: "digital", subSlugs: null, icon: "Laptop", sortOrder: 1 },
   { id: "f3", labelAr: "الشركات", slug: "b2b", kindFilter: "b2b", subSlugs: null, icon: "Building2", sortOrder: 2 },
 ];
 

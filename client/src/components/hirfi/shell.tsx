@@ -20,6 +20,7 @@ import { useAuth } from "@/_core/useAuth";
 import { trpc } from "@/_core/trpc";
 import { useAppRole, useUnreadCount, useWalletEnabled } from "@/lib/hooks";
 import { VerificationGate } from "@/components/hirfi/verification-gate";
+import { ProfessionLock } from "@/components/hirfi/profession-lock";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/hirfi/primitives";
 
@@ -69,6 +70,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-stage min-h-svh">
+      {/* حاجز المهنة: الحرّاف الجديد كيختار نوعو مرة واحدة، والاختيار كيتقفل. */}
+      <ProfessionLock />
       {/* حاجز التفعيل: **أي** حرّاف غير موثّق ما كيشوفش المنصة حتى توافق الإدارة. */}
       <VerificationGate />
       <div className="app-frame shell-frame">
