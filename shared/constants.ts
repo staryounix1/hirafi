@@ -65,7 +65,7 @@ export type TopupRequestStatus = (typeof TOPUP_REQUEST_STATUSES)[number];
  * رقم واتساب الدعم بالصيغة الدولية بلا `+` (مثال: `2126XXXXXXXX`). فارغ = لا
  * يُعرض زر «تواصل معنا» للحرّاف، ويكفي أن تتواصل معه الإدارة على رقمه المسجّل.
  */
-export const SUPPORT_WHATSAPP = "";
+export const SUPPORT_WHATSAPP = "212604084574";
 
 /**
  * عمولة المنصة `حِرْفي` (النسبة الافتراضية) — يدفعها **الحرّاف** من محفظته لحظة

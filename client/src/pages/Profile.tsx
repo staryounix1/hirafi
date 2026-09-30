@@ -15,6 +15,8 @@ import {
   Wallet,
   Bell,
   BellRing,
+  MessageCircle,
+  LifeBuoy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +38,7 @@ import { disablePush, enablePush, getPushState, type PushState } from "@/lib/pus
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { categoryIcon, countAr, errorMessage, formatDateAr, formatMAD, madNumber, ratingAvg } from "@/lib/format";
-import { MOROCCAN_CITIES, DISTRICTS_BY_CITY, kindMeta, type AppRole, type ServiceKind } from "@shared/constants";
+import { MOROCCAN_CITIES, DISTRICTS_BY_CITY, kindMeta, SUPPORT_WHATSAPP, type AppRole, type ServiceKind } from "@shared/constants";
 import { isValidMoroccanPhone } from "@shared/types";
 
 export default function Profile() {
@@ -306,6 +308,29 @@ export default function Profile() {
               </div>
             ) : null}
           </div>
+        </section>
+      ) : null}
+
+      {/* الدعم — واتساب */}
+      {SUPPORT_WHATSAPP ? (
+        <section className="px-4 pt-3">
+          <a
+            href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("مرحبا، بغيت مساعدة فحِرْفي")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card-flat flex items-center gap-3 p-4 active:scale-[.99]"
+          >
+            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-teal/15 text-teal">
+              <LifeBuoy className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <b className="block text-[14px]">الدعم والمساعدة</b>
+              <span className="mt-0.5 block text-[11.5px] leading-relaxed text-muted-foreground">
+                عندك سؤال ولا مشكل؟ تواصل معنا مباشرة على واتساب.
+              </span>
+            </span>
+            <MessageCircle className="size-5 shrink-0 text-teal" />
+          </a>
         </section>
       ) : null}
 

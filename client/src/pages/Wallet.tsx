@@ -158,6 +158,50 @@ export default function Wallet() {
         </div>
       </section>
 
+
+      {/* دليل الشحن — 4 خطوات واضحة + زر واتساب مباشر */}
+      <section className="px-4 pt-3">
+        <div className="card-flat p-4">
+          <h2 className="flex items-center gap-1.5 text-[15px] font-black">
+            <CircleDollarSign className="size-4 text-teal" />
+            كيفاش تشحن محفظتك؟
+          </h2>
+          <ol className="mt-3 grid gap-2.5">
+            {[
+              { n: "1", t: "دخل المبلغ", d: "اختر المبلغ اللي بغيت تشحنه (10 درهم على الأقل) وصيفط الطلب." },
+              { n: "2", t: "تواصل معنا على واتساب", d: "غادي نتواصلو معاك على الرقم المسجّل باش نتفقو على طريقة التحويل." },
+              { n: "3", t: "خلّص المبلغ", d: "حوّل المبلغ المتفق عليه (تحويل بنكي ولا Cash Plus ولا Wafacash…)." },
+              { n: "4", t: "تأكيد الإدارة", d: "بعد ما توصل الفلوس، كنأكّدو الشحن فيتزاد الرصيد فوراً فحسابك." },
+            ].map((st) => (
+              <li key={st.n} className="flex items-start gap-3">
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-teal/15 text-[11px] font-black text-teal">
+                  {st.n}
+                </span>
+                <div className="min-w-0">
+                  <b className="text-[12.5px]">{st.t}</b>
+                  <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">{st.d}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          {SUPPORT_WHATSAPP ? (
+            <a
+              href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("مرحبا، بغيت نشحن محفظتي فحِرْفي")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3.5 flex items-center justify-center gap-2 rounded-2xl bg-teal px-4 py-3 text-[13px] font-black text-white active:scale-[.99]"
+            >
+              <MessageCircle className="size-4" />
+              تواصل معنا على واتساب دابا
+            </a>
+          ) : null}
+          <p className="mt-2.5 flex items-start gap-1.5 rounded-2xl bg-muted px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
+            <Info className="mt-0.5 size-3.5 shrink-0" />
+            المنصّة ما كتحرّكش الفلوس: كتخلّص مباشرة، والإدارة غير كتأكّد وصول المبلغ. كل عملية كتتسجّل فالملف.
+          </p>
+        </div>
+      </section>
+
       {/* طلب نشط — لا يُسمح بطلب ثانٍ حتى يُحسم */}
       {active ? (
         <section className="px-4 pt-3">
@@ -248,20 +292,6 @@ export default function Wallet() {
               </Button>
             </div>
           </form>
-        </section>
-      ) : null}
-
-      {SUPPORT_WHATSAPP ? (
-        <section className="px-4 pt-3">
-          <a
-            href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("مرحبا، بغيت نشحن محفظتي فحِرْفي")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 rounded-3xl border border-border bg-card px-4 py-3 text-[13px] font-bold text-teal"
-          >
-            <MessageCircle className="size-4" />
-            تواصل معنا على واتساب
-          </a>
         </section>
       ) : null}
 
