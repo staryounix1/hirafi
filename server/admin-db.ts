@@ -189,6 +189,8 @@ export async function adminListUsers(input: {
       district: providerProfiles.district,
       phone: providerProfiles.phone,
       isVerified: providerProfiles.isVerified,
+      primaryKind: providerProfiles.primaryKind,
+      professionLockedAt: providerProfiles.professionLockedAt,
       ratingSum: providerProfiles.ratingSum,
       ratingCount: providerProfiles.ratingCount,
       completedJobs: providerProfiles.completedJobs,
@@ -202,6 +204,76 @@ export async function adminListUsers(input: {
     .orderBy(desc(users.createdAt))
     .limit(input.limit ?? 100);
   return rows;
+}
+
+/**
+ * فكّ قفل المهنة — مخرج طوارئ للأدمن فقط.
+ *
+ * القفل نهائي من جهة الحرّاف، ولكن يبقى خطأ بشرياً وارداً (اختار نوعاً غلط).
+ * الأدمن يقدر **يعيد الفتح** (`clear`) فيختار الحرّاف من جديد، أو **يبدّل مباشرة**
+ * لنوع آخر (`setKind`) بلا ما يمرّ من نافذة الاختيار. كل فعل يتسجّل في سجل التدقيق،
+ * ويوصل إشعار للحرّاف.
+ *
+ * `clear` كيمسح `primary_kind`+`profession_locked_at` → نافذة الاختيار كتبان من جديد.
+ */
+export async function adminSetProfession(input: {
+  userId: string;
+  action: "clear" | "setKind";
+  kind?: "field" | "digital" | "b2b" | null;
+  adminId: string;
+}) {
+  const [target] = await db
+    .select({
+      id: providerProfiles.userId,
+      primaryKind: providerProfiles.primaryKind,
+      role: providerProfiles.role,
+    })
+    .from(providerProfiles)
+    .where(eq(providerProfiles.userId, input.userId))
+    .limit(1);
+  if (!target) throw new NotFoundError("ملف الحرّاف غير موجود");
+  if (target.role !== "provider") throw new InvalidStateError("هذا الحساب ليس حرّافاً");
+
+  if (input.action === "setKind" && !input.kind) {
+    throw new InvalidStateError("حدّد النوع الجديد");
+  }
+
+  const [row] = await db
+    .update(providerProfiles)
+    .set(
+      input.action === "clear"
+        ? { primaryKind: null, professionLockedAt: null, updatedAt: new Date() }
+        : { primaryKind: input.kind!, professionLockedAt: new Date(), updatedAt: new Date() },
+    )
+    .where(eq(providerProfiles.userId, input.userId))
+    .returning({ primaryKind: providerProfiles.primaryKind });
+
+  const KIND_LABEL: Record<string, string> = {
+    field: "خدمات ميدانية",
+    digital: "مهام إنترنت",
+    b2b: "خدمات الشركات",
+  };
+  await db.insert(notifications).values({
+    userId: input.userId,
+    type: "profession",
+    title: input.action === "clear" ? "أُعيد فتح اختيار مهنتك" : "غُيّرت مهنتك",
+    body:
+      input.action === "clear"
+        ? "فتحت الإدارة اختيار المهنة من جديد — دخل واختار نوع خدمتك."
+        : `بدّلت الإدارة مهنتك إلى «${KIND_LABEL[input.kind!] ?? input.kind}».`,
+  });
+
+  scheduleFlushPushes(input.userId);
+
+  await recordAdminAction({
+    adminId: input.adminId,
+    action: input.action === "clear" ? "UNLOCK_PROFESSION" : "SET_PROFESSION",
+    targetType: "user",
+    targetId: input.userId,
+    detail: input.action === "clear" ? `كان: ${target.primaryKind ?? "بلا"}` : `→ ${input.kind}`,
+  });
+
+  return row;
 }
 
 /** حظر/إرجاع حساب — لا يحذف أي بيانات، يمنع الدخول والعروض فقط. */
