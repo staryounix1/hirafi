@@ -231,6 +231,38 @@ const reportsRouter = router({
         }),
       ),
     ),
+
+  /** حسم نزاع: إغلاق البلاغ + (اختياري) إرجاع عمولة + إجراء على المستخدم. */
+  resolve: adminProcedure
+    .input(
+      z.object({
+        reportId: z.uuid(),
+        status: z.enum(["open", "reviewing", "resolved", "dismissed"]),
+        note: z.string().min(3).max(600),
+        refund: z
+          .object({
+            toUserId: z.uuid(),
+            amount: z.number().int().min(1).max(100000),
+            requestId: z.uuid().nullish(),
+          })
+          .nullish(),
+        userAction: z.enum(["none", "warn", "block"]).optional(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        a.resolveDispute({
+          reportId: input.reportId,
+          status: input.status,
+          note: input.note,
+          refund: input.refund
+            ? { toUserId: input.refund.toUserId, amount: input.refund.amount, requestId: input.refund.requestId ?? null }
+            : null,
+          userAction: input.userAction ?? "none",
+          adminId: ctx.user.id,
+        }),
+      ),
+    ),
 });
 
 const topupsRouter = router({

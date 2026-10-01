@@ -1,12 +1,13 @@
 // ── البلاغات: صندوق وارد للشكاوى — مراجعة، ملاحظة، وإغلاق دون حذف ────────────
 import { useState } from "react";
-import { Flag, RefreshCw, CheckCircle2, XCircle, Eye, ShieldAlert, Ban } from "lucide-react";
+import { Flag, RefreshCw, CheckCircle2, XCircle, Eye, ShieldAlert, Ban, Undo2, Gavel } from "lucide-react";
 import { AdminShell, DataTable, Tr, Td, MetricCard } from "@/components/hirfi/admin-shell";
 import { TableSkeleton } from "@/components/hirfi/admin-skeleton";
 import { SearchBox, FilterChips, Tag } from "@/components/hirfi/admin-ui";
 import { ErrorState, EmptyState, Badge } from "@/components/hirfi/primitives";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { trpc } from "@/_core/trpc";
 import { toast } from "@/lib/toast";
 import { timeAgoAr, errorMessage, formatDateTimeAr } from "@/lib/format";
@@ -33,6 +34,15 @@ export default function AdminReports() {
   const [status, setStatus] = useState<StatusFilter>("open");
   const [search, setSearch] = useState("");
   const [target, setTarget] = useState<{ id: string; next: "reviewing" | "resolved" | "dismissed" } | null>(null);
+  const [resolveRow, setResolveRow] = useState<null | {
+    id: string;
+    requestId: string | null;
+    requestTitle: string | null;
+    targetUserId: string | null;
+    targetUserName: string | null;
+    reporterName: string | null;
+    body: string;
+  }>(null);
 
   const utils = trpc.useUtils();
   const q = trpc.admin.reports.list.useQuery({
@@ -49,6 +59,17 @@ export default function AdminReports() {
       utils.admin.reports.counts.invalidate();
       utils.admin.overview.invalidate();
       setTarget(null);
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+
+  const resolveM = trpc.admin.reports.resolve.useMutation({
+    onSuccess: (r) => {
+      toast.success(r.refunded ? `حُسم النزاع — رجع ${r.refunded} درهم للحرّاف` : "حُسم النزاع");
+      utils.admin.reports.list.invalidate();
+      utils.admin.reports.counts.invalidate();
+      utils.admin.overview.invalidate();
+      setResolveRow(null);
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
@@ -160,9 +181,19 @@ export default function AdminReports() {
                         size="sm"
                         variant="default"
                         className="h-7 gap-1 rounded-lg px-2 text-[11px]"
-                        onClick={() => setTarget({ id: r.id, next: "resolved" })}
+                        onClick={() =>
+                          setResolveRow({
+                            id: r.id,
+                            requestId: r.requestId ?? null,
+                            requestTitle: r.requestTitle ?? null,
+                            targetUserId: r.targetUserId ?? null,
+                            targetUserName: r.targetUserName ?? null,
+                            reporterName: r.reporterName ?? null,
+                            body: r.body,
+                          })
+                        }
                       >
-                        <CheckCircle2 className="size-3" /> معالَج
+                        <Gavel className="size-3" /> حسم النزاع
                       </Button>
                     ) : null}
                     {r.status === "open" || r.status === "reviewing" ? (
@@ -193,6 +224,15 @@ export default function AdminReports() {
           busy={updateM.isPending}
           onCancel={() => setTarget(null)}
           onConfirm={(note) => updateM.mutate({ reportId: target.id, status: target.next, note })}
+        />
+      ) : null}
+
+      {resolveRow ? (
+        <ResolveDisputeDialog
+          row={resolveRow}
+          busy={resolveM.isPending}
+          onCancel={() => setResolveRow(null)}
+          onConfirm={(payload) => resolveM.mutate(payload)}
         />
       ) : null}
       <span className="hidden">
@@ -268,4 +308,184 @@ function ReportNoteDialog({
       </div>
     </div>
   );
+}
+
+// ── حسم النزاع: إغلاق البلاغ + إرجاع عمولة + إجراء على المستخدم ────────────────
+function ResolveDisputeDialog({
+  row,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  row: {
+    id: string;
+    requestId: string | null;
+    requestTitle: string | null;
+    targetUserId: string | null;
+    targetUserName: string | null;
+    reporterName: string | null;
+    body: string;
+  };
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (p: {
+    reportId: string;
+    status: "resolved" | "dismissed";
+    note: string;
+    refund: { toUserId: string; amount: number; requestId: string | null } | null;
+    userAction: "none" | "warn" | "block";
+  }) => void;
+}) {
+  const [note, setNote] = useState("");
+  const [outcome, setOutcome] = useState<"resolved" | "dismissed">("resolved");
+  const [refundOn, setRefundOn] = useState(false);
+  const [refundTo, setRefundTo] = useState(row.targetUserId ?? "");
+  const [refundAmount, setRefundAmount] = useState("");
+  const [userAction, setUserAction] = useState<"none" | "warn" | "block">("none");
+
+  const amount = Number(refundAmount);
+  const refundValid = !refundOn || (refundTo && Number.isInteger(amount) && amount > 0);
+  const valid = note.trim().length >= 4 && refundValid;
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="dialog" aria-modal>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-xl">
+        <h2 className="flex items-center gap-1.5 text-[16px] font-black">
+          <Gavel className="size-4 text-brand-dark" /> حسم النزاع
+        </h2>
+        <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">
+          بلاغ من <b>{row.reporterName ?? "—"}</b>
+          {row.requestTitle ? <> على طلب <b>«{row.requestTitle}»</b></> : null}
+          . الملاحظة كتوصل للمبلّغ.
+        </p>
+
+        {/* النتيجة */}
+        <div className="mt-4">
+          <span className="text-[11px] font-bold text-muted-foreground">النتيجة</span>
+          <div className="mt-1.5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setOutcome("resolved")}
+              className={cnPick(outcome === "resolved")}
+            >
+              <CheckCircle2 className="size-4" /> معالَج
+            </button>
+            <button
+              type="button"
+              onClick={() => setOutcome("dismissed")}
+              className={cnPick(outcome === "dismissed")}
+            >
+              <XCircle className="size-4" /> مُغلق بلا فعل
+            </button>
+          </div>
+        </div>
+
+        {/* إرجاع العمولة */}
+        {row.requestId ? (
+          <div className="mt-4 rounded-2xl border border-border p-3">
+            <label className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-[12.5px] font-bold">
+                <Undo2 className="size-4 text-teal" /> إرجاع عمولة المنصّة للحرّاف
+              </span>
+              <input
+                type="checkbox"
+                checked={refundOn}
+                onChange={(e) => setRefundOn(e.target.checked)}
+                className="size-4 accent-[color:var(--brand)]"
+              />
+            </label>
+            {refundOn ? (
+              <div className="mt-2.5 grid gap-2">
+                <label className="block">
+                  <span className="text-[10.5px] font-bold text-muted-foreground">رقم المستخدم (User ID) اللي غادي يرجعلو</span>
+                  <Input
+                    value={refundTo}
+                    onChange={(e) => setRefundTo(e.target.value)}
+                    placeholder="uuid…"
+                    dir="ltr"
+                    className="mt-1 rounded-xl text-[12px]"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[10.5px] font-bold text-muted-foreground">المبلغ (درهم)</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder="مثال: 48"
+                    className="mt-1 rounded-xl text-[12px]"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* إجراء على المستخدم */}
+        {row.targetUserId ? (
+          <div className="mt-3">
+            <span className="text-[11px] font-bold text-muted-foreground">
+              إجراء على {row.targetUserName ?? "المستخدم المبلَّغ عنه"}
+            </span>
+            <div className="mt-1.5 grid grid-cols-3 gap-2">
+              {(
+                [
+                  { v: "none", l: "بلا إجراء" },
+                  { v: "warn", l: "تحذير" },
+                  { v: "block", l: "حبس الحساب" },
+                ] as const
+              ).map((o) => (
+                <button key={o.v} type="button" onClick={() => setUserAction(o.v)} className={cnPick(userAction === o.v)}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <label className="mt-4 block">
+          <span className="text-[11px] font-bold text-muted-foreground">ملاحظة الحسم (تظهر للمبلّغ)</span>
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={3}
+            placeholder="اشرح القرار بإيجاز…"
+            className="mt-1.5 rounded-xl text-[13px]"
+          />
+        </label>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" className="rounded-xl" onClick={onCancel} disabled={busy}>
+            إلغاء
+          </Button>
+          <Button
+            variant={outcome === "dismissed" ? "destructive" : "default"}
+            className="rounded-xl"
+            disabled={!valid || busy}
+            onClick={() =>
+              onConfirm({
+                reportId: row.id,
+                status: outcome,
+                note: note.trim(),
+                refund: refundOn
+                  ? { toUserId: refundTo, amount: Number(refundAmount), requestId: row.requestId }
+                  : null,
+                userAction,
+              })
+            }
+          >
+            {busy ? "…" : "تأكيد الحسم"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function cnPick(active: boolean) {
+  return [
+    "flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-bold transition-colors",
+    active ? "border-brand bg-brand/15 text-brand-dark" : "border-border bg-card text-muted-foreground hover:bg-muted",
+  ].join(" ");
 }
