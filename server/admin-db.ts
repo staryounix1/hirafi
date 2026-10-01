@@ -885,7 +885,130 @@ export async function adminUpdateReport(input: {
   return row;
 }
 
+/**
+ * حسم نزاع — الفعل المالي/الجزائي اللي كيرافق إغلاق البلاغ.
+ *
+ * المنصّة ما كتحرّكش فلوس الزبون (كيتخلّص الحرّاف مباشرة)، فالوسيلة الوحيدة
+ * ديال «الضمان» هي **إرجاع عمولة المنصّة** للحرّاف إلا كان الطلب طاح بلا ذنبو.
+ * وزيادة على داكشي، الأدمن يقدر يسجّل إجراء على المستخدم المبلَّغ عنه (تحذير/حبس).
+ *
+ * كل فعل كيتسجّل فسجل التدقيق، وكيوصل إشعار للمعنيّين، والبلاغ كيتقفل بحالة.
+ */
+export async function resolveDispute(input: {
+  reportId: string;
+  status: "resolved" | "dismissed" | "reviewing" | "open";
+  note: string;
+  /** إرجاع عمولة المنصّة على الطلب — للحرّاف اللي فـ`refundToUserId`. */
+  refund?: { toUserId: string; amount: number; requestId?: string | null } | null;
+  /** إجراء على المستخدم المبلَّغ عنه: لا شيء / تحذير / حبس. */
+  userAction?: "none" | "warn" | "block";
+  adminId: string;
+}) {
+  const [before] = await db
+    .select({
+      id: reports.id,
+      reporterId: reports.reporterId,
+      status: reports.status,
+      targetUserId: reports.targetUserId,
+      requestId: reports.requestId,
+    })
+    .from(reports)
+    .where(eq(reports.id, input.reportId))
+    .limit(1);
+  if (!before) throw new NotFoundError("البلاغ غير موجود");
+
+  const note = input.note.trim();
+  if (!note) throw new InvalidStateError("اكتب ملاحظة الحسم — كتوصل للمبلّغ");
+
+  // 1) إرجاع العمولة — حركة محفظة واحدة مسبَّبة (بلا حذف ولا تعديل سابق).
+  let refunded = 0;
+  if (input.refund && input.refund.amount > 0) {
+    if (!Number.isInteger(input.refund.amount)) {
+      throw new InvalidStateError("مبلغ الإرجاع خاصو يكون عدداً صحيحاً");
+    }
+    const [tx] = await db
+      .insert(walletTransactions)
+      .values({
+        userId: input.refund.toUserId,
+        requestId: input.refund.requestId ?? before.requestId ?? null,
+        type: "refund",
+        amount: input.refund.amount,
+        description: `إرجاع عمولة المنصّة بعد حسم نزاع — ${note.slice(0, 120)}`,
+      })
+      .returning();
+    refunded = input.refund.amount;
+    await db.insert(notifications).values({
+      userId: input.refund.toUserId,
+      type: "refund",
+      title: "رُجعت لك عمولة المنصّة",
+      body: `أُضيف ${input.refund.amount} درهم لرصيدك بعد حسم النزاع. ${note}`,
+      requestId: input.refund.requestId ?? before.requestId ?? null,
+    });
+    void tx;
+  }
+
+  // 2) إجراء على المستخدم المبلَّغ عنه.
+  if (input.userAction && input.userAction !== "none" && before.targetUserId) {
+    if (input.userAction === "block") {
+      await db
+        .update(users)
+        .set({ blockedAt: new Date(), blockedReason: note.slice(0, 300) })
+        .where(eq(users.id, before.targetUserId));
+    }
+    await db.insert(notifications).values({
+      userId: before.targetUserId,
+      type: "report",
+      title: input.userAction === "block" ? "تم حبس حسابك" : "تحذير من الإدارة",
+      body: note,
+      requestId: before.requestId ?? null,
+    });
+  }
+
+  // 3) إغلاق البلاغ بحالة + ملاحظة.
+  const [row] = await db
+    .update(reports)
+    .set({
+      status: input.status,
+      adminNote: note,
+      handledByAdminId: input.status === "open" || input.status === "reviewing" ? null : input.adminId,
+      handledAt: input.status === "open" || input.status === "reviewing" ? null : new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(reports.id, input.reportId))
+    .returning();
+
+  // 4) إشعار المبلّغ بالنتيجة.
+  if (input.status !== before.status) {
+    const titles: Record<string, string> = {
+      resolved: "تمّت معالجة بلاغك",
+      dismissed: "أُغلق بلاغك",
+      reviewing: "بلاغك قيد المراجعة",
+      open: "أُعيد فتح بلاغك",
+    };
+    await db.insert(notifications).values({
+      userId: before.reporterId,
+      type: "report",
+      title: titles[input.status] ?? "تحديث على بلاغك",
+      body: note,
+      requestId: before.requestId ?? null,
+    });
+  }
+
+  await recordAdminAction({
+    adminId: input.adminId,
+    action: "RESOLVE_DISPUTE",
+    targetType: "report",
+    targetId: input.reportId,
+    detail: `${input.status} — ${note}${refunded ? ` — إرجاع ${refunded} درهم` : ""}${
+      input.userAction && input.userAction !== "none" ? ` — ${input.userAction}` : ""
+    }`,
+  });
+
+  return { ...row, refunded };
+}
+
 // ── طلبات شحن المحفظة (يدوي عبر واتساب) ───────────────────────────────────────
+
 /**
  * لائحة طلبات الشحن — الأحدث أولاً، مع رصيد الحرّاف الحالي ورقمه للتفاوض.
  * التأكيد والرفض يمرّان من `adminConfirmTopup`/`adminSetTopupStatus` ولا حذف أبداً.
