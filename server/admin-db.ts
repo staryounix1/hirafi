@@ -23,6 +23,7 @@ import {
 } from "../drizzle/schema";
 import { NotFoundError, InvalidStateError } from "./errors";
 import { PLATFORM_FEE_PERCENT } from "../shared/constants";
+import { scheduleFlushPushes } from "./db";
 
 export { NotFoundError, InvalidStateError };
 export { isUniqueViolation };
@@ -875,6 +876,8 @@ export async function adminUpdateReport(input: {
     });
   }
 
+  scheduleFlushPushes(before.reporterId);
+
   await recordAdminAction({
     adminId: input.adminId,
     action: "HANDLE_REPORT",
@@ -993,6 +996,12 @@ export async function resolveDispute(input: {
       requestId: before.requestId ?? null,
     });
   }
+
+  scheduleFlushPushes(
+    before.reporterId,
+    before.targetUserId,
+    input.refund?.toUserId ?? null,
+  );
 
   await recordAdminAction({
     adminId: input.adminId,
