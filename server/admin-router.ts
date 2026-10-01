@@ -61,6 +61,26 @@ const usersRouter = router({
     .mutation(({ ctx, input }) =>
       guarded(() => a.adminSetVerified({ userId: input.userId, verified: input.verified, adminId: ctx.user.id })),
     ),
+
+  /** فكّ/تبديل قفل مهنة الحرّاف — مخرج طوارئ. */
+  setProfession: adminProcedure
+    .input(
+      z.object({
+        userId: z.uuid(),
+        action: z.enum(["clear", "setKind"]),
+        kind: z.enum(["field", "digital", "b2b"]).nullish(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      guarded(() =>
+        a.adminSetProfession({
+          userId: input.userId,
+          action: input.action,
+          kind: input.kind ?? null,
+          adminId: ctx.user.id,
+        }),
+      ),
+    ),
 });
 
 const requestsRouter = router({
