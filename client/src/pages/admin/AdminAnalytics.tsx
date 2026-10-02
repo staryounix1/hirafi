@@ -120,7 +120,7 @@ function AnalyticsBody({ data }: { data: Analytics }) {
             ))}
           </div>
         </div>
-        <AreaChart points={daily.map((d) => ({ label: d.day.slice(5), value: d[series] as number }))} />
+        <AreaChart points={[...daily].reverse().map((d) => ({ label: d.day.slice(5), value: d[series] as number }))} />
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
