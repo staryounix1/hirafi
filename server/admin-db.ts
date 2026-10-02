@@ -149,6 +149,83 @@ export async function adminOverview() {
   return { counts, daily, byCategory };
 }
 
+/**
+ * إحصائيات النمو والمداخيل — سلسلة زمنية 30 يوماً + أفضل الحرّافين + قمع التحويل.
+ *
+ * كلها قراءة فقط ومحسوبة في SQL (بلا تحميل صفوف للتطبيق)، لأن اللوحة تُستعمل
+ * مع نمو البيانات. الأيام بلا نشاط تُرجع 0 في الواجهة عند الرسم.
+ */
+export async function adminAnalytics() {
+  // 1) سلسلة يومية 30 يوم: طلبات جديدة + تسجيلات + عمولات محصّلة + شحن.
+  const daily = await db
+    .select({
+      day: sql<string>`to_char(d.day, 'YYYY-MM-DD')`,
+      requests: sql<number>`coalesce((select count(*) from ${requests} r where date_trunc('day', r.created_at) = d.day),0)::int`,
+      signups: sql<number>`coalesce((select count(*) from ${users} u where date_trunc('day', u.created_at) = d.day),0)::int`,
+      completed: sql<number>`coalesce((select count(*) from ${requests} r where r.status = 'completed' and date_trunc('day', r.updated_at) = d.day),0)::int`,
+      commission: sql<number>`coalesce((select -sum(w.amount) from ${walletTransactions} w where w.type = 'fee' and date_trunc('day', w.created_at) = d.day),0)::int`,
+      topups: sql<number>`coalesce((select sum(w.amount) from ${walletTransactions} w where w.type = 'topup' and date_trunc('day', w.created_at) = d.day),0)::int`,
+    })
+    .from(sql`(select generate_series(date_trunc('day', now()) - interval '29 days', date_trunc('day', now()), interval '1 day') as day) d`)
+    .orderBy(sql`d.day`);
+
+  // 2) أفضل الحرّافين: أعمال منتهية + تقييم + رصيد.
+  const topProviders = await db
+    .select({
+      userId: providerProfiles.userId,
+      name: providerProfiles.displayName,
+      city: providerProfiles.city,
+      primaryKind: providerProfiles.primaryKind,
+      completedJobs: providerProfiles.completedJobs,
+      ratingSum: providerProfiles.ratingSum,
+      ratingCount: providerProfiles.ratingCount,
+      isVerified: providerProfiles.isVerified,
+      balance: sql<number>`coalesce((select sum(w.amount) from ${walletTransactions} w where w.user_id = ${providerProfiles.userId}),0)::int`,
+    })
+    .from(providerProfiles)
+    .where(eq(providerProfiles.role, "provider"))
+    .orderBy(desc(providerProfiles.completedJobs))
+    .limit(10);
+
+  // 3) قمع التحويل: طلبات → عليها عرض → مقبولة → منتهية.
+  const [funnel] = await db
+    .select({
+      requests: sql<number>`(select count(*) from ${requests})::int`,
+      withOffers: sql<number>`(select count(distinct request_id) from ${offers})::int`,
+      accepted: sql<number>`(select count(*) from ${requests} where status in ('accepted','in_progress','completed'))::int`,
+      completed: sql<number>`(select count(*) from ${requests} where status = 'completed')::int`,
+      cancelled: sql<number>`(select count(*) from ${requests} where status = 'cancelled')::int`,
+    })
+    .from(sql`(select 1) as x`);
+
+  // 4) صحة المحافظ + إجماليات.
+  const [totals] = await db
+    .select({
+      commissionTotal: sql<number>`coalesce((select -sum(amount) from ${walletTransactions} where type = 'fee'),0)::int`,
+      refundedTotal: sql<number>`coalesce((select sum(amount) from ${walletTransactions} where type = 'refund'),0)::int`,
+      topupsTotal: sql<number>`coalesce((select sum(amount) from ${walletTransactions} where type = 'topup'),0)::int`,
+      walletBalances: sql<number>`coalesce((select sum(bal) from (select sum(amount) as bal from ${walletTransactions} group by user_id) x),0)::int`,
+      gmv: sql<number>`coalesce((select sum(agreed_amount) from ${requests} where agreed_amount is not null),0)::int`,
+      avgAgreed: sql<number>`coalesce((select round(avg(agreed_amount)) from ${requests} where agreed_amount is not null),0)::int`,
+      avgOffersPerRequest: sql<number>`coalesce((select round(count(*)::numeric / greatest(count(distinct request_id),1), 2) from ${offers}),0)::numeric`,
+      reportsOpen: sql<number>`(select count(*) from ${reports} where status in ('open','reviewing'))::int`,
+      disputesResolved: sql<number>`(select count(*) from ${reports} where status in ('resolved','dismissed'))::int`,
+    })
+    .from(sql`(select 1) as x`);
+
+  // 5) توزيع المهنة (field/digital/b2b) بين الحرّافين.
+  const byKind = await db
+    .select({
+      kind: sql<string>`coalesce(primary_kind, 'none')`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(providerProfiles)
+    .where(eq(providerProfiles.role, "provider"))
+    .groupBy(sql`coalesce(primary_kind, 'none')`);
+
+  return { daily, topProviders, funnel, totals, byKind };
+}
+
 // ── المستخدمون ───────────────────────────────────────────────────────────────
 export async function adminListUsers(input: {
   search?: string;
