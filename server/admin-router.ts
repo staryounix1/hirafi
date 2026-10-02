@@ -20,6 +20,7 @@ function guarded<R>(fn: () => Promise<R>): Promise<R> {
 
 const overviewRouter = router({
   stats: adminProcedure.query(() => guarded(() => a.adminOverview())),
+  analytics: adminProcedure.query(() => guarded(() => a.adminAnalytics())),
   queues: adminProcedure.query(() => guarded(() => a.adminWorkQueues())),
   feePercent: publicProcedure.query(() => PLATFORM_FEE_PERCENT),
 });

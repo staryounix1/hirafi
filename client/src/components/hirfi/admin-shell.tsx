@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   LayoutGrid,
   BadgeCheck,
+  LineChart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/_core/useAuth";
@@ -28,6 +29,7 @@ import { ToastProvider } from "@/lib/toast";
 
 export type AdminSection =
   | "overview"
+  | "analytics"
   | "verifications"
   | "users"
   | "requests"
@@ -42,6 +44,7 @@ export type AdminSection =
 
 const NAV: { key: AdminSection; href: string; label: string; icon: LucideIcon }[] = [
   { key: "overview", href: "/admin", label: "نظرة عامة", icon: LayoutDashboard },
+  { key: "analytics", href: "/admin/analytics", label: "الإحصائيات", icon: LineChart },
   { key: "verifications", href: "/admin/verifications", label: "طلبات التفعيل", icon: BadgeCheck },
   { key: "users", href: "/admin/users", label: "المستخدمون", icon: Users },
   { key: "requests", href: "/admin/requests", label: "الطلبات", icon: ClipboardList },
