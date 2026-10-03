@@ -346,6 +346,7 @@ export const WALLET_TYPE_META: Record<string, { label: string; tone: Tone; sign:
   fee: { label: "عمولة المنصّة", tone: "warn", sign: "-" },
   refund: { label: "استرجاع", tone: "info", sign: "+" },
   topup: { label: "شحن الرصيد", tone: "teal", sign: "+" },
+  referral: { label: "مكافأة إحالة", tone: "success", sign: "+" },
 };
 
 export function walletTypeMeta(t: string) {

@@ -1,7 +1,7 @@
 // ── تسجيل حساب جديد + الحاوية البصرية المشتركة لصفحتي الدخول والتسجيل ──────────
 import { useState, type ReactNode } from "react";
-import { Link, useLocation } from "wouter";
-import { UserPlus, ArrowLeft } from "lucide-react";
+import { Link, useLocation, useSearch } from "wouter";
+import { UserPlus, ArrowLeft, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, Spinner } from "@/components/hirfi/primitives";
@@ -49,6 +49,9 @@ export function AuthShell({
 export default function Register() {
   const { signup } = useAuth();
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const refCode = new URLSearchParams(search).get("ref")?.trim().toUpperCase() || "";
+  const refValid = /^[A-Z0-9]{6}$/.test(refCode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +67,7 @@ export default function Register() {
 
     setBusy(true);
     try {
-      await signup(email.trim(), password, name.trim());
+      await signup(email.trim(), password, name.trim(), refValid ? refCode : undefined);
       toast.success("أُنشئ حسابك — اختر دورك الآن");
       navigate("/onboarding");
     } catch (e2) {
@@ -88,6 +91,12 @@ export default function Register() {
       }
     >
       <form onSubmit={submit} className="grid gap-4">
+        {refValid ? (
+          <p className="flex items-center gap-2 rounded-2xl bg-brand/15 px-3.5 py-2.5 text-[12.5px] font-bold text-brand-dark">
+            <Gift className="size-4 shrink-0" />
+            مدعوّ بكود <span dir="ltr">{refCode}</span> — أهلاً بك!
+          </p>
+        ) : null}
         <Field label="الاسم الكامل" required>
           <Input
             autoComplete="name"

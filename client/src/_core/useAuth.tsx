@@ -10,7 +10,7 @@ interface AuthContextValue {
   user: SessionUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name?: string) => Promise<void>;
+  signup: (email: string, password: string, name?: string, ref?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -32,9 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await loginM.mutateAsync({ email, password });
         await utils.auth.me.invalidate();
       },
-      signup: async (email, password, name) => {
+      signup: async (email, password, name, ref) => {
         await requestStorageAccessIfEmbedded();
-        await signupM.mutateAsync({ email, password, name });
+        await signupM.mutateAsync({ email, password, name, ref });
         await utils.auth.me.invalidate();
       },
       logout: async () => {

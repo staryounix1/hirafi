@@ -55,6 +55,7 @@ const authRouter = router({
         email: z.email(),
         password: z.string().min(8),
         name: z.string().min(2).optional(),
+        ref: z.string().max(12).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -65,6 +66,10 @@ const authRouter = router({
           displayName: input.name ?? user.email.split("@")[0],
           city: MOROCCAN_CITIES[0],
         });
+        // ربط الإحالة إن كان الكود صالحاً — الفشل لا يمنع التسجيل.
+        if (input.ref) {
+          await q.attachReferral({ userId: user.id, code: input.ref }).catch(() => {});
+        }
         await authProvider().login(ctx.c, input.email, input.password);
         return user;
       } catch (e: unknown) {
@@ -463,6 +468,14 @@ const walletRouter = router({
   feePercent: publicProcedure.query(() => PLATFORM_FEE_PERCENT),
 });
 
+// ── الإحالة ──────────────────────────────────────────────────────────────────
+const referralRouter = router({
+  /** لوحة إحالاتي: الكود، عدد المدعوّين، المكسوب، والقائمة. */
+  mine: protectedProcedure.query(({ ctx }) => q.myReferrals(ctx.user.id)),
+  /** المكافأة الحالية (درهم) — تُعرض فالواجهة. */
+  reward: publicProcedure.query(() => q.REFERRAL_REWARD),
+});
+
 // ── الإشعارات ────────────────────────────────────────────────────────────────
 const notificationsRouter = router({
   list: protectedProcedure.query(({ ctx }) => q.listNotifications(ctx.user.id)),
@@ -634,6 +647,7 @@ export const appRouter = router({
   messages: messagesRouter,
   reviews: reviewsRouter,
   wallet: walletRouter,
+  referral: referralRouter,
   notifications: notificationsRouter,
   dashboard: dashboardRouter,
   files: filesRouter,

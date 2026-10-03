@@ -45,7 +45,7 @@ export type OfferStatus = (typeof OFFER_STATUSES)[number];
 export const URGENCIES = ["flexible", "today", "urgent"] as const;
 export type Urgency = (typeof URGENCIES)[number];
 
-export const WALLET_TYPES = ["payment", "payout", "fee", "refund", "topup"] as const;
+export const WALLET_TYPES = ["payment", "payout", "fee", "refund", "topup", "referral"] as const;
 export type WalletType = (typeof WALLET_TYPES)[number];
 
 /**
