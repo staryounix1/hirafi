@@ -17,6 +17,10 @@ import {
   BellRing,
   MessageCircle,
   LifeBuoy,
+  Gift,
+  Copy,
+  Share2,
+  Check as CheckIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -310,6 +314,9 @@ export default function Profile() {
           </div>
         </section>
       ) : null}
+
+      {/* دعوة الأصدقاء — برنامج الإحالة */}
+      <ReferralCard />
 
       {/* الدعم — واتساب */}
       {SUPPORT_WHATSAPP ? (
@@ -616,6 +623,116 @@ export default function Profile() {
         <ReviewsReceived />
       </div>
     </div>
+  );
+}
+
+// ── دعوة الأصدقاء (الإحالة): الكود + المشاركة + الإحصائيات ─────────────────────
+function ReferralCard() {
+  const q = trpc.referral.mine.useQuery();
+  const rewardQ = trpc.referral.reward.useQuery();
+  const [copied, setCopied] = useState(false);
+
+  const code = q.data?.code ?? "";
+  const reward = rewardQ.data ?? 50;
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://hirafi-six.vercel.app";
+  const link = code ? `${origin}/register?ref=${code}` : origin;
+  const shareText = code
+    ? `${code} جرّب حِرْفي — حرّافون وخدمات قريبة منك، وكل واحد كياخد ${reward} درهم مكافأة. سجّل بهاد الرابط: ${link}`
+    : link;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      toast.success("تنسخ الرابط");
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error("تعذّر النسخ — انسخ الرابط يدوياً");
+    }
+  }
+
+  return (
+    <section className="px-4 pt-3">
+      <div className="card-flat p-4">
+        <h2 className="flex items-center gap-1.5 text-[15px] font-black">
+          <Gift className="size-4 text-brand-dark" />
+          دعوة الأصدقاء
+        </h2>
+        <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+          شارك كودك، وكل صديق يسجّل بيه ويكمّل <b>أول عمل</b>، تربح <b>{reward} درهم</b> فرصيدك.
+        </p>
+
+        {/* الكود */}
+        <div className="mt-3 flex items-center gap-2 rounded-2xl border border-dashed border-brand bg-brand/10 px-3.5 py-3">
+          <span className="min-w-0 flex-1 text-center font-display text-[22px] font-black tracking-[0.35em] text-brand-dark" dir="ltr">
+            {q.isLoading ? "……" : code || "—"}
+          </span>
+          <button
+            type="button"
+            onClick={() => void copy()}
+            disabled={!code}
+            className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand text-brand-ink active:scale-95 disabled:opacity-50"
+            aria-label="نسخ الرابط"
+          >
+            {copied ? <CheckIcon className="size-4" /> : <Copy className="size-4" />}
+          </button>
+        </div>
+
+        {/* المشاركة */}
+        <div className="mt-2.5 grid grid-cols-2 gap-2">
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 rounded-2xl bg-teal px-3 py-2.5 text-[12.5px] font-bold text-white active:scale-[.99]"
+          >
+            <MessageCircle className="size-4" /> واتساب
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              if (navigator.share) void navigator.share({ text: shareText }).catch(() => {});
+              else void copy();
+            }}
+            className="flex items-center justify-center gap-1.5 rounded-2xl bg-muted px-3 py-2.5 text-[12.5px] font-bold active:scale-[.99]"
+          >
+            <Share2 className="size-4" /> شارك
+          </button>
+        </div>
+
+        {/* الإحصائيات */}
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-2xl bg-muted/70 px-2 py-2.5">
+            <div className="text-price text-[18px] font-black">{q.data?.total ?? 0}</div>
+            <div className="mt-0.5 text-[10.5px] font-bold text-muted-foreground">دعوة</div>
+          </div>
+          <div className="rounded-2xl bg-muted/70 px-2 py-2.5">
+            <div className="text-price text-[18px] font-black">{q.data?.pending ?? 0}</div>
+            <div className="mt-0.5 text-[10.5px] font-bold text-muted-foreground">فانتظار</div>
+          </div>
+          <div className="rounded-2xl bg-brand/15 px-2 py-2.5">
+            <div className="text-price text-[18px] font-black text-brand-dark">{q.data?.earned ?? 0}</div>
+            <div className="mt-0.5 text-[10.5px] font-bold text-muted-foreground">درهم مكسوب</div>
+          </div>
+        </div>
+
+        {/* القائمة */}
+        {q.data && q.data.list.length > 0 ? (
+          <ul className="mt-3 grid gap-1.5">
+            {q.data.list.slice(0, 6).map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-2 text-[11.5px]">
+                <span className="truncate font-bold">{r.name}</span>
+                {r.rewardedAt ? (
+                  <Badge tone="success">+{r.rewardAmount} درهم</Badge>
+                ) : (
+                  <Badge tone="warn">فانتظار أول عمل</Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
