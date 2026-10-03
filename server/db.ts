@@ -23,6 +23,7 @@ import {
   homeMenuItems,
   providerVerifications,
   pushSubscriptions,
+  referrals,
 } from "../drizzle/schema";
 import { NotFoundError, ForbiddenError, ConflictError, InvalidStateError } from "./errors";
 import { sendPush } from "./_core/push";
@@ -870,6 +871,14 @@ export async function updateRequestStatus(input: {
       type: "status",
       title: input.next === "in_progress" ? "بدأ تنفيذ الطلب" : "أُلغي الطلب",
     });
+  }
+
+  // مكافأة الإحالة: أي من الطرفين كان مدعوّاً، يُصرف لمُحيله عند أول عمل مكتمل.
+  if (input.next === "completed") {
+    await Promise.all([
+      rewardReferralIfDue(request.customerId).catch(() => ({ rewarded: false })),
+      acceptedOffer ? rewardReferralIfDue(acceptedOffer.providerUserId).catch(() => ({ rewarded: false })) : null,
+    ]);
   }
 
   scheduleFlushPushes(
@@ -1909,4 +1918,168 @@ export async function listHomeMenuItems() {
     .from(homeMenuItems)
     .where(eq(homeMenuItems.active, true))
     .orderBy(homeMenuItems.sortOrder);
+}
+
+
+// ── برنامج الإحالة ────────────────────────────────────────────────────────────
+
+/** مكافأة الإحالة الافتراضية (درهم) للحرّاف اللي دعا. */
+export const REFERRAL_REWARD = 50;
+
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // بلا أحرف ملتبسة (O/0/I/1)
+
+function makeReferralCode(): string {
+  let out = "";
+  for (let i = 0; i < 6; i++) {
+    out += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+  }
+  return out;
+}
+
+/**
+ * كود الإحالة ديال المستخدم — كيتولّد مرة واحدة عند أول طلب، ومن بعد ثابت.
+ * إعادة المحاولة عند التصادم (نادر) بفضل القيد الفريد.
+ */
+export async function getOrCreateReferralCode(userId: string): Promise<string> {
+  const [row] = await db
+    .select({ code: users.referralCode })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!row) throw new NotFoundError("المستخدم غير موجود");
+  if (row.code) return row.code;
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = makeReferralCode();
+    try {
+      const [updated] = await db
+        .update(users)
+        .set({ referralCode: code })
+        .where(and(eq(users.id, userId), isNull(users.referralCode)))
+        .returning({ code: users.referralCode });
+      if (updated?.code) return updated.code;
+      // سبقنا أحد — نقرأ القيمة.
+      const [again] = await db
+        .select({ code: users.referralCode })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      if (again?.code) return again.code;
+    } catch (e) {
+      if (!isUniqueViolation(e)) throw e;
+    }
+  }
+  throw new ConflictError("تعذّر توليد كود الإحالة، أعد المحاولة");
+}
+
+/**
+ * ربط مدعوّ بصاحب الكود — كيتنادى وقت التسجيل. آمن للتكرار:
+ * ما كيديرش والو إلا كان المستخدم عندو `referred_by`، ولا الكود غالط، ولا
+ * المستخدم كيدعو راسو.
+ */
+export async function attachReferral(input: {
+  userId: string;
+  code: string;
+}): Promise<{ ok: boolean; referrerId?: string }> {
+  const code = input.code.trim().toUpperCase();
+  if (code.length < 4) return { ok: false };
+
+  const [me] = await db
+    .select({ referredBy: users.referredBy })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .limit(1);
+  if (!me || me.referredBy) return { ok: false };
+
+  const [referrer] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.referralCode, code))
+    .limit(1);
+  if (!referrer || referrer.id === input.userId) return { ok: false };
+
+  const [updated] = await db
+    .update(users)
+    .set({ referredBy: referrer.id })
+    .where(and(eq(users.id, input.userId), isNull(users.referredBy)))
+    .returning({ id: users.id });
+  if (!updated) return { ok: false };
+
+  await db
+    .insert(referrals)
+    .values({ referrerId: referrer.id, referredUserId: input.userId, code, rewardAmount: REFERRAL_REWARD })
+    .onConflictDoNothing();
+
+  return { ok: true, referrerId: referrer.id };
+}
+
+/**
+ * صرف مكافأة الإحالة مرّة واحدة — كيتنادى بعد **إتمام المدعوّ أول عمل**.
+ * كيتحقّق من الختم (`referral_rewarded_at`) باش ما تتصرفش مرتين، وكيزيد
+ * حركة `referral` فمحفظة المُحيل + إشعار + push.
+ */
+export async function rewardReferralIfDue(referredUserId: string): Promise<{ rewarded: boolean; amount?: number }> {
+  const [me] = await db
+    .select({ referredBy: users.referredBy, rewardedAt: users.referralRewardedAt })
+    .from(users)
+    .where(eq(users.id, referredUserId))
+    .limit(1);
+  if (!me?.referredBy || me.rewardedAt) return { rewarded: false };
+
+  // ختم ذرّي — صفر صفوف = سبقنا أحد (أو لا توجد إحالة).
+  const [claimed] = await db
+    .update(users)
+    .set({ referralRewardedAt: new Date() })
+    .where(and(eq(users.id, referredUserId), isNull(users.referralRewardedAt)))
+    .returning({ id: users.id });
+  if (!claimed) return { rewarded: false };
+
+  const [ref] = await db
+    .select({ id: referrals.id, amount: referrals.rewardAmount })
+    .from(referrals)
+    .where(eq(referrals.referredUserId, referredUserId))
+    .limit(1);
+  const amount = ref?.amount ?? REFERRAL_REWARD;
+
+  await db.insert(walletTransactions).values({
+    userId: me.referredBy,
+    type: "referral",
+    amount,
+    description: "مكافأة إحالة — أكمل الشخص اللي دعوتَه أول عمل",
+  });
+  if (ref) {
+    await db.update(referrals).set({ rewardedAt: new Date() }).where(eq(referrals.id, ref.id));
+  }
+  await db.insert(notifications).values({
+    userId: me.referredBy,
+    type: "referral",
+    title: "مكافأة إحالة 🎁",
+    body: `أُضيف ${amount} درهم لرصيدك — الشخص اللي دعوتَه أكمل أول عمل.`,
+  });
+  scheduleFlushPushes(me.referredBy);
+  return { rewarded: true, amount };
+}
+
+/** لوحة إحالات المستخدم: الكود، عدد المدعوّين، المكسوب، وقائمة مختصرة. */
+export async function myReferrals(userId: string) {
+  const code = await getOrCreateReferralCode(userId);
+  const list = await db
+    .select({
+      id: referrals.id,
+      createdAt: referrals.createdAt,
+      rewardedAt: referrals.rewardedAt,
+      rewardAmount: referrals.rewardAmount,
+      name: sql<string>`coalesce(provider_profiles.display_name, users.email, 'مستخدم')`,
+      role: providerProfiles.role,
+    })
+    .from(referrals)
+    .leftJoin(users, eq(users.id, referrals.referredUserId))
+    .leftJoin(providerProfiles, eq(providerProfiles.userId, referrals.referredUserId))
+    .where(eq(referrals.referrerId, userId))
+    .orderBy(desc(referrals.createdAt))
+    .limit(50);
+
+  const earned = list.filter((r) => r.rewardedAt).reduce((a, r) => a + r.rewardAmount, 0);
+  const pending = list.filter((r) => !r.rewardedAt).length;
+  return { code, total: list.length, earned, pending, list };
 }
