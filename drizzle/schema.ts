@@ -36,6 +36,14 @@ export const users = pgTable("users", {
    * يقدرش يقبل عرضاً على خدمة رقمية قبل التفعيل + الشحن.
    */
   walletEnabled: boolean("wallet_enabled").notNull().default(false),
+  /**
+   * الإحالة — كود الدعوة الشخصي (فريد، 6 أحرف) + من دعا هذا المستخدم.
+   * `referredBy` يُكتب مرة واحدة عند التسجيل، و`referralRewardedAt` يمنع
+   * مكافأة نفس الدعوة مرتين.
+   */
+  referralCode: text("referral_code").unique(),
+  referredBy: uuid("referred_by"),
+  referralRewardedAt: timestamp("referral_rewarded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -377,6 +385,31 @@ export const notifications = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)],
+);
+
+/**
+ * الإحالات — كل صف = دعوة واحدة (المُحيل → المدعوّ). المكافأة تُصرف مرة واحدة
+ * عند **إتمام المدعوّ أول عمل**، ويُختم `rewardedAt`. لا حذف: الأثر يبقى.
+ */
+export const referrals = pgTable(
+  "referrals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    referrerId: uuid("referrer_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    referredUserId: uuid("referred_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    rewardAmount: integer("reward_amount").notNull().default(0),
+    rewardedAt: timestamp("rewarded_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("referrals_referrer_idx").on(t.referrerId, t.createdAt),
+    index("referrals_referred_idx").on(t.referredUserId),
+  ],
 );
 
 /**
