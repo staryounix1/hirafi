@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.hirafi_six.twa",
+        "sha256_cert_fingerprints": ["12:A0:0D:9B:38:4C:DC:29:95:AA:F1:F0:5A:F2:68:31:AC:14:D8:15:2C:15:60:46:F9:3A:D3:27:BE:BE:38:A4"]
+      }
+    }]
