@@ -15,6 +15,7 @@ import {
   Wallet,
   Bell,
   BellRing,
+  MapPin,
   MessageCircle,
   LifeBuoy,
   Gift,
@@ -37,6 +38,7 @@ import {
 } from "@/components/hirfi/primitives";
 import { trpc } from "@/_core/trpc";
 import { useCategories, useMyProfile } from "@/lib/hooks";
+import { useGeo } from "@/lib/geo";
 import { useImageUpload, validateImage } from "@/lib/upload";
 import { disablePush, enablePush, getPushState, type PushState } from "@/lib/push";
 import { toast } from "@/lib/toast";
@@ -69,6 +71,8 @@ export default function Profile() {
   const [hydrated, setHydrated] = useState(false);
   const [saving, setSaving] = useState(false);
   const [caption, setCaption] = useState("");
+  const geo = useGeo();
+  const [geoHint, setGeoHint] = useState<string | null>(null);
 
   useEffect(() => {
     if (!q.data || hydrated) return;
@@ -83,6 +87,19 @@ export default function Profile() {
     setSelected(q.data.skillIds);
     setHydrated(true);
   }, [q.data, hydrated]);
+
+  // اقتراح تقريبي من IP — بلا إذن. كنطبّقوه غير ما ضبطش الزائر مدينتو بنفسو
+  // (ما عندو حي محفوظ)، وكنعلموه بالاقتراح فـhint باش يكون شفّاف.
+  useEffect(() => {
+    if (!hydrated || !geo.city) return;
+    const hasOwnLocation = Boolean(q.data?.profile.district);
+    if (hasOwnLocation) return;
+    setCity((prev) => {
+      if (prev === geo.city) return prev;
+      setGeoHint(`اقترحنا مدينتك من موقعك التقريبي (${geo.city}) — بدّلها إلا ماشي صحيحة.`);
+      return geo.city as string;
+    });
+  }, [hydrated, geo.city, q.data?.profile.district]);
 
   if (q.isLoading) {
     return (
@@ -403,6 +420,7 @@ export default function Profile() {
               onChange={(e) => {
                 setCity(e.target.value);
                 setDistrict("");
+                setGeoHint(null);
               }}
             >
               {MOROCCAN_CITIES.map((c) => (
@@ -412,6 +430,54 @@ export default function Profile() {
               ))}
             </Select>
           </Field>
+
+          {geoHint ? (
+            <p className="flex items-start gap-1.5 rounded-2xl bg-brand/12 px-3 py-2.5 text-[11.5px] leading-relaxed text-brand-dark">
+              <MapPin className="mt-0.5 size-3.5 shrink-0" />
+              {geoHint}
+            </p>
+          ) : null}
+
+          <button
+            type="button"
+            disabled={geo.gpsBusy}
+            onClick={async () => {
+              const coords = await geo.requestGps();
+              if (!coords) {
+                if (geo.gpsError) toast.error(geo.gpsError);
+                return;
+              }
+              // نستعملو الـreverse geocoding باش نجيبو المدينة من الإحداثيات.
+              try {
+                const res = await fetch(
+                  `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.lat}&lon=${coords.lng}&zoom=18&addressdetails=1`,
+                );
+                const data = (await res.json()) as { address?: Record<string, string> };
+                const alias: Record<string, string> = {
+                  casablanca: "الدار البيضاء", rabat: "الرباط", sale: "سلا", "salé": "سلا",
+                  marrakech: "مراكش", marrakesh: "مراكش", tanger: "طنجة", tangier: "طنجة",
+                  fes: "فاس", fez: "فاس", agadir: "أكادير", meknes: "مكناس", oujda: "وجدة",
+                };
+                const raw = [data.address?.city, data.address?.town, data.address?.municipality, data.address?.county]
+                  .filter(Boolean)
+                  .map((v) => String(v).trim().toLocaleLowerCase())[0];
+                const found = raw ? alias[raw] : undefined;
+                if (found) {
+                  setCity(found);
+                  setGeoHint(`حدّدنا مدينتك من GPS: ${found}.`);
+                  toast.success(`مدينتك: ${found}`);
+                } else {
+                  setGeoHint("حدّدنا موقعك الدقيق، ولكن ما عرفناش المدينة — اخترها يدوياً.");
+                }
+              } catch {
+                setGeoHint("حدّدنا موقعك الدقيق، ولكن تعذّر تحويله لمدينة.");
+              }
+            }}
+            className="inline-flex items-center gap-1.5 self-start rounded-full bg-muted px-3.5 py-2 text-[12px] font-bold text-muted-foreground active:scale-95 disabled:opacity-60"
+          >
+            {geo.gpsBusy ? <Spinner className="size-3.5" /> : <MapPin className="size-3.5" />}
+            حدّد موقعي بدقة (GPS)
+          </button>
 
           <Field label="الحي" hint="نفس الحي = «قريب» عند الحرف">
             <Select value={district} onChange={(e) => setDistrict(e.target.value)}>
