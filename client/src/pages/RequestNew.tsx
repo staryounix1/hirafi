@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { categoryIcon, errorMessage, kindIcon, kindMeta, madNumber } from "@/lib/format";
 import { MOROCCAN_CITIES, SERVICE_KINDS, type ServiceKind } from "@shared/constants";
+import { useGeo } from "@/lib/geo";
 
 const PROFESSIONAL_CRAFT_LABELS: Record<string, string> = {
   painting: "صباغة",
@@ -225,7 +226,8 @@ export default function RequestNew() {
   const [city, setCity] = useState<string>(MOROCCAN_CITIES[0]);
   const [district, setDistrict] = useState<string>("الموقع الحالي");
   const [gpsAddress, setGpsAddress] = useState<string | null>(null);
-  const [locationSource, setLocationSource] = useState<"profile" | "gps">("profile");
+  const [locationSource, setLocationSource] = useState<"profile" | "ip" | "gps">("profile");
+  const geo = useGeo();
   const [media, setMedia] = useState<(UploadedImage & { kind: "image" | "video" })[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -235,12 +237,25 @@ export default function RequestNew() {
   const serviceLabel = isProfessionalCraft ? PROFESSIONAL_CRAFT_LABELS[requestedService] : undefined;
 
   useEffect(() => {
-    if (locationSource !== "profile") return;
+    if (locationSource === "gps") return;
     const p = profile.data?.profile;
-    if (!p) return;
-    setCity(p.city || MOROCCAN_CITIES[0]);
-    setDistrict(p.district || "الموقع الحالي");
-  }, [locationSource, profile.data]);
+    if (p) {
+      // ملف الزائر عندو الأولوية (هو اللي ضبطو).
+      setCity(p.city || MOROCCAN_CITIES[0]);
+      if (p.district) setDistrict(p.district);
+      else if (geo.city && geo.city !== p.city) {
+        // الملف افتراضي (الدار البيضاء) ولكن الـIP كيقول مدينة أخرى — نقترحو.
+        setCity(geo.city);
+        setLocationSource("ip");
+      }
+      return;
+    }
+    // ما كاينش ملف بعد — نستعملو المدينة التقريبية من IP بلا إذن.
+    if (geo.city) {
+      setCity(geo.city);
+      setLocationSource("ip");
+    }
+  }, [locationSource, profile.data, geo.city]);
 
   useEffect(() => {
     let cancelled = false;

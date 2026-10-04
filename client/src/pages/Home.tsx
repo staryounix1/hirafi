@@ -23,6 +23,7 @@ import { LiveDot, Spinner } from "@/components/hirfi/primitives";
 import { resolveItemCats } from "@/components/hirfi/service-picker";
 import type { MenuItem } from "@/components/hirfi/kind-menu";
 import { useHomeMenu } from "@/lib/hooks";
+import { useGeo } from "@/lib/geo";
 import { useAuth } from "@/_core/useAuth";import { toast } from "@/lib/toast";
 import { errorMessage, categoryIcon } from "@/lib/format";
 
@@ -115,6 +116,7 @@ export default function Home() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const homeMenu = useHomeMenu();
+  const geo = useGeo();
   const items = (homeMenu.data ?? []) as MenuItem[];
   /** "" = عرض التصنيفات؛ وإلا slug التصنيف المفتوح لعرض مهنه. */
   const [key, setKey] = useState<string>("");
@@ -147,7 +149,7 @@ export default function Home() {
               <span className="flex min-w-0 flex-col items-start gap-1 leading-none">
                 <b className="font-display text-[15px] leading-none font-black tracking-tight">حِرفي</b>
                 <span className="whitespace-nowrap text-[10px] leading-none font-medium text-muted-foreground">
-                  خدمات وحرّافون قريبون
+                  {geo.city ? `خدمات وحرّافون ف${geo.city}` : "خدمات وحرّافون قريبون"}
                 </span>
               </span>
             </span>
