@@ -61,10 +61,12 @@ const authRouter = router({
     .mutation(async ({ ctx, input }) => {
       try {
         const user = await registerLocalUser(input.email, input.password, input.name);
+        // المدينة الافتراضية: التقريبية من IP (بلا إذن)، وإلا الدار البيضاء.
+        const geo = cityFromVercelHeaders((n) => ctx.c.req.header(n));
         await q.ensureProfile({
           userId: user.id,
           displayName: input.name ?? user.email.split("@")[0],
-          city: MOROCCAN_CITIES[0],
+          city: geo.city ?? MOROCCAN_CITIES[0],
         });
         // ربط الإحالة إن كان الكود صالحاً — الفشل لا يمنع التسجيل.
         if (input.ref) {
@@ -629,11 +631,70 @@ const filesRouter = router({
 });
 
 /** إعدادات عامة للعميل — ماشي فيها أسرار (غير مفاتيح عامة). */
+/**
+ * خرائط أسماء المدن كما ترجعها Vercel (لاتينية) والرؤوس المرتبطة → تسميتنا العربية.
+ * كتستعمل فجوج مواضع: تعبئة الملف عند التسجيل/الدخول، و`config.geo` للعميل.
+ */
+const GEO_CITY_ALIASES: Record<string, (typeof MOROCCAN_CITIES)[number]> = {
+  casablanca: "الدار البيضاء",
+  rabat: "الرباط",
+  sale: "سلا",
+  "salé": "سلا",
+  marrakech: "مراكش",
+  marrakesh: "مراكش",
+  tanger: "طنجة",
+  tangier: "طنجة",
+  fes: "فاس",
+  fez: "فاس",
+  agadir: "أكادير",
+  meknes: "مكناس",
+  meknès: "مكناس",
+  oujda: "وجدة",
+};
+
+/**
+ * الموقع التقريبي للزائر من رؤوس Vercel — **بلا أي إذن**.
+ *
+ * Vercel كتضيف `x-vercel-ip-city` و`x-vercel-ip-country` و(حسب الخطة)
+ * `x-vercel-ip-latitude/longitude` لكل طلب. هادا تقريبي (مستوى المدينة، من IP)
+ * وكيتأثّر بالـVPN — ماشي GPS. الهدف: نعبّيو المدينة افتراضياً بلا ما نسولوا الزائر،
+ * ونسجّل منين جا. الدقة (الإحداثيات الدقيقة) كتبقى خاصة بالـGPS + إذن صريح.
+ */
+/** المدينة التقريبية من رؤوس Vercel، بلا إذن. null إلا ماكانش تطابق. */
+function cityFromVercelHeaders(get: (name: string) => string | undefined) {
+  const rawCity = (get("x-vercel-ip-city") ?? "").trim();
+  const country = (get("x-vercel-ip-country") ?? "").trim();
+  const key = rawCity.toLocaleLowerCase();
+  return {
+    city: GEO_CITY_ALIASES[key] ?? null,
+    rawCity: rawCity || null,
+    country: country || null,
+  };
+}
+
 const configRouter = router({
   public: publicProcedure.query(() => ({
     vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
     pushEnabled: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
   })),
+
+  /**
+   * موقع الزائر التقريبي (IP) — بلا إذن. كيرجّع:
+   *  - `city`: المدينة المغربية إن تطابقت مع قائمتنا، وإلا null.
+   *  - `rawCity`/`country`: كما رجعتهم Vercel (للتشخيص).
+   *  - `lat`/`lng`: تقريبيان إن توفّرا (مستوى المدينة).
+   *  - `source`: "vercel" إلا كانت الرؤوس موجودة، وإلا "unknown".
+   */
+  geo: publicProcedure.query(({ ctx }) => {
+    const h = ctx.c.req.header.bind(ctx.c.req);
+    const base = cityFromVercelHeaders((n) => h(n));
+    const latRaw = h("x-vercel-ip-latitude");
+    const lngRaw = h("x-vercel-ip-longitude");
+    const lat = latRaw && !Number.isNaN(Number(latRaw)) ? Number(latRaw) : null;
+    const lng = lngRaw && !Number.isNaN(Number(lngRaw)) ? Number(lngRaw) : null;
+    const hasGeo = Boolean(base.rawCity || base.country || lat !== null);
+    return { ...base, lat, lng, source: hasGeo ? ("vercel" as const) : ("unknown" as const) };
+  }),
 });
 
 export const appRouter = router({
